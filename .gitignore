@@ -12,7 +12,7 @@ env/
 .env
 
 # Archivos de datos
-.csv
+*.csv
 
 # Archivos de registro y archivos generados por las bibliotecas de registro
 *.log
