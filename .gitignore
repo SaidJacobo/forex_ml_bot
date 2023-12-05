@@ -1,0 +1,30 @@
+# Archivos generados por Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Entorno virtual
+venv/
+env/
+
+# Archivo de configuración para el entorno de desarrollo
+.env
+
+# Archivos de datos
+.csv
+
+# Archivos de registro y archivos generados por las bibliotecas de registro
+*.log
+
+# Archivos de compilación
+*.pyc
+
+# Carpeta de resultados
+results/
+
+# Carpeta de archivos de caché
+.cache/
+
+# Archivo de configuración para el editor de texto Visual Studio Code
+.vscode/
