@@ -5,7 +5,7 @@ __pycache__/
 *.pyd
 
 # Entorno virtual
-venv/
+mtvenv/
 env/
 
 # Archivo de configuración para el entorno de desarrollo

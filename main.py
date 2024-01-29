@@ -17,7 +17,7 @@ def load_func(dotpath : str):
 
 if __name__ == '__main__':
 
-    with open('config.yml', 'r') as archivo:
+    with open('configs/project_config.yml', 'r') as archivo:
         config = yaml.safe_load(archivo)
 
     try:
@@ -34,12 +34,14 @@ if __name__ == '__main__':
 
         df = df.reset_index()
 
+        df['Date'] = pd.to_datetime(df['Date'])
+        df['Date'] = df['Date'].dt.date
+
         df.to_csv(f'./data/{config["ticker"]}.csv', index=False)
 
+        df = pd.read_csv(f'./data/{config["ticker"]}.csv')
+
         print('Dataset levantado y guardado correctamente')
-    
-    df['Date'] = pd.to_datetime(df['Date'])
-    df['Date'] = df['Date'].dt.date
     
     print(df.sample(5))
 
