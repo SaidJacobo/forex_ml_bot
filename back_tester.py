@@ -1,4 +1,4 @@
-import pandas as pd
+import os
 from datetime import timedelta
 
 class BackTester():
@@ -7,7 +7,7 @@ class BackTester():
     self.trading_agent = trading_agent
     self.market_data = market_data
   
-  def start(self, train_window, train_period):
+  def start(self, train_window, train_period, results_path):
     print('='*16, 'calculando indicadores', '='*16)
     self.market_data = self.trading_agent.calculate_indicators(self.market_data)
     train_window = timedelta(days=train_window)
@@ -56,5 +56,15 @@ class BackTester():
         actual_date=actual_date
       )
       
-    self.trading_agent.save_orders(path='./data')
-    self.ml_agent.save_results(path='./data')
+    buys, sells, wallet = self.trading_agent.get_orders()
+    ml_results = self.ml_agent.get_results()
+
+    path = os.path.join('data', results_path)
+    os.mkdir(path)
+
+    # Guarda resultados
+    buys.to_csv(os.path.join(path, 'buys.csv'), index=False)
+    sells.to_csv(os.path.join(path, 'sells.csv'), index=False)
+    wallet.to_csv(os.path.join(path, 'wallet.csv'), index=False)
+    ml_results.to_csv(os.path.join(path, 'ml_results.csv'), index=False)
+

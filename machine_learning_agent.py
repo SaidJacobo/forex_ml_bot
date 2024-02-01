@@ -72,7 +72,12 @@ class MachineLearningAgent():
 
     else:
       print('Starting train')
-      self.pipeline.fit(x_train, y_train)
+      print(f'y_train value_counts: {y_train.value_counts()}')
+      
+      try:
+        self.pipeline.fit(x_train, y_train)
+      except:
+        print('Entrenamiento cancelado')
 
     # Prediccion de train    
     if verbose:
@@ -89,12 +94,12 @@ class MachineLearningAgent():
     self.y_test.append(y_true)
     self.y_pred += list(y_pred)
 
-  def save_results(self, path):
+  def get_results(self):
     results_df = pd.DataFrame(
       {
         'y_true': self.y_test, 
         'y_pred': self.y_pred
        }
     )
-    final_path = os.path.join(path, 'model_results.csv')
-    results_df.to_csv(final_path, index=False)
+    
+    return results_df

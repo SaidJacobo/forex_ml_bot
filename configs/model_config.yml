@@ -1,0 +1,6 @@
+gradient_boosting:
+  param_grid:
+      objective: ['binary:logistic']
+      max_depth: [2, 5, 10]
+      n_estimators: [5, 10, 20, 30, 40, 50, 70, 100]
+      learning_rate: [0.05, 0.01, 0.1]

@@ -87,7 +87,7 @@ class TradingAgent():
     elif result == 'wait':
       pass
   
-  def save_orders(self, path):
+  def get_orders(self):
     print('saving results')
 
     df_buys = pd.DataFrame(
@@ -111,13 +111,4 @@ class TradingAgent():
       }
     )
 
-    final_path = os.path.join(path, 'buys.csv')
-    df_buys.to_csv(final_path, index=False)
-
-    final_path = os.path.join(path, 'sells.csv')
-    df_sells.to_csv(final_path, index=False)
-    
-    final_path = os.path.join(path, 'wallet.csv')
-    df_wallet.to_csv(final_path, index=False)
-
-    print('results saved! :)')
+    return df_buys, df_sells, df_wallet

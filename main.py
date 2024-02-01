@@ -4,9 +4,10 @@ from machine_learning_agent import MachineLearningAgent
 from trading_agent import TradingAgent
 from back_tester import BackTester
 import yfinance as yf
-# from strategies import machine_learning_strategy
 import yaml
 from importlib import import_module
+import itertools
+
 
 def load_func(dotpath : str):
     """ load function in module.  function is right-most segment """
@@ -16,14 +17,21 @@ def load_func(dotpath : str):
 
 
 if __name__ == '__main__':
-
+    
     with open('configs/project_config.yml', 'r') as archivo:
         config = yaml.safe_load(archivo)
+
+    with open('configs/parameters.yml', 'r') as archivo:
+        parameters = yaml.safe_load(archivo)
+
+    with open('configs/model_config.yml', 'r') as archivo:
+        model_configs = yaml.safe_load(archivo)
 
     try:
         print('Intentando levantar el dataset')
         
         df = pd.read_csv(f'./data/{config["ticker"]}.csv')
+        df['Date'] = pd.to_datetime(df['Date'])
 
         print('Dataset levantado correctamente')
 
@@ -40,10 +48,13 @@ if __name__ == '__main__':
         df.to_csv(f'./data/{config["ticker"]}.csv', index=False)
 
         df = pd.read_csv(f'./data/{config["ticker"]}.csv')
+        df['Date'] = pd.to_datetime(df['Date'])
 
         print('Dataset levantado y guardado correctamente')
     
     print(df.sample(5))
+
+    df = df.head(150)
 
     print('Creando target')
 
@@ -56,33 +67,55 @@ if __name__ == '__main__':
 
     df['target'] = pd.cut(df['target'], bins, labels=labels)
 
-    strategy = load_func(config["trading_strategy"])
-    trading_agent = TradingAgent(
-        start_money=config['start_money'], 
-        trading_strategy=strategy,
-        threshold_up=config['threshold_up'],
-        threshold_down=config['threshold_down']
+    models = parameters['models']
+    train_window = parameters['train_window']
+    train_period = parameters['train_period']
+    trading_strategy = parameters['trading_strategy']
+    only_one_tunning = parameters['only_one_tunning']
+
+    parameter_combinations = list(itertools.product(*[
+        models,
+        train_window,
+        train_period,
+        trading_strategy,
+        only_one_tunning,
+        ])
     )
 
-    param_grid = {
-        "model__objective": config['param_grid']['objective'],
-        "model__max_depth": config['param_grid']['max_depth'],
-        "model__n_estimators": config['param_grid']['n_estimators'],
-        "model__learning_rate": config['param_grid']['learning_rate']
-    }
+    for combination in parameter_combinations:
+        print(combination)
+        model_name, train_window, train_period, trading_strategy, only_one_tunning = combination
 
-    model = xgb.XGBClassifier(random_state=42)
-    
-    only_one_tunning = config['only_one_tunning']
-    mla = MachineLearningAgent(model, param_grid, only_one_tunning=only_one_tunning)
 
-    back_tester = BackTester(
-        market_data=df, 
-        ml_agent=mla, 
-        trading_agent=trading_agent
-    )
+        strategy = load_func(trading_strategy)
+        trading_agent = TradingAgent(
+            start_money=config['start_money'], 
+            trading_strategy=strategy,
+            threshold_up=config['threshold_up'],
+            threshold_down=config['threshold_down']
+        )
 
-    back_tester.start(
-        train_window=config['train_window'], 
-        train_period=config['train_period']
-    )
+        param_grid = {
+            "model__objective": model_configs[model_name]['param_grid']['objective'],
+            "model__max_depth": model_configs[model_name]['param_grid']['max_depth'],
+            "model__n_estimators": model_configs[model_name]['param_grid']['n_estimators'],
+            "model__learning_rate": model_configs[model_name]['param_grid']['learning_rate']
+        }
+
+        model = xgb.XGBClassifier(random_state=42) # esto lo voy a tener que cambiar para que tome el del parametro
+        
+        only_one_tunning = only_one_tunning
+        mla = MachineLearningAgent(model, param_grid, only_one_tunning=only_one_tunning)
+
+        back_tester = BackTester(
+            market_data=df, 
+            ml_agent=mla, 
+            trading_agent=trading_agent
+        )
+
+        results_path = f'{model_name}_train_window_{train_window}_train_period_{train_period}_trading_strategy_{trading_strategy}_only_one_tunning_{only_one_tunning}'
+        back_tester.start(
+            train_window=train_window, 
+            train_period=train_period, 
+            results_path=results_path
+        )
