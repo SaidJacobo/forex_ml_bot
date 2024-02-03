@@ -1,5 +1,4 @@
 import pandas as pd
-import xgboost as xgb
 from machine_learning_agent import MachineLearningAgent
 from trading_agent import TradingAgent
 from back_tester import BackTester
@@ -27,10 +26,11 @@ if __name__ == '__main__':
     with open('configs/model_config.yml', 'r') as archivo:
         model_configs = yaml.safe_load(archivo)
 
+    ticker = config["ticker"] 
     try:
         print('Intentando levantar el dataset')
         
-        df = pd.read_csv(f'./data/{config["ticker"]}.csv')
+        df = pd.read_csv(f'./data/{ticker}.csv')
         df['Date'] = pd.to_datetime(df['Date'])
 
         print('Dataset levantado correctamente')
@@ -45,16 +45,14 @@ if __name__ == '__main__':
         df['Date'] = pd.to_datetime(df['Date'])
         df['Date'] = df['Date'].dt.date
 
-        df.to_csv(f'./data/{config["ticker"]}.csv', index=False)
+        df.to_csv(f'./data/{ticker}.csv', index=False)
 
-        df = pd.read_csv(f'./data/{config["ticker"]}.csv')
+        df = pd.read_csv(f'./data/{ticker}.csv')
         df['Date'] = pd.to_datetime(df['Date'])
 
         print('Dataset levantado y guardado correctamente')
     
     print(df.sample(5))
-
-    df = df.head(150)
 
     print('Creando target')
 
@@ -95,15 +93,11 @@ if __name__ == '__main__':
             threshold_down=config['threshold_down']
         )
 
-        param_grid = {
-            "model__objective": model_configs[model_name]['param_grid']['objective'],
-            "model__max_depth": model_configs[model_name]['param_grid']['max_depth'],
-            "model__n_estimators": model_configs[model_name]['param_grid']['n_estimators'],
-            "model__learning_rate": model_configs[model_name]['param_grid']['learning_rate']
-        }
+        param_grid = model_configs[model_name]['param_grid']
 
-        model = xgb.XGBClassifier(random_state=42) # esto lo voy a tener que cambiar para que tome el del parametro
-        
+        model = load_func(model_configs[model_name]['model'])
+        model = model(random_state=42)
+
         only_one_tunning = only_one_tunning
         mla = MachineLearningAgent(model, param_grid, only_one_tunning=only_one_tunning)
 
@@ -113,7 +107,7 @@ if __name__ == '__main__':
             trading_agent=trading_agent
         )
 
-        results_path = f'{model_name}_train_window_{train_window}_train_period_{train_period}_trading_strategy_{trading_strategy}_only_one_tunning_{only_one_tunning}'
+        results_path = f'{ticker}_{model_name}_train_window_{train_window}_train_period_{train_period}_trading_strategy_{trading_strategy}_only_one_tunning_{only_one_tunning}'
         back_tester.start(
             train_window=train_window, 
             train_period=train_period, 

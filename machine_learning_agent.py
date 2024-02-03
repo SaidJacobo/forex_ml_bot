@@ -6,7 +6,6 @@ from sklearn.compose import ColumnTransformer
 from sklearn.metrics import fbeta_score, make_scorer, classification_report
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import RobustScaler
-import os 
 
 class MachineLearningAgent():
 
@@ -24,7 +23,13 @@ class MachineLearningAgent():
     return pred
 
   def predict_proba(self, x):
-    pred = self.pipeline.predict_proba(x)[:,1]
+    proba = self.pipeline.predict_proba(x)
+
+    try:
+      pred = proba[:,1] # si el array tiene dos valores agarro el segundo
+    except:
+      pred = proba[:,0] # si tiene uno solo es porque esta super seguro de una de las dos clases, y agarro ese valor
+      
     return pred
 
   def train(self, x_train, x_test, y_train, y_test, verbose=False):
@@ -76,18 +81,20 @@ class MachineLearningAgent():
       
       try:
         self.pipeline.fit(x_train, y_train)
+
+        # Prediccion de train    
+        if verbose:
+          y_pred = self.predict(x_train)
+          print('='*16, 'classification_report_train', '='*16)
+          class_report = classification_report(y_train, y_pred)
+          print(class_report)
+
+        # Prediccion de test
+        y_pred = self.predict_proba(x_test)
+
       except:
         print('Entrenamiento cancelado')
 
-    # Prediccion de train    
-    if verbose:
-      y_pred = self.predict(x_train)
-      print('='*16, 'classification_report_train', '='*16)
-      class_report = classification_report(y_train, y_pred)
-      print(class_report)
-
-    # Prediccion de test
-    y_pred = self.predict_proba(x_test)
 
 
   def save_predictions(self, y_true, y_pred):

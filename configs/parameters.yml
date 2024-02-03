@@ -1,7 +1,6 @@
-# models: ['logistic_regression', 'random_forest', 'gradient_boosting']
-models: ['gradient_boosting']
+models: ['random_forest', 'logistic_regression', 'gradient_boosting']
 
-train_window: [30, 60, 90] # tamanio de la ventana
+train_window: [38, 76, 114] # tamanio de la ventana
 
 train_period: [1, 7, 14, 30] # frecuencia con la que se entrena
 
