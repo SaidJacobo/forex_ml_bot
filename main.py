@@ -6,7 +6,7 @@ import yfinance as yf
 import yaml
 from importlib import import_module
 import itertools
-
+import os
 
 def load_func(dotpath : str):
     """ load function in module.  function is right-most segment """
@@ -83,33 +83,40 @@ if __name__ == '__main__':
     for combination in parameter_combinations:
         print(combination)
         model_name, train_window, train_period, trading_strategy, only_one_tunning = combination
-
-
-        strategy = load_func(trading_strategy)
-        trading_agent = TradingAgent(
-            start_money=config['start_money'], 
-            trading_strategy=strategy,
-            threshold_up=config['threshold_up'],
-            threshold_down=config['threshold_down']
-        )
-
-        param_grid = model_configs[model_name]['param_grid']
-
-        model = load_func(model_configs[model_name]['model'])
-        model = model(random_state=42)
-
-        only_one_tunning = only_one_tunning
-        mla = MachineLearningAgent(model, param_grid, only_one_tunning=only_one_tunning)
-
-        back_tester = BackTester(
-            market_data=df, 
-            ml_agent=mla, 
-            trading_agent=trading_agent
-        )
-
+        
         results_path = f'{ticker}_{model_name}_train_window_{train_window}_train_period_{train_period}_trading_strategy_{trading_strategy}_only_one_tunning_{only_one_tunning}'
-        back_tester.start(
-            train_window=train_window, 
-            train_period=train_period, 
-            results_path=results_path
-        )
+        path = os.path.join('data', results_path)
+        
+        if os.path.exists(path):
+            print(f'El entrenamiento con la configuracion: {results_path} ya fue realizado. se procedera al siguiente')
+
+        else:
+
+            strategy = load_func(trading_strategy)
+            trading_agent = TradingAgent(
+                start_money=config['start_money'], 
+                trading_strategy=strategy,
+                threshold_up=config['threshold_up'],
+                threshold_down=config['threshold_down'],
+                allowed_days_in_position=config['days_back_target']
+            )
+
+            param_grid = model_configs[model_name]['param_grid']
+
+            model = load_func(model_configs[model_name]['model'])
+            model = model(random_state=42)
+
+            only_one_tunning = only_one_tunning
+            mla = MachineLearningAgent(model, param_grid, only_one_tunning=only_one_tunning)
+
+            back_tester = BackTester(
+                market_data=df, 
+                ml_agent=mla, 
+                trading_agent=trading_agent
+            )
+
+            back_tester.start(
+                train_window=train_window, 
+                train_period=train_period, 
+                results_path=results_path
+            )

@@ -1,12 +1,12 @@
 import talib
 import pandas as pd
-import os
-
+import numpy as np
 
 class TradingAgent():
-  def __init__(self, start_money, trading_strategy, threshold_up, threshold_down):
+  def __init__(self, start_money, trading_strategy, threshold_up, threshold_down, allowed_days_in_position):
     self.money = start_money
-    self.open_position = False
+    self.days_in_position = -1
+    self.allowed_days_in_position = allowed_days_in_position
     self.buy_history = {}
     self.sell_history = {}
     self.wallet_evolution = {}
@@ -15,10 +15,10 @@ class TradingAgent():
     self.threshold_down = threshold_down
 
   def calculate_indicators(self, df):
-    df['ema_15'] = talib.EMA(df['Close'], timeperiod=15)
-    df['ema_30'] = talib.EMA(df['Close'], timeperiod=30)
-    df['ema_60'] = talib.EMA(df['Close'], timeperiod=60)
-    df['momentum_5'] = talib.MOM(df['Close'], timeperiod=5)
+    df['ema_12'] = talib.EMA(df['Close'], timeperiod=12)
+    df['ema_26'] = talib.EMA(df['Close'], timeperiod=26)
+    df['ema_50'] = talib.EMA(df['Close'], timeperiod=50)
+    df['ema_200'] = talib.EMA(df['Close'], timeperiod=200)
     df['rsi'] = talib.RSI(df['Close'])
 
     upper_band, middle_band, lower_band = talib.BBANDS(df['Close'], timeperiod=5)
@@ -30,18 +30,25 @@ class TradingAgent():
     df['macd'] = macd
     df['macdsignal'] = macdsignal
     df['macdhist'] = macdhist
+    df['macdhist_yesterday'] = df['macdhist'].shift(1)
 
-    df['change_percent_1_day'] = (((df['Close']- df['Close'].shift(1)) / df['Close']) * 100).round(0)
-    df['change_percent_2_day'] = (((df['Close']- df['Close'].shift(2)) / df['Close']) * 100).round(0)
-    df['change_percent_3_day'] = (((df['Close']- df['Close'].shift(3)) / df['Close']) * 100).round(0)
-    df['change_percent_4_day'] = (((df['Close']- df['Close'].shift(4)) / df['Close']) * 100).round(0)
-    df['change_percent_5_day'] = (((df['Close']- df['Close'].shift(5)) / df['Close']) * 100).round(0)
-    df['change_percent_6_day'] = (((df['Close']- df['Close'].shift(6)) / df['Close']) * 100).round(0)
-    df['change_percent_7_day'] = (((df['Close']- df['Close'].shift(7)) / df['Close']) * 100).round(0)
+    df['macd_flag'] = 0
+    df['macd_flag'] = np.where((df['macdhist_yesterday'] < 0) & (df['macdhist'] > 0), 1, df['macd_flag'])
+    df['macd_flag'] = np.where((df['macdhist_yesterday'] > 0) & (df['macdhist'] < 0), -1, df['macd_flag'])
+
+    df['change_percent_1_day'] = (((df['Close'] - df['Close'].shift(1)) / df['Close']) * 100).round(0)
+    df['change_percent_2_day'] = (((df['Close'] - df['Close'].shift(2)) / df['Close']) * 100).round(0)
+    df['change_percent_3_day'] = (((df['Close'] - df['Close'].shift(3)) / df['Close']) * 100).round(0)
+    df['change_percent_4_day'] = (((df['Close'] - df['Close'].shift(4)) / df['Close']) * 100).round(0)
+    df['change_percent_5_day'] = (((df['Close'] - df['Close'].shift(5)) / df['Close']) * 100).round(0)
+    df['change_percent_6_day'] = (((df['Close'] - df['Close'].shift(6)) / df['Close']) * 100).round(0)
+    df['change_percent_7_day'] = (((df['Close'] - df['Close'].shift(7)) / df['Close']) * 100).round(0)
 
     df = df.drop(columns=['Open','High','Low', 'Dividends', 'Stock Splits'])
 
     df = df.dropna()
+
+    df.to_csv('./data/df_features.csv', index=False)
     return df
   
   def buy(self, date, price):
@@ -69,7 +76,8 @@ class TradingAgent():
     result = self.trading_strategy(
       pred, 
       actual_market_data, 
-      self.open_position,
+      self.days_in_position,
+      self.allowed_days_in_position,
       self.threshold_up,
       self.threshold_down
     )
@@ -79,14 +87,18 @@ class TradingAgent():
     if result == 'buy':
       price = actual_market_data.iloc[0].Close
       self.buy(actual_date, price)
+      self.days_in_position = 0
 
     elif result == 'sell':
       price = actual_market_data.iloc[0].Close
       self.sell(actual_date, price)
+      self.days_in_position = -1
     
     elif result == 'wait':
-      pass
+      if self.days_in_position > -1:
+        self.days_in_position += 1
   
+
   def get_orders(self):
     print('saving results')
 
