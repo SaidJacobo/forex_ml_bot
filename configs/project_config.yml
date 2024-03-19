@@ -1,4 +1,4 @@
-ticker: YPF
+tickers: [YPF, BBAR, BMA, CEPU, EDN, TEO, LOMA]
 period: 5y
 days_back_target: 10
 start_money: 100

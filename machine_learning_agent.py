@@ -9,14 +9,20 @@ from sklearn.preprocessing import RobustScaler
 
 class MachineLearningAgent():
 
-  def __init__(self, model, param_grid, only_one_tunning):
+  def __init__(self, tickers, model, param_grid, only_one_tunning):
     self.model = model
     self.param_grid = param_grid
     self.pipeline = None
     self.only_one_tunning = only_one_tunning
     self.tunning = True
-    self.y_test = []
-    self.y_pred = []
+
+    self.stock_predictions = {}
+    for ticker in tickers:
+      self.stock_predictions[ticker] = {}
+      self.stock_predictions[ticker]['y_true'] = []
+      self.stock_predictions[ticker]['y_pred'] = []
+    # self.y_test = []
+    # self.y_pred = []
 
   def predict(self, x):
     pred = self.pipeline.predict(x)
@@ -97,16 +103,10 @@ class MachineLearningAgent():
 
 
 
-  def save_predictions(self, y_true, y_pred):
-    self.y_test.append(y_true)
-    self.y_pred += list(y_pred)
+  def save_predictions(self, ticker, y_true, y_pred):
+    self.stock_predictions[ticker]['y_true'].append(y_true)
+    self.stock_predictions[ticker]['y_pred'].append(y_pred)
 
   def get_results(self):
-    results_df = pd.DataFrame(
-      {
-        'y_true': self.y_test, 
-        'y_pred': self.y_pred
-       }
-    )
-    
+    results_df = pd.DataFrame(self.stock_predictions)
     return results_df

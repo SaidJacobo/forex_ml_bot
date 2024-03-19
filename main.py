@@ -26,44 +26,38 @@ if __name__ == '__main__':
     with open('configs/model_config.yml', 'r') as archivo:
         model_configs = yaml.safe_load(archivo)
 
-    ticker = config["ticker"] 
-    try:
-        print('Intentando levantar el dataset')
-        
-        df = pd.read_csv(f'./data/{ticker}.csv')
-        df['Date'] = pd.to_datetime(df['Date'])
+    tickers = config["tickers"] 
+    stocks = {}
 
-        print('Dataset levantado correctamente')
-
-    except FileNotFoundError:
-        print('No se encontro el Dataset, llamando a yfinance')
-
-        df = yf.Ticker(config['ticker']).history(period=config['period'])
-
-        df = df.reset_index()
-
-        df['Date'] = pd.to_datetime(df['Date'])
-        df['Date'] = df['Date'].dt.date
-
-        df.to_csv(f'./data/{ticker}.csv', index=False)
-
-        df = pd.read_csv(f'./data/{ticker}.csv')
-        df['Date'] = pd.to_datetime(df['Date'])
-
-        print('Dataset levantado y guardado correctamente')
     
-    print(df.sample(5))
+    for ticker in tickers:
+        try:
+            print(f'Intentando levantar el dataset {ticker}')
 
-    print('Creando target')
+            stocks[ticker] = pd.read_csv(f'./data/{ticker}.csv')
 
-    days_back = config['days_back_target']
-    df['target'] = ((df['Close'].shift(-days_back) - df['Close']) / df['Close']) * 100
-    df['target'] = df['target'].round(0)
+        except FileNotFoundError:
+            print(f'No se encontro el Dataset {ticker}, llamando a yfinance')
 
-    bins = [-25, 0, 25]
-    labels = [0, 1]
+            stocks[ticker] = yf.Ticker(ticker).history(period=config['period']).reset_index()
+            stocks[ticker]['Date'] = stocks[ticker]['Date'].dt.date
+            stocks[ticker].to_csv(f'./data/{ticker}.csv', index=False)
 
-    df['target'] = pd.cut(df['target'], bins, labels=labels)
+            print('Dataset levantado y guardado correctamente')
+        
+        stocks[ticker]['Date'] = pd.to_datetime(stocks[ticker]['Date'])
+
+        print(stocks[ticker].sample(5))
+        print('Creando target')
+
+        days_back = config['days_back_target']
+        stocks[ticker]['target'] = ((stocks[ticker]['Close'].shift(-days_back) - stocks[ticker]['Close']) / stocks[ticker]['Close']) * 100
+        stocks[ticker]['target'] = stocks[ticker]['target'].round(0)
+
+        bins = [-25, 0, 25]
+        labels = [0, 1]
+
+        stocks[ticker]['target'] = pd.cut(stocks[ticker]['target'], bins, labels=labels)
 
     models = parameters['models']
     train_window = parameters['train_window']
@@ -84,7 +78,7 @@ if __name__ == '__main__':
         print(combination)
         model_name, train_window, train_period, trading_strategy, only_one_tunning = combination
         
-        results_path = f'{ticker}_{model_name}_train_window_{train_window}_train_period_{train_period}_trading_strategy_{trading_strategy}_only_one_tunning_{only_one_tunning}'
+        results_path = f'{model_name}_train_window_{train_window}_train_period_{train_period}_trading_strategy_{trading_strategy}_only_one_tunning_{only_one_tunning}'
         path = os.path.join('data', results_path)
         
         if os.path.exists(path):
@@ -94,6 +88,7 @@ if __name__ == '__main__':
 
             strategy = load_func(trading_strategy)
             trading_agent = TradingAgent(
+                tickers=tickers,
                 start_money=config['start_money'], 
                 trading_strategy=strategy,
                 threshold_up=config['threshold_up'],
@@ -107,10 +102,10 @@ if __name__ == '__main__':
             model = model(random_state=42)
 
             only_one_tunning = only_one_tunning
-            mla = MachineLearningAgent(model, param_grid, only_one_tunning=only_one_tunning)
+            mla = MachineLearningAgent(tickers, model, param_grid, only_one_tunning=only_one_tunning)
 
             back_tester = BackTester(
-                market_data=df, 
+                stocks=stocks, 
                 ml_agent=mla, 
                 trading_agent=trading_agent
             )

@@ -3,16 +3,24 @@ import pandas as pd
 import numpy as np
 
 class TradingAgent():
-  def __init__(self, start_money, trading_strategy, threshold_up, threshold_down, allowed_days_in_position):
+  def __init__(self, tickers, start_money, trading_strategy, threshold_up, threshold_down, allowed_days_in_position):
+    self.tickers = tickers
     self.money = start_money
-    self.days_in_position = -1
     self.allowed_days_in_position = allowed_days_in_position
-    self.buy_history = {}
-    self.sell_history = {}
     self.wallet_evolution = {}
     self.trading_strategy = trading_strategy
     self.threshold_up = threshold_up
     self.threshold_down = threshold_down
+    
+    self.buy_history = {}
+    self.sell_history = {}
+    self.position_manager = {}
+    
+    for ticker in self.tickers:
+      self.position_manager[ticker] = {}
+      self.position_manager[ticker]['days_in_position'] = -1
+      self.buy_history[ticker] = {}
+      self.sell_history[ticker] = {}
 
   def calculate_indicators(self, df):
     df['ema_12'] = talib.EMA(df['Close'], timeperiod=12)
@@ -48,73 +56,63 @@ class TradingAgent():
 
     df = df.dropna()
 
-    df.to_csv('./data/df_features.csv', index=False)
     return df
   
-  def buy(self, date, price):
+  def buy(self, ticker, date, price):
     date = date.strftime('%Y-%m-%d')
-    self.buy_history[date] = price
-    self.open_position = True
+    self.buy_history[ticker][date] = price
     print('='*16, f'se abrio una nueva posicion el {date}', '='*16)
 
-  def sell(self, date, price):
+  def sell(self, ticker, date, price):
     date = date.strftime('%Y-%m-%d')
-    self.sell_history[date] = price
 
-    last_buy_date = max(list(self.buy_history.keys()))
-    self.update_wallet(last_buy_date=last_buy_date, sell_date=date)
-    self.open_position = False
+    self.sell_history[ticker][date] = price
+
+    last_buy_date = max(list(self.buy_history[ticker].keys()))
+    self.update_wallet(ticker=ticker, last_buy_date=last_buy_date, sell_date=date)
     print('='*16, f'se cerro una posicion el {date}', '='*16)
 
-  def update_wallet(self, last_buy_date, sell_date):
-      self.money += self.sell_history[sell_date] - self.buy_history[last_buy_date]
+  def update_wallet(self, ticker, last_buy_date, sell_date):
+      self.money += self.sell_history[ticker][sell_date] - self.buy_history[ticker][last_buy_date]
       self.wallet_evolution[sell_date] = self.money
       print(f'money: {self.money}')
 
-  def take_operation_decision(self, pred,  actual_market_data, actual_date):
-
+  def take_operation_decision(self, actual_market_data, actual_date):
+    ticker = actual_market_data['ticker']
     result = self.trading_strategy(
-      pred, 
       actual_market_data, 
-      self.days_in_position,
+      self.position_manager[ticker]['days_in_position'],
       self.allowed_days_in_position,
       self.threshold_up,
       self.threshold_down
     )
 
-    print(f'result: {result}')
+    print(f'result {ticker}: {result}')
 
     if result == 'buy':
-      price = actual_market_data.iloc[0].Close
-      self.buy(actual_date, price)
-      self.days_in_position = 0
+      price = actual_market_data['Close']
+      self.buy(ticker, actual_date, price)
+      self.position_manager[ticker]['days_in_position'] = 0
 
     elif result == 'sell':
-      price = actual_market_data.iloc[0].Close
-      self.sell(actual_date, price)
-      self.days_in_position = -1
+      price = actual_market_data.Close
+      self.sell(ticker, actual_date, price)
+      self.position_manager[ticker]['days_in_position'] = -1
     
     elif result == 'wait':
-      if self.days_in_position > -1:
-        self.days_in_position += 1
+      if self.position_manager[ticker]['days_in_position'] > -1:
+        self.position_manager[ticker]['days_in_position'] += 1
   
 
   def get_orders(self):
     print('saving results')
 
-    df_buys = pd.DataFrame(
-      {
-        'date': self.buy_history.keys(),
-        'buy':self.buy_history.values()
-      }
-    )
+    df_buys = pd.DataFrame(self.buy_history)
 
-    df_sells = pd.DataFrame(
-      {      
-        'date': self.sell_history.keys(), 
-        'sell':self.sell_history.values()
-      }
-    )
+    df_sells = pd.DataFrame(self.sell_history)
+    
+    df_buys = df_buys.reset_index().rename(columns={'index':'fecha'})
+    df_sells = df_sells.reset_index().rename(columns={'index':'fecha'})
 
     df_wallet = pd.DataFrame(
       {      
