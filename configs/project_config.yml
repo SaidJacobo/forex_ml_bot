@@ -1,3 +1,5 @@
+mode: train
+limit_date_train: '2023-03-01'
 tickers: [YPF, BBAR, BMA, CEPU, EDN, TEO, LOMA]
 period: 5y
 days_back_target: 10

@@ -17,12 +17,10 @@ class MachineLearningAgent():
     self.tunning = True
 
     self.stock_predictions = {}
+    self.stock_true_values = {}
     for ticker in tickers:
       self.stock_predictions[ticker] = {}
-      self.stock_predictions[ticker]['y_true'] = []
-      self.stock_predictions[ticker]['y_pred'] = []
-    # self.y_test = []
-    # self.y_pred = []
+      self.stock_true_values[ticker] = {}
 
   def predict(self, x):
     pred = self.pipeline.predict(x)
@@ -101,12 +99,15 @@ class MachineLearningAgent():
       except:
         print('Entrenamiento cancelado')
 
-
-
-  def save_predictions(self, ticker, y_true, y_pred):
-    self.stock_predictions[ticker]['y_true'].append(y_true)
-    self.stock_predictions[ticker]['y_pred'].append(y_pred)
+  def save_predictions(self, date, ticker, y_true, y_pred):
+    self.stock_predictions[ticker][date] = y_pred
+    self.stock_true_values[ticker][date] = y_true
 
   def get_results(self):
-    results_df = pd.DataFrame(self.stock_predictions)
-    return results_df
+    stock_predictions_df = pd.DataFrame(self.stock_predictions)
+    stock_true_values_df = pd.DataFrame(self.stock_true_values)
+
+    stock_predictions_df = stock_predictions_df.reset_index().rename(columns={'index':'fecha'})
+    stock_true_values_df = stock_true_values_df.reset_index().rename(columns={'index':'fecha'})
+
+    return stock_predictions_df, stock_true_values_df
