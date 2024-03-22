@@ -1,0 +1,8 @@
+mode: train
+limit_date_train: '2023-03-01'
+tickers: [YPF, BBAR, BMA, CEPU, EDN, TEO, LOMA]
+period: 5y
+days_back_target: 10
+start_money: 100
+threshold_up: 0.85
+threshold_down: 0.15

@@ -1,0 +1,10 @@
+models: ['random_forest', 'logistic_regression', 'gradient_boosting']
+
+train_window: [38, 76, 114] # tamanio de la ventana
+
+train_period: [1, 7, 14, 30] # frecuencia con la que se entrena
+
+# trading_strategy: ['strategies.sma_ml_strategy', 'strategies.bb_ml_strategy', 'strategies.macd_ml_strategy']
+trading_strategy: ['strategies.ml_strategy', 'strategies.macd_ml_strategy', 'strategies.sma_ml_strategy']
+
+only_one_tunning: [True]

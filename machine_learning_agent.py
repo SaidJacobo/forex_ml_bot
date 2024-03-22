@@ -6,25 +6,34 @@ from sklearn.compose import ColumnTransformer
 from sklearn.metrics import fbeta_score, make_scorer, classification_report
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import RobustScaler
-import os 
 
 class MachineLearningAgent():
 
-  def __init__(self, model, param_grid, only_one_tunning):
+  def __init__(self, tickers, model, param_grid, only_one_tunning):
     self.model = model
     self.param_grid = param_grid
     self.pipeline = None
     self.only_one_tunning = only_one_tunning
     self.tunning = True
-    self.y_test = []
-    self.y_pred = []
+
+    self.stock_predictions = {}
+    self.stock_true_values = {}
+    for ticker in tickers:
+      self.stock_predictions[ticker] = {}
+      self.stock_true_values[ticker] = {}
 
   def predict(self, x):
     pred = self.pipeline.predict(x)
     return pred
 
   def predict_proba(self, x):
-    pred = self.pipeline.predict_proba(x)[:,1]
+    proba = self.pipeline.predict_proba(x)
+
+    try:
+      pred = proba[:,1] # si el array tiene dos valores agarro el segundo
+    except:
+      pred = proba[:,0] # si tiene uno solo es porque esta super seguro de una de las dos clases, y agarro ese valor
+      
     return pred
 
   def train(self, x_train, x_test, y_train, y_test, verbose=False):
@@ -72,29 +81,33 @@ class MachineLearningAgent():
 
     else:
       print('Starting train')
-      self.pipeline.fit(x_train, y_train)
+      print(f'y_train value_counts: {y_train.value_counts()}')
+      
+      try:
+        self.pipeline.fit(x_train, y_train)
 
-    # Prediccion de train    
-    if verbose:
-      y_pred = self.predict(x_train)
-      print('='*16, 'classification_report_train', '='*16)
-      class_report = classification_report(y_train, y_pred)
-      print(class_report)
+        # Prediccion de train    
+        if verbose:
+          y_pred = self.predict(x_train)
+          print('='*16, 'classification_report_train', '='*16)
+          class_report = classification_report(y_train, y_pred)
+          print(class_report)
 
-    # Prediccion de test
-    y_pred = self.predict_proba(x_test)
+        # Prediccion de test
+        y_pred = self.predict_proba(x_test)
 
+      except:
+        print('Entrenamiento cancelado')
 
-  def save_predictions(self, y_true, y_pred):
-    self.y_test.append(y_true)
-    self.y_pred += list(y_pred)
+  def save_predictions(self, date, ticker, y_true, y_pred):
+    self.stock_predictions[ticker][date] = y_pred
+    self.stock_true_values[ticker][date] = y_true
 
-  def save_results(self, path):
-    results_df = pd.DataFrame(
-      {
-        'y_true': self.y_test, 
-        'y_pred': self.y_pred
-       }
-    )
-    final_path = os.path.join(path, 'model_results.csv')
-    results_df.to_csv(final_path, index=False)
+  def get_results(self):
+    stock_predictions_df = pd.DataFrame(self.stock_predictions)
+    stock_true_values_df = pd.DataFrame(self.stock_true_values)
+
+    stock_predictions_df = stock_predictions_df.reset_index().rename(columns={'index':'fecha'})
+    stock_true_values_df = stock_true_values_df.reset_index().rename(columns={'index':'fecha'})
+
+    return stock_predictions_df, stock_true_values_df
