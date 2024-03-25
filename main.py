@@ -58,7 +58,6 @@ if __name__ == '__main__':
         else:
             strategy = load_func(trading_strategy)
             trading_agent = TradingAgent(
-                tickers=tickers,
                 start_money=config['start_money'], 
                 trading_strategy=strategy,
                 threshold_up=config['threshold_up'],

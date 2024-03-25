@@ -2,16 +2,35 @@ import os
 from datetime import timedelta
 import pandas as pd
 import yfinance as yf
-
+from machine_learning_agent import MachineLearningAgent
+from trading_agent import TradingAgent
 
 class BackTester():
-  def __init__(self, tickers, ml_agent, trading_agent):
+  """Simulador de Backtesting para evaluar estrategias de trading."""
+
+  def __init__(self, tickers:list, ml_agent:MachineLearningAgent, trading_agent:TradingAgent):
+    """Inicializa el Simulador de Backtesting.
+
+    Args:
+        tickers (list): Lista de tickers financieros.
+        ml_agent (MachineLearningAgent): Agente de Aprendizaje Automático.
+        trading_agent (TradingAgent): Agente de Trading.
+    """
     self.ml_agent = ml_agent
     self.trading_agent = trading_agent
     self.tickers = tickers
     self.stocks = {}
 
-  def create_dataset(self, data_path, days_back, period, limit_date_train):
+  def create_dataset(self, data_path:str, days_back:int, period:int, limit_date_train:str):
+    """Crea el conjunto de datos para el backtesting.
+
+    Args:
+        data_path (str): Ruta donde se guardarán los datos.
+        days_back (int): Número de días para calcular el objetivo de predicción.
+        period (int): Período de tiempo para obtener datos históricos.
+        limit_date_train (str): Fecha límite para el conjunto de entrenamiento.
+    """
+
     df = pd.DataFrame()
 
     for ticker in self.tickers:
@@ -62,7 +81,15 @@ class BackTester():
     df_test.to_csv(os.path.join(data_path, 'test.csv'), index=False)
 
 
-  def start(self, data_path, train_window, train_period, results_path):
+  def start(self, data_path:str, train_window:int, train_period:int, results_path:str):
+    """Inicia el proceso de backtesting.
+
+    Args:
+        data_path (str): Ruta donde se encuentran los datos de entrada.
+        train_window (int): Ventana de entrenamiento para el modelo.
+        train_period (int): Período de entrenamiento para el modelo.
+        results_path (str): Ruta donde se guardarán los resultados del backtesting.
+    """
     df = pd.read_csv(data_path)
     df['Date'] = pd.to_datetime(df['Date'])
 
@@ -125,15 +152,14 @@ class BackTester():
           actual_date=actual_date
         )
       
-    buys, sells, wallet = self.trading_agent.get_orders()
+    orders, wallet = self.trading_agent.get_orders()
     stock_predictions, stock_true_values = self.ml_agent.get_results()
 
     path = os.path.join('data', results_path)
     os.mkdir(path)
 
     # Guarda resultados
-    buys.to_csv(os.path.join(path, 'buys.csv'), index=False)
-    sells.to_csv(os.path.join(path, 'sells.csv'), index=False)
+    orders.to_csv(os.path.join(path, 'orders.csv'), index=False)
     wallet.to_csv(os.path.join(path, 'wallet.csv'), index=False)
     stock_predictions.to_csv(os.path.join(path, 'stock_predictions.csv'), index=False)
     stock_true_values.to_csv(os.path.join(path, 'stock_true_values.csv'), index=False)

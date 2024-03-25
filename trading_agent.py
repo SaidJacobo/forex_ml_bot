@@ -1,28 +1,45 @@
 import talib
 import pandas as pd
 import numpy as np
+from order import Order
+from pandas import DataFrame
 
 class TradingAgent():
-  def __init__(self, tickers, start_money, trading_strategy, threshold_up, threshold_down, allowed_days_in_position):
-    self.tickers = tickers
+  """Agente de Trading para tomar decisiones de compra y venta."""
+
+  def __init__(self, 
+               start_money:float, 
+               trading_strategy, 
+               threshold_up:int, 
+               threshold_down:int, 
+               allowed_days_in_position:int):
+    """
+    Inicializa el Agente de Trading.
+    Args:
+        start_money (float): Dinero inicial para realizar las operaciones.
+        trading_strategy: Estrategia de trading.
+        threshold_up (int): Umbral superior.
+        threshold_down (int): Umbral inferior.
+        allowed_days_in_position (int): Días permitidos en una posición.
+    """
     self.money = start_money
     self.allowed_days_in_position = allowed_days_in_position
     self.wallet_evolution = {}
     self.trading_strategy = trading_strategy
     self.threshold_up = threshold_up
     self.threshold_down = threshold_down
-    
-    self.buy_history = {}
-    self.sell_history = {}
-    self.position_manager = {}
-    
-    for ticker in self.tickers:
-      self.position_manager[ticker] = {}
-      self.position_manager[ticker]['days_in_position'] = -1
-      self.buy_history[ticker] = {}
-      self.sell_history[ticker] = {}
 
-  def calculate_indicators(self, df):
+    self.orders = []    
+
+  def calculate_indicators(self, df:DataFrame):
+    """Calcula indicadores técnicos para el DataFrame dado.
+
+    Args:
+        df (DataFrame): DataFrame de datos financieros.
+
+    Returns:
+        DataFrame: DataFrame con los indicadores calculados.
+    """
     df['ema_12'] = talib.EMA(df['Close'], timeperiod=12)
     df['ema_26'] = talib.EMA(df['Close'], timeperiod=26)
     df['ema_50'] = talib.EMA(df['Close'], timeperiod=50)
@@ -58,61 +75,97 @@ class TradingAgent():
 
     return df
   
-  def buy(self, ticker, date, price):
-    date = date.strftime('%Y-%m-%d')
-    self.buy_history[ticker][date] = price
+  def open_position(self, type, ticker, date, price):
+    order = Order(
+      order_type=type, 
+      ticker=ticker, 
+      open_date=date, 
+      open_price=price
+    )
+    """Abre una nueva posición de trading.
+
+    Args:
+        type: Tipo de operación (compra/venta).
+        ticker (str): Ticker financiero.
+        date (datetime): Fecha de la operación.
+        price (float): Precio de la operación.
+    """
+    self.orders.append(order)
+
     print('='*16, f'se abrio una nueva posicion el {date}', '='*16)
 
-  def sell(self, ticker, date, price):
-    date = date.strftime('%Y-%m-%d')
+  def close_position(self, order:Order, date, price):
+    """Cierra una posición de trading.
 
-    self.sell_history[ticker][date] = price
+    Args:
+        order (Order): Orden de trading.
+        date (datetime): Fecha de cierre de la operación.
+        price (float): Precio de cierre de la operación.
+    """
+    order.close(close_price=price, close_date=date)
+    self.__update_wallet(order)
 
-    last_buy_date = max(list(self.buy_history[ticker].keys()))
-    self.update_wallet(ticker=ticker, last_buy_date=last_buy_date, sell_date=date)
     print('='*16, f'se cerro una posicion el {date}', '='*16)
 
-  def update_wallet(self, ticker, last_buy_date, sell_date):
-      self.money += self.sell_history[ticker][sell_date] - self.buy_history[ticker][last_buy_date]
-      self.wallet_evolution[sell_date] = self.money
+  def __update_wallet(self, order:Order):
+      """Actualiza el estado de la cartera después de cerrar una posición.
+
+      Args:
+          order (Order): Orden de trading.
+      """
+      self.money += order.profit
+      self.wallet_evolution[order.close_date] = self.money
+
       print(f'money: {self.money}')
 
   def take_operation_decision(self, actual_market_data, actual_date):
+    """Toma la decisión de operación basada en la estrategia de trading.
+
+    Args:
+        actual_market_data (DataFrame): Datos del mercado actual.
+        actual_date (datetime): Fecha actual.
+    """
     ticker = actual_market_data['ticker']
-    result = self.trading_strategy(
+
+    orders = [order for order in self.orders if order.ticker == ticker]
+
+    action, operation_type, order = self.trading_strategy(
+      actual_date,
       actual_market_data, 
-      self.position_manager[ticker]['days_in_position'],
+      orders,
       self.allowed_days_in_position,
       self.threshold_up,
       self.threshold_down
     )
 
-    print(f'result {ticker}: {result}')
+    print(f'result {action} {operation_type}: {ticker}')
 
-    if result == 'buy':
+    if action != 'wait':
       price = actual_market_data['Close']
-      self.buy(ticker, actual_date, price)
-      self.position_manager[ticker]['days_in_position'] = 0
-
-    elif result == 'sell':
-      price = actual_market_data.Close
-      self.sell(ticker, actual_date, price)
-      self.position_manager[ticker]['days_in_position'] = -1
-    
-    elif result == 'wait':
-      if self.position_manager[ticker]['days_in_position'] > -1:
-        self.position_manager[ticker]['days_in_position'] += 1
+  
+      if action == 'open':
+        self.open_position(
+          type=operation_type, 
+          ticker=ticker, 
+          date=actual_date, 
+          price=price
+        )
+      elif action == 'close':
+        self.close_position(order, date=actual_date, price=price)
   
 
   def get_orders(self):
+    """Obtiene las órdenes de compra y venta realizadas.
+
+    Returns:
+        DataFrame: Órdenes de compra.
+        DataFrame: Órdenes de venta.
+        DataFrame: Estado de la cartera.
+    """
     print('saving results')
 
-    df_buys = pd.DataFrame(self.buy_history)
+    df_orders = pd.DataFrame([vars(order) for order in self.orders])
 
-    df_sells = pd.DataFrame(self.sell_history)
-    
-    df_buys = df_buys.reset_index().rename(columns={'index':'fecha'})
-    df_sells = df_sells.reset_index().rename(columns={'index':'fecha'})
 
     df_wallet = pd.DataFrame(
       {      
@@ -121,4 +174,4 @@ class TradingAgent():
       }
     )
 
-    return df_buys, df_sells, df_wallet
+    return df_orders, df_wallet
