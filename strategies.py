@@ -58,7 +58,7 @@ def ml_rsi_strategy(
 
         # Si estás en posición y han pasado los días permitidos, vende
         if (
-            rsi > 70
+            rsi > 60
             and pred < threshold_down
         ) or days_in_position == allowed_days_in_position:
             return "close", "sell", open_order
@@ -68,7 +68,7 @@ def ml_rsi_strategy(
             return "wait", None, None
     # Si la predicción del mercado supera el umbral superior, compra
 
-    elif pred >= threshold_up and rsi < 30:
+    elif pred >= threshold_up and rsi < 40:
         return "open", "buy", None
     return "wait", None, None
 
@@ -93,7 +93,7 @@ def ml_bband_strategy(
     upper_bband = actual_market_data["upper_bband"]
     lower_bband = actual_market_data["lower_bband"]
     pred = actual_market_data["pred"]
-    avg_bband = (upper_bband - lower_bband) / 2
+    avg_bband = (upper_bband + lower_bband) / 2
 
     open_order = find_open_order(orders)
 
@@ -101,8 +101,7 @@ def ml_bband_strategy(
         days_in_position = (today - open_order.open_date).days
         # Si estás en posición y han pasado los días permitidos, vende
         if (
-            close_price > avg_bband
-            and pred < threshold_down
+            close_price > avg_bband and pred < threshold_down
         ) or days_in_position == allowed_days_in_position:
             return "close", "sell", open_order
         # Si estás en posición pero no han pasado los días permitidos, espera
@@ -140,8 +139,7 @@ def ml_macd_strategy(
         days_in_position = (today - open_order.open_date).days
         # Si estás en posición y han pasado los días permitidos, vende
         if (
-            macd < macd_signal
-            and pred < threshold_down
+            macd < macd_signal and pred < threshold_down
         ) or days_in_position == allowed_days_in_position:
             return "close", "sell", open_order
         # Si estás en posición pero no han pasado los días permitidos, espera
@@ -154,58 +152,3 @@ def ml_macd_strategy(
         return "open", "buy", None
     
     return "wait", None, None
-
-
-
-
-
-
-# def sma_ml_strategy(today, actual_market_data, orders:list, allowed_days_in_position:int, threshold_up:float, threshold_down:float):
-#     open_order = find_open_order(orders)
-
-#     if open_order:
-#         days_in_position = (today - open_order.open_date).days
-
-#         # Si estás en posición pero no han pasado los días permitidos, espera
-#         if days_in_position is not None and days_in_position < allowed_days_in_position:
-#             return 'wait', None, None
-
-#         # Si estás en posición y han pasado los días permitidos, vende
-#         elif days_in_position == allowed_days_in_position:
-#             return 'close', 'sell', open_order
-
-#     # si no estas en posicion y se que la prediccion es mayor al threshold y la media de 12 es mayor al precio de cierre
-#     elif actual_market_data['pred'] >= threshold_up and actual_market_data['Close'] > actual_market_data['ema_12']:
-#         return 'open', 'buy', None
-
-
-#     # elif days_in_position is not None and actual_market_data['pred'] < threshold_down and actual_market_data['Close'] < actual_market_data['ema_12']:
-#     #     return 'close', 'sell', open_order
-
-#     return 'wait', None, None
-
-
-# def macd_ml_strategy(today, actual_market_data, orders:list, allowed_days_in_position:int, threshold_up:float, threshold_down:float):
-#     open_order = find_open_order(orders)
-
-#     if open_order:
-#         days_in_position = (today - open_order.open_date).days
-
-#         # si estas en posicion pero no pasaron los x dias, espera
-#         if days_in_position is not None and days_in_position < allowed_days_in_position:
-#             return 'wait', None, None
-
-#         # si estas en posicion y ya pasaron los x dias, vende
-#         elif days_in_position is not None and days_in_position == allowed_days_in_position:
-#             return 'close', 'sell', open_order
-
-#     # si no estas en posicion y se cumple la condicion de macd junto con la prediccion compra.
-#     elif actual_market_data['pred'] > threshold_up and actual_market_data['macd'] > actual_market_data['macdsignal']:
-#         return 'open', 'buy', None
-
-#     # Si se cumple la condicion de macd para vender, vende
-#     # elif actual_market_data['pred'] < threshold_down and actual_market_data['macd'] < actual_market_data['macdsignal']:
-#     #     if days_in_position is not None:
-#     #         return 'close', 'sell', open_order
-
-#     return 'wait', None, None

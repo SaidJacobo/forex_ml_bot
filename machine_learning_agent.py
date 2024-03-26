@@ -10,19 +10,17 @@ from sklearn.preprocessing import RobustScaler
 class MachineLearningAgent():
   """Agente de Aprendizaje Automático para entrenar y predecir."""
 
-  def __init__(self, tickers, model, param_grid, only_one_tunning):
+  def __init__(self, tickers, model, param_grid):
     """Inicializa el Agente de Aprendizaje Automático.
 
     Args:
         tickers (list): Lista de tickers financieros.
         model: Modelo de machine learning.
         param_grid (dict): Parámetros del modelo para búsqueda de hiperparámetros.
-        only_one_tunning (bool): True si solo se debe realizar un tuneo de hiperparámetros, False en caso contrario.
     """
     self.model = model
     self.param_grid = param_grid
     self.pipeline = None
-    self.only_one_tunning = only_one_tunning
     self.tunning = True
 
     self.stock_predictions = {}
@@ -109,8 +107,7 @@ class MachineLearningAgent():
       # Obtengo el best estimator
       self.pipeline = search.best_estimator_
 
-      if self.only_one_tunning:
-        self.tunning = False
+      self.tunning = False
 
     else:
       print('Starting train')
