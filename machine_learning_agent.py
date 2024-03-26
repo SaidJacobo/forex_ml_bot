@@ -8,12 +8,19 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import RobustScaler
 
 class MachineLearningAgent():
+  """Agente de Aprendizaje Automático para entrenar y predecir."""
 
-  def __init__(self, tickers, model, param_grid, only_one_tunning):
+  def __init__(self, tickers, model, param_grid):
+    """Inicializa el Agente de Aprendizaje Automático.
+
+    Args:
+        tickers (list): Lista de tickers financieros.
+        model: Modelo de machine learning.
+        param_grid (dict): Parámetros del modelo para búsqueda de hiperparámetros.
+    """
     self.model = model
     self.param_grid = param_grid
     self.pipeline = None
-    self.only_one_tunning = only_one_tunning
     self.tunning = True
 
     self.stock_predictions = {}
@@ -23,10 +30,26 @@ class MachineLearningAgent():
       self.stock_true_values[ticker] = {}
 
   def predict(self, x):
+    """Realiza predicciones.
+
+    Args:
+        x (DataFrame): Datos de entrada para realizar las predicciones.
+
+    Returns:
+        array: Predicciones del modelo.
+    """
     pred = self.pipeline.predict(x)
     return pred
 
   def predict_proba(self, x):
+    """Realiza predicciones de probabilidad.
+
+    Args:
+        x (DataFrame): Datos de entrada para realizar las predicciones.
+
+    Returns:
+        array: Predicciones de probabilidad del modelo.
+    """
     proba = self.pipeline.predict_proba(x)
 
     try:
@@ -37,7 +60,15 @@ class MachineLearningAgent():
     return pred
 
   def train(self, x_train, x_test, y_train, y_test, verbose=False):
-    
+    """Entrena el modelo de machine learning.
+
+    Args:
+        x_train (DataFrame): Datos de entrenamiento.
+        x_test (DataFrame): Datos de prueba.
+        y_train (array): Etiquetas de entrenamiento.
+        y_test (array): Etiquetas de prueba.
+        verbose (bool, optional): Indica si mostrar información detallada durante el entrenamiento. Por defecto False.
+    """
     if self.tunning:
       print('Starting tunning')
       columns_to_scale = x_train.columns
@@ -76,8 +107,7 @@ class MachineLearningAgent():
       # Obtengo el best estimator
       self.pipeline = search.best_estimator_
 
-      if self.only_one_tunning:
-        self.tunning = False
+      self.tunning = False
 
     else:
       print('Starting train')
@@ -100,10 +130,24 @@ class MachineLearningAgent():
         print('Entrenamiento cancelado')
 
   def save_predictions(self, date, ticker, y_true, y_pred):
+    """Guarda las predicciones del modelo.
+
+    Args:
+        date (datetime): Fecha de las predicciones.
+        ticker (str): Ticker financiero.
+        y_true (array): Valores verdaderos.
+        y_pred (array): Valores predichos.
+    """
     self.stock_predictions[ticker][date] = y_pred
     self.stock_true_values[ticker][date] = y_true
 
   def get_results(self):
+    """Obtiene los resultados del modelo.
+
+    Returns:
+        DataFrame: Predicciones del modelo.
+        DataFrame: Valores verdaderos.
+    """
     stock_predictions_df = pd.DataFrame(self.stock_predictions)
     stock_true_values_df = pd.DataFrame(self.stock_true_values)
 
