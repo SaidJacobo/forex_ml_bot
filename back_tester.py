@@ -21,7 +21,7 @@ class BackTester():
     self.tickers = tickers
     self.stocks = {}
 
-  def create_dataset(self, data_path:str, days_back:int, period:int, limit_date_train:str):
+  def create_dataset(self, data_path:str, days_back:int, period:int):
     """Crea el conjunto de datos para el backtesting.
 
     Args:
@@ -74,14 +74,10 @@ class BackTester():
 
     df = df.sort_values(by='Date')
     
-    df_train = df[df.Date <= limit_date_train]
-    df_test = df[df.Date > limit_date_train]
-
-    df_train.to_csv(os.path.join(data_path, 'train.csv'), index=False)
-    df_test.to_csv(os.path.join(data_path, 'test.csv'), index=False)
+    df.to_csv(os.path.join(data_path, 'dataset.csv'), index=False)
 
 
-  def start(self, data_path:str, train_window:int, train_period:int, results_path:str):
+  def start(self, data_path:str, train_window:int, train_period:int, mode, limit_date_train, results_path):
     """Inicia el proceso de backtesting.
 
     Args:
@@ -100,17 +96,17 @@ class BackTester():
 
     print('='*16, 'Iniciando backtesting', '='*16)
 
-    start_date = dates[0] + train_window
+    start_date = dates[0] + train_window if mode=='train' else limit_date_train
     dates = dates[dates > start_date]
 
     for date in dates:
       actual_date = date
       date_from = date - train_window
       
-      actual_market_data = df[df.Date == actual_date]
+      today_market_data = df[df.Date == actual_date]
 
       print('='*16, f'Fecha actual: {actual_date}', '='*16)
-      print('Datos para la fecha actual', actual_market_data[['Date', 'ticker', 'target']])
+      print('Datos para la fecha actual', today_market_data[['Date', 'ticker', 'target']])
 
       # si nunca entreno o si ya pasaron los dias suficientes entrena
       if days_from_train is None or days_from_train >= train_period:
@@ -121,9 +117,9 @@ class BackTester():
 
         self.ml_agent.train(
             x_train = market_data_window.drop(columns=['target', 'Date', 'ticker']),
-            x_test = actual_market_data.drop(columns=['target', 'Date', 'ticker']),
+            x_test = today_market_data.drop(columns=['target', 'Date', 'ticker']),
             y_train = market_data_window.target,
-            y_test = actual_market_data.target,
+            y_test = today_market_data.target,
             verbose=True
         )
 
@@ -132,13 +128,13 @@ class BackTester():
       else:
         days_from_train += 1
 
-      pred = self.ml_agent.predict_proba(actual_market_data.drop(columns=['target', 'Date', 'ticker']))
+      pred = self.ml_agent.predict_proba(today_market_data.drop(columns=['target', 'Date', 'ticker']))
 
       print(f'Prediccion: {pred}')
       
-      actual_market_data['pred'] = pred
+      today_market_data['pred'] = pred
       
-      for _, stock in actual_market_data.iterrows():
+      for _, stock in today_market_data.iterrows():
       
         self.ml_agent.save_predictions(
           stock.Date,

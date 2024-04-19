@@ -14,6 +14,7 @@ def load_function(dotpath: str):
     return getattr(m, func)
 
 if __name__ == '__main__':
+
     # Carga de configuraciones desde archivos YAML
     with open('configs/project_config.yml', 'r') as file:
         config = yaml.safe_load(file)
@@ -65,6 +66,7 @@ if __name__ == '__main__':
 
         # Configuración del modelo de machine learning
         param_grid = model_configs[model_name]['param_grid']
+
         model = load_function(model_configs[model_name]['model'])(random_state=42)
         mla = MachineLearningAgent(tickers, model, param_grid)
 
@@ -75,19 +77,22 @@ if __name__ == '__main__':
             trading_agent=trading_agent
         )
 
-        if not os.path.exists('./data/train.csv'):
+        if not os.path.exists('./data/dataset.csv'):
             back_tester.create_dataset(
                 data_path='./data', 
                 days_back=days_back, 
                 period=period,
-                limit_date_train=limit_date_train
+                # limit_date_train=limit_date_train
             )
 
-        data_path = './data/train.csv' if mode == 'train' else './data/test.csv'
+        # data_path = './data/train.csv' if mode == 'train' else './data/test.csv'
+        data_path = './data/dataset.csv'
 
         back_tester.start(
             data_path=data_path,
             train_window=train_window, 
-            train_period=train_period, 
+            train_period=train_period,
+            mode=mode,
+            limit_date_train=limit_date_train,
             results_path=results_path
         )
