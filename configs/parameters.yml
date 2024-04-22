@@ -1,39 +1,47 @@
-models: ['neural_network', 'random_forest', 'logistic_regression', 'gradient_boosting']
+models: [
+  null, 
+  'random_forest', 
+  # 'neural_network', 
+  # 'logistic_regression', 
+  # 'gradient_boosting'
+  ]
 
 train_window: [
     38, # un mes
-    76, # dos meses
-    114, # tres meses
-    228, # seis meses
-    461, # un anio
-    689 # un anio y medio
+    # 76, # dos meses
+    # 114, # tres meses
+    # 228, # seis meses
+    # 461, # un anio
+    # 689 # un anio y medio
   ] # tamanio de la ventana de entrenamiento
 
-train_period: [1, 7, 14, 30] # frecuencia con la que se entrena
+train_period: [
+  1, 
+  # 7, 
+  # 14, 
+  # 30
+  ] # frecuencia con la que se entrena
 
 trading_strategy: [
-    'strategies.rsi_strategy',
+    'strategies.ma_strategy',
     'strategies.macd_strategy',
     'strategies.bband_strategy', 
-    'strategies.ml_strategy',
-    'strategies.ml_bband_strategy', 
-    'strategies.ml_macd_strategy',
-    'strategies.ml_rsi_strategy',
+    'strategies.ml_strategy'
   ]
 
 
 
-models: ['logistic_regression', 'gradient_boosting']
+# models: ['logistic_regression', 'gradient_boosting']
 
-train_window: [
-    38, # un mes
-    461, # un anio
-  ] # tamanio de la ventana de entrenamiento
+# train_window: [
+#     38, # un mes
+#     461, # un anio
+#   ] # tamanio de la ventana de entrenamiento
 
-train_period: [1] # frecuencia con la que se entrena
+# train_period: [1] # frecuencia con la que se entrena
 
-trading_strategy: [
-    'strategies.ml_strategy',
-    'strategies.ml_bband_strategy', 
-    'strategies.ml_macd_strategy',
-  ]
+# trading_strategy: [
+#     'strategies.ml_strategy',
+#     'strategies.ml_bband_strategy', 
+#     'strategies.ml_macd_strategy',
+#   ]
