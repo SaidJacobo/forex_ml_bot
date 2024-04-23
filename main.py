@@ -14,6 +14,7 @@ def load_function(dotpath: str):
     return getattr(m, func)
 
 def get_parameter_combinations(models, train_window, train_period, trading_strategies):
+    parameter_combinations = []
     if None in models:
         strategies = [x for x in trading_strategies if x != 'strategies.ml_strategy']
         parameter_combinations += list(itertools.product(

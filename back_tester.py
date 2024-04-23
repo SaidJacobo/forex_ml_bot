@@ -104,12 +104,12 @@ class BackTester():
       actual_date = date
       date_from = date - train_window
       
-      today_market_data = df[df.Date == actual_date]
+      today_market_data = df[df.Date == actual_date].copy()
 
       print('='*16, f'Fecha actual: {actual_date}', '='*16)
       print('Datos para la fecha actual', today_market_data[['Date', 'ticker', 'target']])
 
-      today_market_data['pred'] = np.nan
+      today_market_data.loc[:, 'pred'] = np.nan
 
       # si nunca entreno o si ya pasaron los dias suficientes entrena
       if self.ml_agent is not None:
@@ -124,6 +124,7 @@ class BackTester():
               x_test = today_market_data.drop(columns=['target', 'Date', 'ticker']),
               y_train = market_data_window.target,
               y_test = today_market_data.target,
+              date_train=actual_date.strftime('%Y-%m-%d'),
               verbose=True
           )
 
@@ -134,7 +135,7 @@ class BackTester():
 
         pred = self.ml_agent.predict_proba(today_market_data.drop(columns=['target', 'Date', 'ticker']))
         print(f'Prediccion: {pred}')
-        today_market_data['pred'] = pred
+        today_market_data.loc[:, 'pred'] = pred
       
       for _, stock in today_market_data.iterrows():
         if self.ml_agent is not None:
@@ -155,9 +156,10 @@ class BackTester():
 
     # Guarda resultados
     if self.ml_agent is not None:
-      stock_predictions, stock_true_values = self.ml_agent.get_results()
+      stock_predictions, stock_true_values, train_results_df = self.ml_agent.get_results()
       stock_predictions.to_csv(os.path.join(path, 'stock_predictions.csv'), index=False)
       stock_true_values.to_csv(os.path.join(path, 'stock_true_values.csv'), index=False)
+      train_results_df.to_csv(os.path.join(path, 'train_results.csv'), index=False)
 
     orders, wallet = self.trading_agent.get_orders()
     orders.to_csv(os.path.join(path, 'orders.csv'), index=False)
