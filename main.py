@@ -61,7 +61,7 @@ if __name__ == '__main__':
         model_name, train_window, train_period, trading_strategies = combination
         
         # Definición de la ruta de resultados
-        results_path = f'{mode}_{model_name}_train_window_{train_window}_train_period_{train_period}_trading_strategy_{trading_strategies}'
+        results_path = f'mode_{mode}-model_{model_name}-trainwindow_{train_window}-trainperiod_{train_period}-tradingstrategy_{trading_strategies}'
         path = os.path.join('data', results_path)
         
         if os.path.exists(path):
