@@ -9,8 +9,8 @@ logistic_regression:
 random_forest:
   model: 'sklearn.ensemble.RandomForestClassifier'
   param_grid:
-    'model__n_estimators': [50, 100, 200]         # Número de árboles en el bosque
-    'model__max_depth': [10, 20, 30, 50, 100]         # Profundidad máxima de los árboles
+    'model__n_estimators': [3, 10, 50, 100, 200]         # Número de árboles en el bosque
+    'model__max_depth': [3, 5, 10, 20, 30, 50, 100]         # Profundidad máxima de los árboles
     'model__min_samples_split': [2, 5, 10]         # Número mínimo de muestras requeridas para dividir un nodo
     'model__min_samples_leaf': [1, 2, 4]            # Número mínimo de muestras requeridas en cada hoja
 
@@ -21,3 +21,16 @@ gradient_boosting:
       "model__max_depth": [2, 5, 10]
       "model__n_estimators": [5, 10, 20, 30, 40, 50, 70, 100]
       "model__learning_rate": [0.05, 0.01, 0.1]
+
+neural_network:
+  model: 'sklearn.neural_network.MLPClassifier'
+  param_grid:
+    "model__hidden_layer_sizes": 
+      - [3,]
+      - [5,]
+      - [10,]
+      - [50,] 
+      - [100,]
+    "model__activation": ['relu', 'tanh', 'logistic']
+    "model__solver": ['sgd', 'adam']
+    "model__alpha": [0.0001, 0.001, 0.01]

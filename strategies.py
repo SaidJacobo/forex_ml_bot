@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def find_open_order(orders):
     """Encuentra la orden abierta más reciente."""
     open_orders = [order for order in orders if order.close_date is None]
@@ -33,7 +36,7 @@ def ml_strategy(
     return "wait", None, None
 
 
-def ml_rsi_strategy(
+def ma_strategy(
     today,
     actual_market_data,
     orders: list,
@@ -48,19 +51,20 @@ def ml_rsi_strategy(
     lo que sugiere que la acción está en una condición de sobrecompra.
     Mantener en cualquier otro caso.
     """
-    rsi = actual_market_data["rsi"]
+    ema_12 = actual_market_data["ema_12"]
+    ema_200 = actual_market_data["ema_200"]
     pred = actual_market_data["pred"]
 
     open_order = find_open_order(orders)
+
+    model_with_indicator_buy_condition = np.isfinite(pred) and pred >= threshold_up and ema_12 > ema_200
+    only_indicator_buy_condition = np.isnan(pred) and ema_12 > ema_200
 
     if open_order:
         days_in_position = (today - open_order.open_date).days
 
         # Si estás en posición y han pasado los días permitidos, vende
-        if (
-            rsi > 60
-            and pred < threshold_down
-        ) or days_in_position == allowed_days_in_position:
+        if ema_12 < ema_200 or days_in_position == allowed_days_in_position:
             return "close", "sell", open_order
         # Si estás en posición pero no han pasado los días permitidos, espera
 
@@ -68,11 +72,12 @@ def ml_rsi_strategy(
             return "wait", None, None
     # Si la predicción del mercado supera el umbral superior, compra
 
-    elif pred >= threshold_up and rsi < 40:
+    elif model_with_indicator_buy_condition or only_indicator_buy_condition:
         return "open", "buy", None
+    
     return "wait", None, None
 
-def ml_bband_strategy(
+def bband_strategy(
     today,
     actual_market_data,
     orders: list,
@@ -96,13 +101,14 @@ def ml_bband_strategy(
     avg_bband = (upper_bband + lower_bband) / 2
 
     open_order = find_open_order(orders)
+    
+    model_with_indicator_buy_condition = np.isfinite(pred) and pred >= threshold_up and close_price < avg_bband
+    only_indicator_buy_condition = np.isnan(pred) and close_price < avg_bband
 
     if open_order:
         days_in_position = (today - open_order.open_date).days
         # Si estás en posición y han pasado los días permitidos, vende
-        if (
-            close_price > avg_bband and pred < threshold_down
-        ) or days_in_position == allowed_days_in_position:
+        if close_price > avg_bband or days_in_position == allowed_days_in_position:
             return "close", "sell", open_order
         # Si estás en posición pero no han pasado los días permitidos, espera
 
@@ -110,12 +116,12 @@ def ml_bband_strategy(
             return "wait", None, None
     # Si la predicción del mercado supera el umbral superior, compra
 
-    elif pred >= threshold_up and close_price < avg_bband:
+    elif model_with_indicator_buy_condition or only_indicator_buy_condition:
         return "open", "buy", None
     
     return "wait", None, None
 
-def ml_macd_strategy(
+def macd_strategy(
     today,
     actual_market_data,
     orders: list,
@@ -134,13 +140,14 @@ def ml_macd_strategy(
     macd = actual_market_data["macd"]
     pred = actual_market_data["pred"]
 
+    model_with_indicator_buy_condition = np.isfinite(pred) and pred >= threshold_up and macd > macd_signal
+    only_indicator_buy_condition = np.isnan(pred) and macd > macd_signal
+
     open_order = find_open_order(orders)
     if open_order:
         days_in_position = (today - open_order.open_date).days
         # Si estás en posición y han pasado los días permitidos, vende
-        if (
-            macd < macd_signal and pred < threshold_down
-        ) or days_in_position == allowed_days_in_position:
+        if macd < macd_signal or days_in_position == allowed_days_in_position:
             return "close", "sell", open_order
         # Si estás en posición pero no han pasado los días permitidos, espera
 
@@ -148,7 +155,7 @@ def ml_macd_strategy(
             return "wait", None, None
     # Si la predicción del mercado supera el umbral superior, compra
 
-    elif pred >= threshold_up and macd > macd_signal:
+    elif model_with_indicator_buy_condition or only_indicator_buy_condition:
         return "open", "buy", None
     
     return "wait", None, None

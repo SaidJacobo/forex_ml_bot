@@ -3,7 +3,7 @@ from sklearn.metrics import classification_report
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.compose import ColumnTransformer
-from sklearn.metrics import fbeta_score, make_scorer, classification_report
+from sklearn.metrics import fbeta_score, make_scorer, auc, roc_curve
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import RobustScaler
 
@@ -28,6 +28,8 @@ class MachineLearningAgent():
     for ticker in tickers:
       self.stock_predictions[ticker] = {}
       self.stock_true_values[ticker] = {}
+    
+    self.train_results = {}
 
   def predict(self, x):
     """Realiza predicciones.
@@ -59,7 +61,7 @@ class MachineLearningAgent():
       
     return pred
 
-  def train(self, x_train, x_test, y_train, y_test, verbose=False):
+  def train(self, x_train, x_test, y_train, y_test, date_train, verbose=False):
     """Entrena el modelo de machine learning.
 
     Args:
@@ -116,18 +118,21 @@ class MachineLearningAgent():
       try:
         self.pipeline.fit(x_train, y_train)
 
-        # Prediccion de train    
-        if verbose:
-          y_pred = self.predict(x_train)
-          print('='*16, 'classification_report_train', '='*16)
-          class_report = classification_report(y_train, y_pred)
-          print(class_report)
-
-        # Prediccion de test
-        y_pred = self.predict_proba(x_test)
-
       except:
         print('Entrenamiento cancelado')
+      
+    
+    x_train['preds'] = self.pipeline.predict(x_train)
+    x_train['target'] = y_train
+
+    fpr, tpr, _ = roc_curve(x_train['preds'], x_train['target'])
+    auc_score = auc(fpr, tpr)
+    
+    self.train_results[date_train] = auc_score
+
+    if verbose:
+      print('train auc: ', auc_score)
+
 
   def save_predictions(self, date, ticker, y_true, y_pred):
     """Guarda las predicciones del modelo.
@@ -150,8 +155,14 @@ class MachineLearningAgent():
     """
     stock_predictions_df = pd.DataFrame(self.stock_predictions)
     stock_true_values_df = pd.DataFrame(self.stock_true_values)
+    stock_train_results_df = pd.DataFrame(
+      {
+        'fecha': self.train_results.keys(), 
+        'auc': self.train_results.values()
+      }
+    )
 
     stock_predictions_df = stock_predictions_df.reset_index().rename(columns={'index':'fecha'})
     stock_true_values_df = stock_true_values_df.reset_index().rename(columns={'index':'fecha'})
 
-    return stock_predictions_df, stock_true_values_df
+    return stock_predictions_df, stock_true_values_df, stock_train_results_df
