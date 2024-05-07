@@ -1,7 +1,7 @@
 import os
 from datetime import timedelta
 import pandas as pd
-import yfinance as yf
+from ib_insync import *
 from machine_learning_agent import MachineLearningAgent
 from trading_agent import TradingAgent
 import numpy as np
@@ -20,9 +20,9 @@ class BackTester():
     self.ml_agent = ml_agent
     self.trading_agent = trading_agent
     self.tickers = tickers
-    self.stocks = {}
+    self.instruments = {}
 
-  def create_dataset(self, data_path:str, days_back:int, period:int):
+  def create_dataset(self, data_path:str, period:int):
     """Crea el conjunto de datos para el backtesting.
 
     Args:
@@ -31,54 +31,39 @@ class BackTester():
         period (int): Período de tiempo para obtener datos históricos.
         limit_date_train (str): Fecha límite para el conjunto de entrenamiento.
     """
-
-    df = pd.DataFrame()
+    ib = IB()
+    ib.connect('127.0.0.1', 7497, clientId=1)
 
     for ticker in self.tickers:
       try:
         print(f'Intentando levantar el dataset {ticker}')
-        self.stocks[ticker] = pd.read_csv(f'./data/{ticker}.csv')
+        self.instruments[ticker] = pd.read_csv(f'./data/{ticker}.csv')
 
       except FileNotFoundError:
-        print(f'No se encontro el Dataset {ticker}, llamando a yfinance')
 
-        self.stocks[ticker] = yf.Ticker(ticker).history(period=period).reset_index()
-        self.stocks[ticker]['Date'] = self.stocks[ticker]['Date'].dt.date
-        self.stocks[ticker].to_csv(f'./data/{ticker}.csv', index=False)
+        contract = Forex(ticker)
+
+        bars = ib.reqHistoricalData(
+            contract, endDateTime='', durationStr='30 D',
+            barSizeSetting='1 hour', whatToShow='MIDPOINT', useRTH=True, formatDate=2)
+
+        df = util.df(bars).rename(columns={'date':'Date', 'open':'Open', 'high':'High', 'low':'Low', 'close':'Close', 'volume':'Volume'})
+
+        self.instruments[ticker] = df
+        self.instruments[ticker]['Date'] = self.instruments[ticker]['Date']
 
         print('Dataset levantado y guardado correctamente')
         
-      self.stocks[ticker]['Date'] = pd.to_datetime(self.stocks[ticker]['Date'])
-      print(self.stocks[ticker].sample(5))
-
-      print('Creando target')
-
-      self.stocks[ticker]['target'] = ((self.stocks[ticker]['Close'].shift(-days_back) - self.stocks[ticker]['Close']) / self.stocks[ticker]['Close']) * 100
-      self.stocks[ticker]['target'] = self.stocks[ticker]['target'].round(0)
-
-      bins = [-25, 0, 25]
-      labels = [0, 1]
-
-      self.stocks[ticker]['target'] = pd.cut(self.stocks[ticker]['target'], bins, labels=labels)
+      self.instruments[ticker]['Date'] = pd.to_datetime(self.instruments[ticker]['Date'])
+      print(self.instruments[ticker].sample(5))
 
       print('='*16, 'calculando indicadores', '='*16)
 
-      self.stocks[ticker] = self.trading_agent.calculate_indicators(self.stocks[ticker])
-      self.stocks[ticker]['ticker'] = ticker
-
-      df = pd.concat(
-        [
-          df,
-          self.stocks[ticker]
-        ]
-      )
-
-    df = df.sort_values(by='Date')
-    
-    df.to_csv(os.path.join(data_path, 'dataset.csv'), index=False)
+      self.instruments[ticker] = self.trading_agent.calculate_indicators(self.instruments[ticker])
+      self.instruments[ticker].to_csv(f'./data/{ticker}.csv', index=False)
 
 
-  def start(self, data_path:str, train_window:int, train_period:int, mode, limit_date_train, results_path):
+  def start(self, data_path:str, train_window:int, train_period:int, mode, limit_date_train, results_path, period_forward_target):
     """Inicia el proceso de backtesting.
 
     Args:
@@ -87,22 +72,50 @@ class BackTester():
         train_period (int): Período de entrenamiento para el modelo.
         results_path (str): Ruta donde se guardarán los resultados del backtesting.
     """
-    df = pd.read_csv(data_path)
+    df = pd.DataFrame()
+
+    for ticker in self.tickers:
+      self.instruments[ticker] = pd.read_csv(f'./data/{ticker}.csv')
+      self.instruments[ticker]['ticker'] = ticker
+      
+      
+      print('Creando target')
+
+      self.instruments[ticker]['target'] = ((self.instruments[ticker]['Close'].shift(-period_forward_target) - self.instruments[ticker]['Close']) / self.instruments[ticker]['Close']) * 100
+
+      bins = [-1, 0, 1]
+      labels = [0, 1]
+
+      self.instruments[ticker]['target'] = pd.cut(self.instruments[ticker]['target'], bins, labels=labels)
+
+      df = pd.concat(
+        [
+          df,
+          self.instruments[ticker]
+        ]
+      )
+
+    df = df.dropna()
     df['Date'] = pd.to_datetime(df['Date'])
+    df = df.sort_values(by='Date')
 
-    train_window = timedelta(days=train_window)
+    print(f'df value_counts {df["target"].value_counts()}')
 
-    dates = df.Date.unique()
+    df.to_csv(data_path, index=False)
+
+    train_window = timedelta(hours=train_window)
+
+    periods = df.Date.unique()
     days_from_train = None
 
     print('='*16, 'Iniciando backtesting', '='*16)
 
-    start_date = dates[0] + train_window if mode=='train' else limit_date_train
-    dates = dates[dates > start_date]
+    start_date = periods[0] + train_window if mode=='train' else limit_date_train
+    periods = periods[periods > start_date]
 
-    for date in dates:
-      actual_date = date
-      date_from = date - train_window
+    for period in periods:
+      actual_date = period
+      date_from = period - train_window
       
       today_market_data = df[df.Date == actual_date].copy()
 
@@ -113,8 +126,8 @@ class BackTester():
 
       # si nunca entreno o si ya pasaron los dias suficientes entrena
       if self.ml_agent is not None:
-        if days_from_train is None or days_from_train >= train_period:
-          market_data_window = df[(df.Date >= date_from) & (df.Date < actual_date)]
+        market_data_window = df[(df.Date >= date_from) & (df.Date < actual_date)]
+        if days_from_train is None or days_from_train >= train_period and market_data_window.shape[0]>0:
 
           print(f'Se entrenaran con {market_data_window.shape[0]} registros')
           print(f'Value counts de ticker: {market_data_window.ticker.value_counts()}')

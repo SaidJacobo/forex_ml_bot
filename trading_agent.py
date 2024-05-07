@@ -12,7 +12,10 @@ class TradingAgent():
                trading_strategy, 
                threshold_up:int, 
                threshold_down:int, 
-               allowed_days_in_position:int):
+               allowed_days_in_position:int,
+               stop_loss_in_pips:int,
+               take_profit_in_pips:int,
+               risk_percentage:int):
     """
     Inicializa el Agente de Trading.
     Args:
@@ -28,8 +31,17 @@ class TradingAgent():
     self.trading_strategy = trading_strategy
     self.threshold_up = threshold_up
     self.threshold_down = threshold_down
+    self.stop_loss_in_pips = stop_loss_in_pips
+    self.take_profit_in_pips = take_profit_in_pips
+    self.risk_percentage = risk_percentage
+    self.orders = []
 
-    self.orders = []    
+    self.pips_per_value = {
+          "EURUSD": 0.0001,  # euros per US dollar
+          "GBPUSD": 0.0001,  # British pounds per US dollar
+          "USDJPY": 0.01,    # US dollar per Japanese yen
+          # Add more currency pairs as needed
+      } 
 
   def calculate_indicators(self, df:DataFrame):
     """Calcula indicadores técnicos para el DataFrame dado.
@@ -61,27 +73,74 @@ class TradingAgent():
     df['macd_flag'] = np.where((df['macdhist_yesterday'] < 0) & (df['macdhist'] > 0), 1, df['macd_flag'])
     df['macd_flag'] = np.where((df['macdhist_yesterday'] > 0) & (df['macdhist'] < 0), -1, df['macd_flag'])
 
+
+    df['change_percent_ch'] = (((df['Close'] - df['High']) / df['Close']) * 100).round(0)
+    df['change_percent_co'] = (((df['Close'] - df['Open']) / df['Close']) * 100).round(0)
+    df['change_percent_cl'] = (((df['Close'] - df['Low']) / df['Close']) * 100).round(0)
+
     df['change_percent_1_day'] = (((df['Close'] - df['Close'].shift(1)) / df['Close']) * 100).round(0)
     df['change_percent_2_day'] = (((df['Close'] - df['Close'].shift(2)) / df['Close']) * 100).round(0)
     df['change_percent_3_day'] = (((df['Close'] - df['Close'].shift(3)) / df['Close']) * 100).round(0)
-    df['change_percent_4_day'] = (((df['Close'] - df['Close'].shift(4)) / df['Close']) * 100).round(0)
-    df['change_percent_5_day'] = (((df['Close'] - df['Close'].shift(5)) / df['Close']) * 100).round(0)
-    df['change_percent_6_day'] = (((df['Close'] - df['Close'].shift(6)) / df['Close']) * 100).round(0)
-    df['change_percent_7_day'] = (((df['Close'] - df['Close'].shift(7)) / df['Close']) * 100).round(0)
 
-    df = df.drop(columns=['Open','High','Low', 'Dividends', 'Stock Splits'])
+    df['change_percent_h'] = (((df['High'] - df['High'].shift(1)) / df['High']) * 100).round(0)
+    df['change_percent_h'] = (((df['High'] - df['High'].shift(2)) / df['High']) * 100).round(0)
+    df['change_percent_h'] = (((df['High'] - df['High'].shift(3)) / df['High']) * 100).round(0)
+    
+    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(1)) / df['Open']) * 100).round(0)
+    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(2)) / df['Open']) * 100).round(0)
+    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(3)) / df['Open']) * 100).round(0)
+    
+    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(1)) / df['Low']) * 100).round(0)
+    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(2)) / df['Low']) * 100).round(0)
+    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(3)) / df['Low']) * 100).round(0)
+
+    df = df.drop(columns=['Open','High','Low', 'average',	'barCount', 'Volume'])
 
     df = df.dropna()
 
     return df
   
+  def _calculate_lot_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair):
+      # Get the pip value for the given currency pair
+      pip_value = self.pips_per_value.get(currency_pair, None)
+      if pip_value is None:
+          return "Invalid currency pair"
+      
+      # Calculate risk in account currency
+      account_currency_risk = account_size * (risk_percentage / 100)
+      
+      # Calculate lot size in units
+      lot_size = round(account_currency_risk / (pip_value * stop_loss_pips))
+      
+      return lot_size
+
+  def _calculate_stop_loss(self, operation_type, price, ticker):
+      pips = self.pips_per_value[ticker]
+
+      price_sl = None
+      if operation_type == 'buy':
+        price_sl = price - (self.stop_loss_in_pips * pips)
+      
+      elif operation_type == 'sell':
+        price_sl = price + (self.stop_loss_in_pips * pips)
+        
+      return price_sl
+  
+
+  def _calculate_take_profit(self, operation_type, price, ticker):
+      
+      pips = self.pips_per_value[ticker]
+
+      price_tp = None
+      if operation_type == 'buy':
+        price_tp = price + (self.take_profit_in_pips * pips)
+      
+      elif operation_type == 'sell':
+        price_tp = price - (self.take_profit_in_pips * pips)
+        
+      return price_tp
+
   def open_position(self, type, ticker, date, price):
-    order = Order(
-      order_type=type, 
-      ticker=ticker, 
-      open_date=date, 
-      open_price=price
-    )
     """Abre una nueva posición de trading.
 
     Args:
@@ -90,11 +149,31 @@ class TradingAgent():
         date (datetime): Fecha de la operación.
         price (float): Precio de la operación.
     """
+    units = self._calculate_lot_size(
+       self.money, 
+       self.risk_percentage, # parametrizar
+       self.stop_loss_in_pips, # parametrizar
+       currency_pair=ticker
+       )
+
+    price_sl = self._calculate_stop_loss(type, price, ticker)
+    price_tp = self._calculate_take_profit(type, price, ticker)
+
+    order = Order(
+      order_type=type, 
+      ticker=ticker, 
+      open_date=date, 
+      open_price=price,
+      units=units,
+      stop_loss=price_sl, # parametrizar
+      take_profit=price_tp # parametrizar
+    )
+
     self.orders.append(order)
 
     print('='*16, f'se abrio una nueva posicion el {date}', '='*16)
 
-  def close_position(self, order:Order, date, price):
+  def close_position(self, order:Order, date, price, comment):
     """Cierra una posición de trading.
 
     Args:
@@ -102,7 +181,7 @@ class TradingAgent():
         date (datetime): Fecha de cierre de la operación.
         price (float): Precio de cierre de la operación.
     """
-    order.close(close_price=price, close_date=date)
+    order.close(close_price=price, close_date=date, comment=comment)
     self.__update_wallet(order)
 
     print('='*16, f'se cerro una posicion el {date}', '='*16)
@@ -129,7 +208,7 @@ class TradingAgent():
 
     orders = [order for order in self.orders if order.ticker == ticker]
 
-    action, operation_type, order = self.trading_strategy(
+    action, operation_type, order, comment = self.trading_strategy(
       actual_date,
       actual_market_data, 
       orders,
@@ -138,7 +217,7 @@ class TradingAgent():
       self.threshold_down
     )
 
-    print(f'result {action} {operation_type}: {ticker}')
+    print(f'result {action} {operation_type}: {ticker}, {comment}')
 
     if action != 'wait':
       price = actual_market_data['Close']
@@ -151,7 +230,7 @@ class TradingAgent():
           price=price
         )
       elif action == 'close':
-        self.close_position(order, date=actual_date, price=price)
+        self.close_position(order, date=actual_date, price=price, comment=comment)
   
 
   def get_orders(self):
