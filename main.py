@@ -61,6 +61,8 @@ if __name__ == '__main__':
     period = config['period']
     mode = config['mode']
     limit_date_train = config['limit_date_train']
+    date_from = config['date_from']
+    date_to = config['date_to']
     tickers = config["tickers"] 
     risk_percentage = config["risk_percentage"] 
     
@@ -87,10 +89,32 @@ if __name__ == '__main__':
     )
 
     for combination in parameter_combinations:
-        model_name, train_window, train_period, trading_strategy, period_forward_target, stop_loss_in_pips, take_profit_in_pips, cancel_position_in_shift_days  = combination
-        
+        (
+            model_name, 
+            train_window, 
+            train_period, 
+            trading_strategy, 
+            period_forward_target, 
+            stop_loss_in_pips, 
+            take_profit_in_pips, 
+            cancel_position_in_shift_days
+        ) = combination
+                
         # Definición de la ruta de resultados
-        results_path = f'mode_{mode}-model_{model_name}-trainwindow_{train_window}-trainperiod_{train_period}-tradingstrategy_{trading_strategy}-stop_loss_in_pips_{stop_loss_in_pips}-periods_forward_target_{period_forward_target}'
+        results_path = f'''
+            Mode_{mode}
+            -Model_{model_name}
+            -TrainWindow_{train_window}
+            -TrainPeriod_{train_period}
+            -TradingStrategy_{trading_strategy}
+            -PeriodsForwardTarget_{period_forward_target}
+            -SL_{stop_loss_in_pips}
+            -TP_{take_profit_in_pips}
+            -UseDaysInClosePos_{cancel_position_in_shift_days}
+        '''.replace("\n", "").strip().replace(" ", "")
+        
+        print(results_path)
+        
         path = os.path.join('data', results_path)
         
         if os.path.exists(path):
@@ -131,10 +155,10 @@ if __name__ == '__main__':
             back_tester.create_dataset(
                 data_path='./data', 
                 period=period,
-                # limit_date_train=limit_date_train
+                date_from=date_from,
+                date_to=date_to
             )
 
-        # data_path = './data/train.csv' if mode == 'train' else './data/test.csv'
         data_path = './data/dataset.csv'
 
         back_tester.start(

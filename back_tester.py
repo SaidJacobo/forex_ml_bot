@@ -1,10 +1,12 @@
 import os
 from datetime import timedelta
 import pandas as pd
-from ib_insync import *
 from machine_learning_agent import MachineLearningAgent
 from trading_agent import TradingAgent
 import numpy as np
+import MetaTrader5 as mt5
+import pytz
+from datetime import datetime
 
 class BackTester():
   """Simulador de Backtesting para evaluar estrategias de trading."""
@@ -22,7 +24,7 @@ class BackTester():
     self.tickers = tickers
     self.instruments = {}
 
-  def create_dataset(self, data_path:str, period:int):
+  def create_dataset(self, data_path:str, period:int, date_from:str, date_to:str):
     """Crea el conjunto de datos para el backtesting.
 
     Args:
@@ -31,8 +33,6 @@ class BackTester():
         period (int): Período de tiempo para obtener datos históricos.
         limit_date_train (str): Fecha límite para el conjunto de entrenamiento.
     """
-    ib = IB()
-    ib.connect('127.0.0.1', 7497, clientId=1)
 
     for ticker in self.tickers:
       try:
@@ -41,18 +41,48 @@ class BackTester():
 
       except FileNotFoundError:
 
-        contract = Forex(ticker)
+        # display data on the MetaTrader 5 package
+        print(f'No se encontro el dataset {ticker}. Llamando a metatrader')
+        print("MetaTrader5 package author: ", mt5.__author__)
+        print("MetaTrader5 package version: ", mt5.__version__)
+        
+        # establish connection to MetaTrader 5 terminal
+        if not mt5.initialize():
+            raise Exception("initialize() failed, error code =",mt5.last_error())
+        
+        # set time zone to UTC
+        timezone = pytz.timezone("Etc/UTC")
 
-        bars = ib.reqHistoricalData(
-            contract, endDateTime='', durationStr='30 D',
-            barSizeSetting='1 hour', whatToShow='MIDPOINT', useRTH=True, formatDate=2)
+        # create 'datetime' objects in UTC time zone to avoid the implementation of a local time zone offset
+        date_format = '%Y-%m-%d %H:%M:%S'
+        utc_from = datetime.strptime(date_from, date_format).replace(tzinfo=timezone)
+        utc_to = datetime.strptime(date_to, date_format).replace(tzinfo=timezone)
 
-        df = util.df(bars).rename(columns={'date':'Date', 'open':'Open', 'high':'High', 'low':'Low', 'close':'Close', 'volume':'Volume'})
+        # get bars from USDJPY M5 within the interval of 2020.01.10 00:00 - 2020.01.11 13:00 in UTC time zone
+        rates = mt5.copy_rates_range(ticker, mt5.TIMEFRAME_H1, utc_from, utc_to)
+        
+        # shut down connection to the MetaTrader 5 terminal
+        mt5.shutdown()
+        # display each element of obtained data in a new line
+        
+        # create DataFrame out of the obtained data
+        df = pd.DataFrame(rates)
+
+        # convert time in seconds into the datetime format
+        df['time'] = pd.to_datetime(df['time'], unit='s')
+                                  
+        df = df.rename(columns={
+          'time':'Date', 
+          'open':'Open', 
+          'high':'High', 
+          'low':'Low', 
+          'close':'Close', 
+          'tick_volume':'Volume'
+        })
 
         self.instruments[ticker] = df
         self.instruments[ticker]['Date'] = self.instruments[ticker]['Date']
 
-        print('Dataset levantado y guardado correctamente')
         
       self.instruments[ticker]['Date'] = pd.to_datetime(self.instruments[ticker]['Date'])
       print(self.instruments[ticker].sample(5))
@@ -61,9 +91,18 @@ class BackTester():
 
       self.instruments[ticker] = self.trading_agent.calculate_indicators(self.instruments[ticker])
       self.instruments[ticker].to_csv(f'./data/{ticker}.csv', index=False)
+      print(f'Dataset {ticker} levantado y guardado correctamente')
 
-
-  def start(self, data_path:str, train_window:int, train_period:int, mode, limit_date_train, results_path, period_forward_target):
+  def start(
+      self, 
+      data_path:str, 
+      train_window:int, 
+      train_period:int, 
+      mode, 
+      limit_date_train, 
+      results_path, 
+      period_forward_target
+  ):
     """Inicia el proceso de backtesting.
 
     Args:
@@ -124,10 +163,17 @@ class BackTester():
 
       today_market_data.loc[:, 'pred'] = np.nan
 
-      # si nunca entreno o si ya pasaron los dias suficientes entrena
+      # Si no tiene datos para entrenar en esa ventana que pase al siguiente periodo
+      market_data_window = df[(df.Date >= date_from) & (df.Date < actual_date)]
+      
+      if market_data_window.shape[0] < 70:
+        print(f'No existen datos para el intervalo {date_from}-{actual_date}, se procedera con el siguiente')
+        continue
+      
       if self.ml_agent is not None:
-        market_data_window = df[(df.Date >= date_from) & (df.Date < actual_date)]
-        if days_from_train is None or days_from_train >= train_period and market_data_window.shape[0]>0:
+        
+        # si nunca entreno o si ya pasaron los dias
+        if (days_from_train is None or days_from_train >= train_period):
 
           print(f'Se entrenaran con {market_data_window.shape[0]} registros')
           print(f'Value counts de ticker: {market_data_window.ticker.value_counts()}')

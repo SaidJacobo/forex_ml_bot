@@ -1,14 +1,10 @@
 mode: train
-limit_date_train: '2024-04-30'
-tickers: [EURUSD, GBPUSD, USDJPY]
+date_from: '2024-01-01 00:00:00'
+date_to: '2024-04-01 00:00:00'
+limit_date_train: '2024-02-29 00:00:00'
+tickers: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
 period: 5y
 start_money: 100
 threshold_up: 0.85
 threshold_down: 0.15
 risk_percentage: 1
-
-# EUR/USD.
-# USD/JPY.
-# GBP/USD.
-# USD/CAD.
-# AUD/USD.

@@ -37,9 +37,13 @@ class TradingAgent():
     self.orders = []
 
     self.pips_per_value = {
-          "EURUSD": 0.0001,  # euros per US dollar
-          "GBPUSD": 0.0001,  # British pounds per US dollar
-          "USDJPY": 0.01,    # US dollar per Japanese yen
+          "EURUSD": 0.0001,
+          "GBPUSD": 0.0001,
+          "USDJPY": 0.01,
+          "USDCAD": 0.0001,
+          "AUDUSD": 0.0001,
+          "USDCHF": 0.0001,
+
           # Add more currency pairs as needed
       } 
 
@@ -94,7 +98,7 @@ class TradingAgent():
     df['change_percent_l'] = (((df['Low'] - df['Low'].shift(2)) / df['Low']) * 100).round(0)
     df['change_percent_l'] = (((df['Low'] - df['Low'].shift(3)) / df['Low']) * 100).round(0)
 
-    df = df.drop(columns=['Open','High','Low', 'average',	'barCount', 'Volume'])
+    df = df.drop(columns=['Open','High','Low', 'spread', 'real_volume'])
 
     df = df.dropna()
 
