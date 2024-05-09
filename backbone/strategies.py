@@ -26,8 +26,8 @@ def operation_management_logic(
                 return "close", "sell", open_order, 'closed for days in position'
             
             # Si estás en posición y han pasado los días permitidos, vende
-            if only_indicator_close_buy_condition:
-                return "close", "sell", open_order, 'closed for indicator signal'
+            # if only_indicator_close_buy_condition:
+            #     return "close", "sell", open_order, 'closed for indicator signal'
 
             if close_price <= open_order.stop_loss:
                 return "close", "sell", open_order, 'closed for stop loss'
@@ -40,8 +40,8 @@ def operation_management_logic(
             if allowed_days_in_position and days_in_position == allowed_days_in_position:
                 return "close", "buy", open_order, 'closed for days in position'
             
-            if only_indicator_close_sell_condition:
-                return "close", "buy", open_order, 'closed for indicator signal'
+            # if only_indicator_close_sell_condition:
+            #     return "close", "buy", open_order, 'closed for indicator signal'
             
             if close_price >= open_order.stop_loss:
                 return "close", "sell", open_order, 'closed for stop loss'

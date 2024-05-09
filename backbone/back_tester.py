@@ -1,8 +1,8 @@
 import os
 from datetime import timedelta
 import pandas as pd
-from machine_learning_agent import MachineLearningAgent
-from trading_agent import TradingAgent
+from backbone.machine_learning_agent import MachineLearningAgent
+from backbone.trading_agent import TradingAgent
 import numpy as np
 import MetaTrader5 as mt5
 import pytz
@@ -24,7 +24,7 @@ class BackTester():
     self.tickers = tickers
     self.instruments = {}
 
-  def create_dataset(self, data_path:str, period:int, date_from:str, date_to:str):
+  def create_dataset(self, symbols_path:str, period:int, date_from:str, date_to:str):
     """Crea el conjunto de datos para el backtesting.
 
     Args:
@@ -37,7 +37,7 @@ class BackTester():
     for ticker in self.tickers:
       try:
         print(f'Intentando levantar el dataset {ticker}')
-        self.instruments[ticker] = pd.read_csv(f'./data/{ticker}.csv')
+        self.instruments[ticker] = pd.read_csv(os.path.join(symbols_path, f'{ticker}.csv'))
 
       except FileNotFoundError:
 
@@ -90,12 +90,17 @@ class BackTester():
       print('='*16, 'calculando indicadores', '='*16)
 
       self.instruments[ticker] = self.trading_agent.calculate_indicators(self.instruments[ticker])
-      self.instruments[ticker].to_csv(f'./data/{ticker}.csv', index=False)
+      
+      self.instruments[ticker].to_csv(
+        os.path.join(symbols_path, f'{ticker}.csv'), 
+        index=False
+      )
+      
       print(f'Dataset {ticker} levantado y guardado correctamente')
 
   def start(
       self, 
-      data_path:str, 
+      symbols_path:str, 
       train_window:int, 
       train_period:int, 
       mode, 
@@ -114,12 +119,12 @@ class BackTester():
     df = pd.DataFrame()
 
     for ticker in self.tickers:
-      self.instruments[ticker] = pd.read_csv(f'./data/{ticker}.csv')
+      self.instruments[ticker] = pd.read_csv(os.path.join(symbols_path, f'{ticker}.csv'))
       self.instruments[ticker]['ticker'] = ticker
       
       
       print('Creando target')
-
+      self.instruments[ticker] = self.instruments[ticker].sort_values(by='Date')
       self.instruments[ticker]['target'] = ((self.instruments[ticker]['Close'].shift(-period_forward_target) - self.instruments[ticker]['Close']) / self.instruments[ticker]['Close']) * 100
 
       bins = [-1, 0, 1]
@@ -140,7 +145,8 @@ class BackTester():
 
     print(f'df value_counts {df["target"].value_counts()}')
 
-    df.to_csv(data_path, index=False)
+    path = os.path.join(symbols_path, 'dataset.csv')
+    df.to_csv(path, index=False)
 
     train_window = timedelta(hours=train_window)
 
@@ -154,8 +160,13 @@ class BackTester():
 
     for period in periods:
       actual_date = period
-      date_from = period - train_window
+
+      # ultimo periodo disponible en la realidad
+      date_to = actual_date - timedelta(hours=period_forward_target+1)
       
+      # de ese momento, n horas hacia atras
+      date_from = date_to - train_window
+
       today_market_data = df[df.Date == actual_date].copy()
 
       print('='*16, f'Fecha actual: {actual_date}', '='*16)
@@ -164,7 +175,7 @@ class BackTester():
       today_market_data.loc[:, 'pred'] = np.nan
 
       # Si no tiene datos para entrenar en esa ventana que pase al siguiente periodo
-      market_data_window = df[(df.Date >= date_from) & (df.Date < actual_date)]
+      market_data_window = df[(df.Date >= date_from) & (df.Date < date_to)]
       
       if market_data_window.shape[0] < 70:
         print(f'No existen datos para el intervalo {date_from}-{actual_date}, se procedera con el siguiente')
@@ -183,7 +194,7 @@ class BackTester():
               x_test = today_market_data.drop(columns=['target', 'Date', 'ticker']),
               y_train = market_data_window.target,
               y_test = today_market_data.target,
-              date_train=actual_date.strftime('%Y-%m-%d'),
+              date_train=actual_date.strftime('%Y-%m-%d %H:%M:%S'),
               verbose=True
           )
 
@@ -210,16 +221,14 @@ class BackTester():
           actual_date=actual_date
         )
 
-    path = os.path.join('data', results_path)
-    os.mkdir(path)
-
+    os.mkdir(results_path)
     # Guarda resultados
     if self.ml_agent is not None:
       stock_predictions, stock_true_values, train_results_df = self.ml_agent.get_results()
-      stock_predictions.to_csv(os.path.join(path, 'stock_predictions.csv'), index=False)
-      stock_true_values.to_csv(os.path.join(path, 'stock_true_values.csv'), index=False)
-      train_results_df.to_csv(os.path.join(path, 'train_results.csv'), index=False)
+      stock_predictions.to_csv(os.path.join(results_path, 'preds.csv'), index=False)
+      stock_true_values.to_csv(os.path.join(results_path, 'truevals.csv'), index=False)
+      train_results_df.to_csv(os.path.join(results_path, 'trainres.csv'), index=False)
 
     orders, wallet = self.trading_agent.get_orders()
-    orders.to_csv(os.path.join(path, 'orders.csv'), index=False)
-    wallet.to_csv(os.path.join(path, 'wallet.csv'), index=False)
+    orders.to_csv(os.path.join(results_path, 'orders.csv'), index=False)
+    wallet.to_csv(os.path.join(results_path, 'wallet.csv'), index=False)

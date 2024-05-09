@@ -1,7 +1,7 @@
 import talib
 import pandas as pd
 import numpy as np
-from order import Order
+from backbone.order import Order
 from pandas import DataFrame
 
 class TradingAgent():
@@ -76,7 +76,6 @@ class TradingAgent():
     df['macd_flag'] = 0
     df['macd_flag'] = np.where((df['macdhist_yesterday'] < 0) & (df['macdhist'] > 0), 1, df['macd_flag'])
     df['macd_flag'] = np.where((df['macdhist_yesterday'] > 0) & (df['macdhist'] < 0), -1, df['macd_flag'])
-
 
     df['change_percent_ch'] = (((df['Close'] - df['High']) / df['Close']) * 100).round(0)
     df['change_percent_co'] = (((df['Close'] - df['Open']) / df['Close']) * 100).round(0)
