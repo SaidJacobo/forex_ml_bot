@@ -1,67 +1,18 @@
-import pandas as pd
+from datetime import datetime
 import yaml
 import os
-import itertools
-from importlib import import_module
 from backbone.machine_learning_agent import MachineLearningAgent
 from backbone.trading_agent import TradingAgent
 from backbone.back_tester import BackTester
 import multiprocessing
+from backbone.utils import load_function, get_parameter_combinations
 
-def load_function(dotpath: str):
-    """Carga una función desde un módulo."""
-    module_, func = dotpath.rsplit(".", maxsplit=1)
-    m = import_module(module_)
-    return getattr(m, func)
-
-def get_parameter_combinations(
-        models,
-        train_window, 
-        train_period, 
-        trading_strategies, 
-        periods_forward_target, 
-        stop_loses_in_pips, 
-        take_profits_in_pips,
-        use_days_in_position
-    ):
-    parameter_combinations = []
-    if None in models:
-        strategies = [x for x in trading_strategies if x != 'strategies.ml_strategy']
-        parameter_combinations += list(itertools.product(
-            [None], [0], [0], strategies
-        ))
-
-        models.remove(None)
-    
-    parameter_combinations += list(itertools.product(
-        models, 
-        train_window, 
-        train_period, 
-        trading_strategies, 
-        periods_forward_target, 
-        stop_loses_in_pips, 
-        take_profits_in_pips,
-        use_days_in_position
-    ))
-
-    return parameter_combinations
-
-def run_in_paralel(            
-    model_name, 
-    train_window, 
-    train_period, 
-    trading_strategy, 
-    period_forward_target, 
-    stop_loss_in_pips, 
-    take_profit_in_pips, 
-    cancel_position_in_shift_days
-):
-    pass
+date_format = '%Y-%m-%d %H:00:00'
 
 def initialize_backtesting(paralelize=True):
-    data_path = './backbone/data'
-    experiments_path = './backbone/data/experiments'
-    symbols_path = './backbone/data/symbols'
+    data_path = './backbone/data/backtest'
+    experiments_path = './backbone/data/backtest/experiments'
+    symbols_path = './backbone/data/backtest/symbols'
     
     # Carga de configuraciones desde archivos YAML
     if not os.path.exists(data_path):
@@ -83,11 +34,10 @@ def initialize_backtesting(paralelize=True):
         model_configs = yaml.safe_load(file)
 
     # Obtención de parámetros del proyecto
-    period = config['period']
     mode = config['mode']
     limit_date_train = config['limit_date_train']
-    date_from = config['date_from']
-    date_to = config['date_to']
+    date_from = datetime.strptime(config['date_from'], date_format)
+    date_to = datetime.strptime(config['date_to'], date_format)
     tickers = config["tickers"] 
     risk_percentage = config["risk_percentage"] 
     
@@ -130,15 +80,14 @@ def initialize_backtesting(paralelize=True):
         results_path = f'''
             Mode_{mode}
             -Model_{model_name}
-            -TrainWindow_{train_window}
-            -TrainPeriod_{train_period}
-            -TradingStrategy_{trading_strategy.split('.')[-1]}
-            -PeriodsForwardTarget_{period_forward_target}
+            -TrainWw_{train_window}
+            -TrainPd_{train_period}
+            -TradingStgy_{trading_strategy.split('.')[-1]}
+            -PeriodsFwTg_{period_forward_target}
             -SL_{stop_loss_in_pips}
             -TP_{take_profit_in_pips}
-            -UseDaysInClosePos_{cancel_position_in_shift_days}
+            -UseDaysClose_{cancel_position_in_shift_days}
         '''.replace("\n", "").strip().replace(" ", "")
-        
         
         this_experiment_path = os.path.join(experiments_path, results_path)
         
@@ -168,7 +117,7 @@ def initialize_backtesting(paralelize=True):
 
         if model_name is not None:
             param_grid = model_configs[model_name]['param_grid']
-            model = load_function(model_configs[model_name]['model'])(random_state=42)
+            model = model_configs[model_name]['model']
             mla = MachineLearningAgent(tickers, model, param_grid)
 
         # Inicio del backtesting
@@ -180,11 +129,14 @@ def initialize_backtesting(paralelize=True):
 
         # si hay menos archivos de symbolos csv que la cantidad de tickers con la que trabajo
         if len(os.listdir(symbols_path)) < len(tickers):
-            back_tester.create_dataset(
+            back_tester.get_symbols_and_generate_indicators(
                 symbols_path=symbols_path, 
-                period=period,
                 date_from=date_from,
-                date_to=date_to
+                date_to=date_to,
+                # Si no se guarda el dataset se descargara por cada configuracion
+                save=True,
+                # No se sobreescribe para poder correr varias veces con el mismo dataset
+                force_download=False,
             )
 
         if paralelize:

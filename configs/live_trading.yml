@@ -1,0 +1,39 @@
+mode: paper
+
+tickers: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
+
+user: blablabla
+password: 1234
+
+model_name: 'random_forest'
+model: 'sklearn.ensemble.RandomForestClassifier'
+model_params:
+  'n_estimators': 3
+  'max_depth': 4
+  'min_samples_split': 5
+  'min_samples_leaf': 3
+  'random_state': 42
+
+threshold_up: 0.85
+
+threshold_down: 0.15
+
+risk_percentage: 1
+
+models: 'random_forest'
+
+train_window: 48
+
+train_period: 1 # frecuencia con la que se entrena
+
+stop_loss_in_pips: 15
+
+take_profits_in_pips: 30
+
+periods_forward_target: 5
+
+use_days_in_position: False
+
+trading_strategy: backbone.strategies.bband_strategy
+
+risk_percentage: 1
