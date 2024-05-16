@@ -1,7 +1,7 @@
 
 import yaml
 from backbone.machine_learning_agent import MachineLearningAgent
-from backbone.trading_agent import TradingAgent
+from backbone.realtime_trader import RealtimeTrader
 from datetime import datetime
 from backbone.utils import load_function
 from backbone.botardo import Botardo
@@ -13,12 +13,16 @@ if __name__ == '__main__':
  # Carga de configuraciones desde archivos YAML
     data_path = './backbone/data/trading'
     symbols_path = './backbone/data/trading/symbols'
+    logs_path = './backbone/data/trading/logs'
     
     if not os.path.exists(data_path):
         os.mkdir(data_path)
 
     if not os.path.exists(symbols_path):
         os.mkdir(symbols_path)
+
+    if not os.path.exists(logs_path):
+        os.mkdir(logs_path)
 
     with open('configs/live_trading.yml', 'r') as file:
         config = yaml.safe_load(file)
@@ -44,11 +48,8 @@ if __name__ == '__main__':
 
     risk_percentage = config["risk_percentage"] 
 
-    actual_money = 1000 # obtener esto de metatrader
-
     strategy = load_function(trading_strategy)
-    trading_agent = TradingAgent(
-        start_money=actual_money, 
+    trader = RealtimeTrader(
         trading_strategy=strategy,
         threshold_up=threshold_up,
         threshold_down=threshold_down,
@@ -56,6 +57,7 @@ if __name__ == '__main__':
         stop_loss_in_pips=stop_loss_in_pips,
         take_profit_in_pips=take_profit_in_pips,
         risk_percentage=risk_percentage,
+        save_orders_path=logs_path
     )
 
     mla = MachineLearningAgent(tickers, model, param_grid=None)
@@ -63,13 +65,13 @@ if __name__ == '__main__':
     botardo = Botardo(
         tickers=tickers, 
         ml_agent=mla, 
-        trading_agent=trading_agent
+        trader=trader
     )
 
     # set time zone to UTC
     timezone = pytz.timezone("Etc/UTC")
 
-    now = datetime.now(timezone) - timedelta(hours=5) # cambiar!!!!
+    now = datetime.now(timezone) - timedelta(hours=1)
     actual_date = datetime(
         now.year,
         now.month,
@@ -79,7 +81,7 @@ if __name__ == '__main__':
         0
     )
 
-    date_from = actual_date - timedelta(hours=300)
+    date_from = actual_date - timedelta(hours=800)
 
     botardo.get_symbols_and_generate_indicators(
         symbols_path=symbols_path, 
@@ -97,7 +99,7 @@ if __name__ == '__main__':
         # Necesito que conserve el target del dia de hoy que es null
         drop_nulls=False
     )
-
+    
     train_window = timedelta(hours=train_window)
 
     print('='*16, 'Iniciando backtesting', '='*16)

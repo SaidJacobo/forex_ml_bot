@@ -1,12 +1,13 @@
 models: [
   'random_forest', 
-  'gradient_boosting'
 ]
 
 train_window: [
-  24, # Una semana 
-  48,
-  72 
+  720, # mes y medio
+  480, # un mes
+  360, # tres semanas
+  240, # dos semanas
+  120, # una semana
 ] # tamanio de la ventana de entrenamiento
 
 train_period: [
@@ -19,14 +20,12 @@ stop_loss_in_pips: [
 
 take_profits_in_pips: [
   30, 
-  45, 
 ]
 
 periods_forward_target: [
-  1,
-  2,
-  4,
-  8,
+  5,
+  10,
+  15,
 ]
 
 use_days_in_position: [

@@ -14,6 +14,9 @@ env/
 # Archivos de datos
 *.csv
 
+# Archivos de texto
+*.txt
+
 # Archivos de registro y archivos generados por las bibliotecas de registro
 *.log
 

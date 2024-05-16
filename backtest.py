@@ -2,8 +2,9 @@ from datetime import datetime
 import yaml
 import os
 from backbone.machine_learning_agent import MachineLearningAgent
-from backbone.trading_agent import TradingAgent
+from backbone.backtesting_trader import BacktestingTrader
 from backbone.back_tester import BackTester
+from backbone.botardo import Botardo
 import multiprocessing
 from backbone.utils import load_function, get_parameter_combinations
 
@@ -99,8 +100,8 @@ def initialize_backtesting(paralelize=True):
         
         # Carga del agente de estrategia de trading
         strategy = load_function(trading_strategy)
-        trading_agent = TradingAgent(
-            start_money=config['start_money'], 
+        trader = BacktestingTrader(
+            money=config['start_money'], 
             trading_strategy=strategy,
             threshold_up=config['threshold_up'],
             threshold_down=config['threshold_down'],
@@ -121,15 +122,17 @@ def initialize_backtesting(paralelize=True):
             mla = MachineLearningAgent(tickers, model, param_grid)
 
         # Inicio del backtesting
-        back_tester = BackTester(
+        botardo = Botardo(
             tickers=tickers, 
             ml_agent=mla, 
-            trading_agent=trading_agent
+            trader=trader
         )
+        
+        backtester = BackTester(botardo)
 
         # si hay menos archivos de symbolos csv que la cantidad de tickers con la que trabajo
         if len(os.listdir(symbols_path)) < len(tickers):
-            back_tester.get_symbols_and_generate_indicators(
+            botardo.get_symbols_and_generate_indicators(
                 symbols_path=symbols_path, 
                 date_from=date_from,
                 date_to=date_to,
@@ -141,7 +144,7 @@ def initialize_backtesting(paralelize=True):
 
         if paralelize:
             process = multiprocessing.Process(
-                target=back_tester.start, 
+                target=backtester.start, 
                 args=(
                     symbols_path,
                     train_window, 
@@ -155,7 +158,7 @@ def initialize_backtesting(paralelize=True):
 
             processes.append(process)
         else:
-            back_tester.start(
+            backtester.start(
                 symbols_path=symbols_path,
                 train_window=train_window, 
                 train_period=train_period,

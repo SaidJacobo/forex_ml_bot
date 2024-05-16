@@ -1,14 +1,15 @@
+from typing import List
 import talib
 import pandas as pd
 import numpy as np
 from backbone.order import Order
 from pandas import DataFrame
+from abc import ABC, abstractmethod
 
-class TradingAgent():
+class ABCTrader(ABC):
   """Agente de Trading para tomar decisiones de compra y venta."""
 
   def __init__(self, 
-               start_money:float, 
                trading_strategy, 
                threshold_up:int, 
                threshold_down:int, 
@@ -25,16 +26,13 @@ class TradingAgent():
         threshold_down (int): Umbral inferior.
         allowed_days_in_position (int): Días permitidos en una posición.
     """
-    self.money = start_money
     self.allowed_days_in_position = allowed_days_in_position
-    self.wallet_evolution = {}
     self.trading_strategy = trading_strategy
     self.threshold_up = threshold_up
     self.threshold_down = threshold_down
     self.stop_loss_in_pips = stop_loss_in_pips
     self.take_profit_in_pips = take_profit_in_pips
     self.risk_percentage = risk_percentage
-    self.orders = []
 
     self.pips_per_value = {
           "EURUSD": 0.0001,
@@ -43,10 +41,8 @@ class TradingAgent():
           "USDCAD": 0.0001,
           "AUDUSD": 0.0001,
           "USDCHF": 0.0001,
-
-          # Add more currency pairs as needed
-      } 
-
+      }
+    
   def calculate_indicators(self, df:DataFrame):
     """Calcula indicadores técnicos para el DataFrame dado.
 
@@ -103,19 +99,28 @@ class TradingAgent():
 
     return df
   
-  def _calculate_lot_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair):
+  def _calculate_units_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair):
       # Get the pip value for the given currency pair
       pip_value = self.pips_per_value.get(currency_pair, None)
       if pip_value is None:
-          return "Invalid currency pair"
+          raise Exception(f'No existe valor de pip para el par {currency_pair}')
       
       # Calculate risk in account currency
       account_currency_risk = account_size * (risk_percentage / 100)
       
       # Calculate lot size in units
-      lot_size = round(account_currency_risk / (pip_value * stop_loss_pips))
+      units = round(account_currency_risk / (pip_value * stop_loss_pips))
       
-      return lot_size
+      return units
+
+
+  def _calculate_lot_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair, lot_size_standard):
+    units = self._calculate_units_size(account_size, risk_percentage, stop_loss_pips, currency_pair)
+    
+    decimals = 2
+    number_of_lots = round(units / lot_size_standard, decimals)
+    
+    return number_of_lots
 
   def _calculate_stop_loss(self, operation_type, price, ticker):
       pips = self.pips_per_value[ticker]
@@ -143,7 +148,8 @@ class TradingAgent():
         
       return price_tp
 
-  def open_position(self, type, ticker, date, price):
+  @abstractmethod
+  def open_position(self, operation_type:str, ticker:str, date:str, price:float) -> None:
     """Abre una nueva posición de trading.
 
     Args:
@@ -152,31 +158,10 @@ class TradingAgent():
         date (datetime): Fecha de la operación.
         price (float): Precio de la operación.
     """
-    units = self._calculate_lot_size(
-       self.money, 
-       self.risk_percentage, # parametrizar
-       self.stop_loss_in_pips, # parametrizar
-       currency_pair=ticker
-       )
+    pass
 
-    price_sl = self._calculate_stop_loss(type, price, ticker)
-    price_tp = self._calculate_take_profit(type, price, ticker)
-
-    order = Order(
-      order_type=type, 
-      ticker=ticker, 
-      open_date=date, 
-      open_price=price,
-      units=units,
-      stop_loss=price_sl, # parametrizar
-      take_profit=price_tp # parametrizar
-    )
-
-    self.orders.append(order)
-
-    print('='*16, f'se abrio una nueva posicion el {date}', '='*16)
-
-  def close_position(self, order:Order, date, price, comment):
+  @abstractmethod
+  def close_position(self, order_id:int, date:str, price:float, comment:str) -> None:
     """Cierra una posición de trading.
 
     Args:
@@ -184,21 +169,8 @@ class TradingAgent():
         date (datetime): Fecha de cierre de la operación.
         price (float): Precio de cierre de la operación.
     """
-    order.close(close_price=price, close_date=date, comment=comment)
-    self.__update_wallet(order)
+    pass
 
-    print('='*16, f'se cerro una posicion el {date}', '='*16)
-
-  def __update_wallet(self, order:Order):
-      """Actualiza el estado de la cartera después de cerrar una posición.
-
-      Args:
-          order (Order): Orden de trading.
-      """
-      self.money += order.profit
-      self.wallet_evolution[order.close_date] = self.money
-
-      print(f'money: {self.money}')
 
   def take_operation_decision(self, actual_market_data, actual_date):
     """Toma la decisión de operación basada en la estrategia de trading.
@@ -208,13 +180,13 @@ class TradingAgent():
         actual_date (datetime): Fecha actual.
     """
     ticker = actual_market_data['ticker']
+    
+    open_positions = self.get_open_orders(symbol=ticker)
 
-    orders = [order for order in self.orders if order.ticker == ticker]
-
-    action, operation_type, order, comment = self.trading_strategy(
+    action, operation_type, order_id, comment = self.trading_strategy(
       actual_date,
       actual_market_data, 
-      orders,
+      open_positions,
       self.allowed_days_in_position,
       self.threshold_up,
       self.threshold_down
@@ -227,16 +199,16 @@ class TradingAgent():
   
       if action == 'open':
         self.open_position(
-          type=operation_type, 
+          operation_type=operation_type, 
           ticker=ticker, 
           date=actual_date, 
           price=price
         )
       elif action == 'close':
-        self.close_position(order, date=actual_date, price=price, comment=comment)
+        self.close_position(order_id=order_id, date=actual_date, price=price, comment=comment)
   
-
-  def get_orders(self):
+  @abstractmethod
+  def get_open_orders(self, ticket:int=None, symbol:str=None) -> List[Order]:
     """Obtiene las órdenes de compra y venta realizadas.
 
     Returns:
@@ -244,16 +216,4 @@ class TradingAgent():
         DataFrame: Órdenes de venta.
         DataFrame: Estado de la cartera.
     """
-    print('saving results')
-
-    df_orders = pd.DataFrame([vars(order) for order in self.orders])
-
-
-    df_wallet = pd.DataFrame(
-      {      
-        'date': self.wallet_evolution.keys(), 
-        'wallet': self.wallet_evolution.values()
-      }
-    )
-
-    return df_orders, df_wallet
+    pass
