@@ -81,7 +81,7 @@ if __name__ == '__main__':
         0
     )
 
-    date_from = actual_date - timedelta(hours=800)
+    date_from = actual_date - timedelta(hours=train_window + 300)
 
     botardo.get_symbols_and_generate_indicators(
         symbols_path=symbols_path, 

@@ -218,7 +218,6 @@ class Botardo():
     # Si no tiene datos para entrenar en esa ventana que pase al siguiente periodo
     market_data_window = df[(df.Date >= date_from) & (df.Date < date_to)].dropna()
     
-    
     if market_data_window.shape[0] < 70:
       print(f'No existen datos para el intervalo {date_from}-{actual_date}, se procedera con el siguiente')
       return

@@ -20,7 +20,6 @@ def operation_management_logic(
         model_with_indicator_open_sell_condition:bool,
         only_indicator_open_sell_condition:bool
     ) -> Result:
-    return Result("close", "sell", None, 'bla bla bla')
 
     if open_order:
 
