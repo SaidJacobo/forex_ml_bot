@@ -239,7 +239,7 @@ class Botardo():
             verbose=True,
         )
 
-        self.ml_agent.days_from_train = 0
+        self.ml_agent.days_from_train = 1
         print('Entrenamiento terminado! :)')
       else:
         self.ml_agent.days_from_train += 1

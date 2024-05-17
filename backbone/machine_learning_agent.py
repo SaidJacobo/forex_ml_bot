@@ -95,7 +95,7 @@ class MachineLearningAgent():
       verbose=False,
     ) -> None:
     if self.tunning:
-      n_splits = 3
+      n_splits = 2
       stratified_kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
       search = GridSearchCV(

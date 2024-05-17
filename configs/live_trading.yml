@@ -8,15 +8,15 @@ password: 1234
 model_name: 'random_forest'
 model: 'sklearn.ensemble.RandomForestClassifier'
 model_params:
-  'n_estimators': 3
-  'max_depth': 4
-  'min_samples_split': 5
-  'min_samples_leaf': 3
+  'max_depth': 25
+  'min_samples_leaf': 1
+  'min_samples_split': 2
+  'n_estimators': 120
   'random_state': 42
 
-threshold_up: 0.85
+threshold_up: 0.80
 
-threshold_down: 0.15
+threshold_down: 0.20
 
 risk_percentage: 1
 

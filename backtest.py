@@ -139,7 +139,7 @@ def initialize_backtesting(paralelize=True):
                 # Si no se guarda el dataset se descargara por cada configuracion
                 save=True,
                 # No se sobreescribe para poder correr varias veces con el mismo dataset
-                force_download=False,
+                force_download=True,
             )
 
         if paralelize:
