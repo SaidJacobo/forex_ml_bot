@@ -1,4 +1,4 @@
-
+import joblib
 import yaml
 from backbone.machine_learning_agent import MachineLearningAgent
 from backbone.realtime_trader import RealtimeTrader
@@ -11,10 +11,14 @@ import pytz
 
 if __name__ == '__main__':
  # Carga de configuraciones desde archivos YAML
+    root = './backbone/data'
     data_path = './backbone/data/trading'
     symbols_path = './backbone/data/trading/symbols'
     logs_path = './backbone/data/trading/logs'
-    
+
+    if not os.path.exists(root):
+        os.mkdir(root)
+
     if not os.path.exists(data_path):
         os.mkdir(data_path)
 
@@ -27,12 +31,10 @@ if __name__ == '__main__':
     with open('configs/live_trading.yml', 'r') as file:
         config = yaml.safe_load(file)
 
+    pipeline_path = config['pipeline_path']
     mode = config['mode']
     user = config['user']
     pw = config['password']
-    model_name = config['model_name']
-    model = config['model']
-    model_params = config['model_params']
     threshold_up = config['threshold_up']
     threshold_down = config['threshold_down']
     risk_percentage = config['risk_percentage']
@@ -60,7 +62,12 @@ if __name__ == '__main__':
         save_orders_path=logs_path
     )
 
-    mla = MachineLearningAgent(tickers, model, param_grid=None)
+
+    # Cargar el pipeline desde el archivo .pkl
+    with open(pipeline_path, 'rb') as file:
+        pipeline = joblib.load(file)
+
+    mla = MachineLearningAgent(tickers=tickers, pipeline=pipeline)
 
     botardo = Botardo(
         tickers=tickers, 

@@ -3,6 +3,7 @@ import itertools
 from backbone.order import Order
 from datetime import datetime
 from collections import namedtuple
+import os
 
 def load_function(dotpath: str):
     """Carga una función desde un módulo."""
@@ -73,3 +74,13 @@ def from_order_to_mt_order(order:Order) -> dict:
     )
 
     return mt_order
+
+def write_in_logs(path, time, comment, content):
+    with open(os.path.join(path), 'a') as file:
+        file.write(f'\n {time} \n')
+
+        file.write(f'{"="*32 + comment + "="*32} \n')
+        
+        file.write(f'{content}\n')
+        
+        file.write('='*32)

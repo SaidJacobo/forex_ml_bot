@@ -1,9 +1,10 @@
 mode: train
-date_from: '2023-06-01 00:00:00'
-date_to: '2024-01-01 00:00:00'
-limit_date_train: '2023-12-01 00:00:00'
+paralelize: False
+force_download_symbols: True
+date_from: '2024-04-01 00:00:00'
+date_to: '2024-05-17 00:00:00'
+limit_date_train: '2024-05-18 00:00:00'
 tickers: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
-period: 5y
 start_money: 100
 threshold_up: 0.85
 threshold_down: 0.15

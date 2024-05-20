@@ -6,6 +6,8 @@ import MetaTrader5 as mt5
 import pytz
 from datetime import datetime
 from datetime import timedelta
+from backbone.utils import write_in_logs
+
 
 class Botardo():
   """Clase base de bot de trading y aprendizaje automático.
@@ -257,7 +259,16 @@ class Botardo():
           stock.pred
         )
 
-      self.trader.take_operation_decision(
+      result = self.trader.take_operation_decision(
         actual_market_data=stock.drop(columns=['target']),
         actual_date=actual_date
       )
+
+      # write_in_logs(
+      #     path=os.path.join(self.save_orders_path, 'orders.txt'), 
+      #     time=actual_date, 
+      #     comment="Close position", 
+      #     content=str(result._asdict())
+      # )
+
+      

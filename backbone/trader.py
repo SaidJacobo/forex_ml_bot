@@ -183,7 +183,7 @@ class ABCTrader(ABC):
     
     open_positions = self.get_open_orders(symbol=ticker)
 
-    action, operation_type, order_id, comment = self.trading_strategy(
+    result = self.trading_strategy(
       actual_date,
       actual_market_data, 
       open_positions,
@@ -192,20 +192,26 @@ class ABCTrader(ABC):
       self.threshold_down
     )
 
-    print(f'result {action} {operation_type}: {ticker}, {comment}')
-
-    if action != 'wait':
+    if result.action != 'wait':
       price = actual_market_data['Close']
   
-      if action == 'open':
+      if result.action == 'open':
         self.open_position(
-          operation_type=operation_type, 
+          operation_type=result.operation_type, 
           ticker=ticker, 
           date=actual_date, 
           price=price
         )
-      elif action == 'close':
-        self.close_position(order_id=order_id, date=actual_date, price=price, comment=comment)
+        
+      elif result.action == 'close':
+        self.close_position(
+          order_id=result.order_id, 
+          date=actual_date, 
+          price=price, 
+          comment=result.comment
+        )
+    
+    return result
   
   @abstractmethod
   def get_open_orders(self, ticket:int=None, symbol:str=None) -> List[Order]:
