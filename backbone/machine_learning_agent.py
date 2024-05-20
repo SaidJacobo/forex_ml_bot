@@ -10,7 +10,7 @@ from typing import Tuple
 class MachineLearningAgent():
   """Agente de Aprendizaje Automático para entrenar y predecir."""
 
-  def __init__(self, tickers, model, param_grid=None, params=None):
+  def __init__(self, tickers, model=None, pipeline=None, param_grid=None):
     """Inicializa el Agente de Aprendizaje Automático.
 
     Args:
@@ -18,13 +18,19 @@ class MachineLearningAgent():
         model: Modelo de machine learning.
         param_grid (dict): Parámetros del modelo para búsqueda de hiperparámetros.
     """
-
-    if param_grid and params:
-      raise Exception('No pueden enviarse ambos parametros param grid y params')
+    if model and pipeline:
+      raise Exception('No puede enviarse un modelo y un pipeline')
     
-    self.model = load_function(model)
-    self.param_grid = param_grid
-    self.params = params
+    if model:
+      self.model = load_function(model)
+      if not param_grid:
+        raise Exception('Debe adjuntarse una grilla de hiperparametros para optimizar')
+      self.param_grid = param_grid
+      self.pipeline = self._create_pipeline()
+
+    elif pipeline:
+      self.pipeline = pipeline
+
 
     # si llegan los parametros no tiene que tunear nada, sino armar el pipeline directamente con esos
     self.tunning = True if param_grid else False
@@ -39,14 +45,12 @@ class MachineLearningAgent():
       self.stock_predictions[ticker] = {}
       self.stock_true_values[ticker] = {}
     
-    self.pipeline = self._create_pipeline()
-
     self.train_results = {}
     self.best_params = {}
 
   def _create_pipeline(self):
     scaler = StandardScaler()
-    model = self.model(self.params) if self.params else self.model()
+    model = self.model()
 
     pipe = Pipeline([
         ('scaler', scaler),
@@ -115,7 +119,6 @@ class MachineLearningAgent():
         print("Best parameter (CV score=%0.3f):" % search.best_score_)
 
         print(f'Best params: {search.best_params_}')
-        
 
       # Obtengo el best estimator
       self.pipeline = search.best_estimator_
@@ -170,4 +173,4 @@ class MachineLearningAgent():
     stock_predictions_df = stock_predictions_df.reset_index().rename(columns={'index':'fecha'})
     stock_true_values_df = stock_true_values_df.reset_index().rename(columns={'index':'fecha'})
 
-    return stock_predictions_df, stock_true_values_df, stock_train_results_df, self.best_params
+    return stock_predictions_df, stock_true_values_df, stock_train_results_df, self.best_params, self.pipeline

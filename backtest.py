@@ -10,11 +10,15 @@ from backbone.utils import load_function, get_parameter_combinations
 
 date_format = '%Y-%m-%d %H:00:00'
 
-def initialize_backtesting(paralelize=True):
+def initialize_backtesting():
+    root = './backbone/data'
     data_path = './backbone/data/backtest'
     experiments_path = './backbone/data/backtest/experiments'
     symbols_path = './backbone/data/backtest/symbols'
     
+    if not os.path.exists(root):
+        os.mkdir(root)
+
     # Carga de configuraciones desde archivos YAML
     if not os.path.exists(data_path):
         os.mkdir(data_path)
@@ -36,6 +40,8 @@ def initialize_backtesting(paralelize=True):
 
     # Obtención de parámetros del proyecto
     mode = config['mode']
+    paralelize = config['paralelize']
+    force_download_symbols = config['force_download_symbols']
     limit_date_train = config['limit_date_train']
     date_from = datetime.strptime(config['date_from'], date_format)
     date_to = datetime.strptime(config['date_to'], date_format)
@@ -119,7 +125,7 @@ def initialize_backtesting(paralelize=True):
         if model_name is not None:
             param_grid = model_configs[model_name]['param_grid']
             model = model_configs[model_name]['model']
-            mla = MachineLearningAgent(tickers, model, param_grid)
+            mla = MachineLearningAgent(tickers=tickers, model=model, param_grid=param_grid)
 
         # Inicio del backtesting
         botardo = Botardo(
@@ -139,7 +145,7 @@ def initialize_backtesting(paralelize=True):
                 # Si no se guarda el dataset se descargara por cada configuracion
                 save=True,
                 # No se sobreescribe para poder correr varias veces con el mismo dataset
-                force_download=True,
+                force_download=force_download_symbols,
             )
 
         if paralelize:
@@ -180,5 +186,5 @@ def initialize_backtesting(paralelize=True):
 
 
 if __name__ == '__main__':
-    initialize_backtesting(paralelize=False)
+    initialize_backtesting()
  

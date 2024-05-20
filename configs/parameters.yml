@@ -3,11 +3,11 @@ models: [
 ]
 
 train_window: [
-  720, # mes y medio
-  480, # un mes
-  360, # tres semanas
-  240, # dos semanas
-  120, # una semana
+  # 720, # mes y medio
+  # 480, # un mes
+  360 # tres semanas
+  # 240, # dos semanas
+  # 120, # una semana
 ] # tamanio de la ventana de entrenamiento
 
 train_period: [
@@ -19,13 +19,13 @@ stop_loss_in_pips: [
 ]
 
 take_profits_in_pips: [
-  30, 
+  30,
 ]
 
 periods_forward_target: [
   5,
-  10,
-  15,
+  # 10,
+  # 15,
 ]
 
 use_days_in_position: [
@@ -35,5 +35,5 @@ use_days_in_position: [
 
 trading_strategy: [
   'backbone.strategies.macd_strategy',
-  'backbone.strategies.bband_strategy', 
+  # 'backbone.strategies.bband_strategy', 
 ]

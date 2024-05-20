@@ -5,7 +5,7 @@ import MetaTrader5 as mt5
 from backbone.utils import from_mt_order_to_order, from_order_to_mt_order
 from typing import List, Tuple
 import os
-
+from backbone.utils import write_in_logs
 
 class RealtimeTrader(ABCTrader):
     
@@ -125,17 +125,12 @@ class RealtimeTrader(ABCTrader):
 
         mt5.shutdown()
 
-        try:
-            with open(os.path.join(self.save_orders_path, 'orders.txt'), 'a') as file:
-                file.write(f'{"="*32 + "Open position" + "="*32} \n')
-
-                for key, value in result._asdict().items():
-                    file.write(f'{key}: {value}\n')
-
-                file.write('='*32)
-        except:
-            with open(os.path.join(self.save_orders_path, 'orders.txt'), 'a') as file:
-                file.write(f'{"="*32 + "No se pudo guardar la operacion (open)" + "="*32} \n')
+        write_in_logs(
+            path=os.path.join(self.save_orders_path, 'orders.txt'),
+            time=date, 
+            comment="Open position", 
+            content=str(result._asdict())
+        )
 
 
     def close_position(self, order_id:int, date:str, price:float, comment:str) -> None:
@@ -179,16 +174,11 @@ class RealtimeTrader(ABCTrader):
         print(result)
         mt5.shutdown()
 
-        try: 
-            with open(os.path.join(self.save_orders_path, 'orders.txt'), 'a') as file:
-                file.write(f'{"="*32 + "Close position" + "="*32} \n')
-
-                for key, value in result._asdict().items():
-                    file.write(f'{key}: {value}\n')
-
-                file.write('='*32)
-        except:
-            with open(os.path.join(self.save_orders_path, 'orders.txt'), 'a') as file:
-                file.write(f'{"="*32 + "No se pudo guardar la operacion (close)" + "="*32} \n')
+        write_in_logs(
+            path=os.path.join(self.save_orders_path, 'orders.txt'), 
+            time=date, 
+            comment="Close position", 
+            content=str(result._asdict())
+        )
 
             
