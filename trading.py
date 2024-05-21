@@ -8,6 +8,8 @@ from backbone.botardo import Botardo
 from datetime import timedelta
 import os
 import pytz
+from backbone.telegram_bot import TelegramBot
+import joblib
 
 if __name__ == '__main__':
  # Carga de configuraciones desde archivos YAML
@@ -45,10 +47,14 @@ if __name__ == '__main__':
     periods_forward_target = config['periods_forward_target']
     use_days_in_position = config['use_days_in_position']
     trading_strategy = config['trading_strategy']
+    telegram_bot_token = config['telegram_bot_token']
+    telegram_chat_id = config['telegram_chat_id']
 
     tickers = config["tickers"] 
 
     risk_percentage = config["risk_percentage"] 
+
+    telegram_bot = TelegramBot(bot_token=telegram_bot_token, chat_id=telegram_chat_id)
 
     strategy = load_function(trading_strategy)
     trader = RealtimeTrader(
@@ -59,9 +65,9 @@ if __name__ == '__main__':
         stop_loss_in_pips=stop_loss_in_pips,
         take_profit_in_pips=take_profit_in_pips,
         risk_percentage=risk_percentage,
-        save_orders_path=logs_path
+        save_orders_path=logs_path,
+        telegram_bot=telegram_bot
     )
-
 
     # Cargar el pipeline desde el archivo .pkl
     with open(pipeline_path, 'rb') as file:
@@ -112,4 +118,8 @@ if __name__ == '__main__':
     print('='*16, 'Iniciando backtesting', '='*16)
 
     botardo.trading_bot_workflow(actual_date, df, train_period, train_window, periods_forward_target)
+    
+    # sobreescribo el pipeline recien entrenado
+    with open(pipeline_path, 'wb') as file:
+        joblib.dump(botardo.ml_agent.pipeline, file)
     

@@ -6,6 +6,8 @@ from backbone.utils import from_mt_order_to_order, from_order_to_mt_order
 from typing import List, Tuple
 import os
 from backbone.utils import write_in_logs
+from backbone.telegram_bot import TelegramBot
+
 
 class RealtimeTrader(ABCTrader):
     
@@ -18,7 +20,8 @@ class RealtimeTrader(ABCTrader):
             stop_loss_in_pips: int, 
             take_profit_in_pips: int, 
             risk_percentage: int,
-            save_orders_path:str
+            save_orders_path:str,
+            telegram_bot: TelegramBot
         ):
 
         super().__init__(
@@ -38,6 +41,8 @@ class RealtimeTrader(ABCTrader):
         if not mt5.initialize():
             raise Exception('No se pudo inicializar mt5')
         
+        self.telegram_bot = telegram_bot
+
         self.money = mt5.account_info().balance
 
         self.operations_mapper = {
@@ -91,7 +96,7 @@ class RealtimeTrader(ABCTrader):
 
         symbol_info = mt5.symbol_info(ticker)
         # point = symbol_info.point
-        price = symbol_info.bid if operation_type=='buy' else symbol_info.ask
+        price = symbol_info.ask if operation_type=='buy' else symbol_info.bid
 
         lot = self._calculate_lot_size(
             self.money, 
@@ -129,8 +134,10 @@ class RealtimeTrader(ABCTrader):
             path=os.path.join(self.save_orders_path, 'orders.txt'),
             time=date, 
             comment="Open position", 
-            content=str(result._asdict())
+            order=result._asdict()
         )
+
+        self.telegram_bot.send_order_by_telegram(result)
 
 
     def close_position(self, order_id:int, date:str, price:float, comment:str) -> None:
@@ -178,7 +185,10 @@ class RealtimeTrader(ABCTrader):
             path=os.path.join(self.save_orders_path, 'orders.txt'), 
             time=date, 
             comment="Close position", 
-            content=str(result._asdict())
+            order=result._asdict()
         )
+
+        self.telegram_bot.send_order_by_telegram(result)
+
 
             
