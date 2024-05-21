@@ -247,7 +247,10 @@ class Botardo():
         self.ml_agent.days_from_train += 1
 
       pred = self.ml_agent.predict_proba(today_market_data.drop(columns=['target', 'Date', 'ticker']))
-      print(f'Prediccion: {pred}')
+      
+      pred_per_ticker = pd.DataFrame({'ticker':today_market_data.ticker, 'pred':pred})
+      print(f'Prediccion: {pred_per_ticker}')
+
       today_market_data.loc[:, 'pred'] = pred
     
     for _, stock in today_market_data.iterrows():

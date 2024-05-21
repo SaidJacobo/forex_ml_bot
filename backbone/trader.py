@@ -191,7 +191,7 @@ class ABCTrader(ABC):
       self.threshold_up,
       self.threshold_down
     )
-
+    print(ticker,  result)
     if result.action != 'wait':
       price = actual_market_data['Close']
   

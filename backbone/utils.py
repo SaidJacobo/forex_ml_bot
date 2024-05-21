@@ -5,6 +5,8 @@ from datetime import datetime
 from collections import namedtuple
 import os
 
+
+
 def load_function(dotpath: str):
     """Carga una función desde un módulo."""
     module_, func = dotpath.rsplit(".", maxsplit=1)
@@ -75,12 +77,22 @@ def from_order_to_mt_order(order:Order) -> dict:
 
     return mt_order
 
-def write_in_logs(path, time, comment, content):
+def write_in_logs(path, time, comment, order):
     with open(os.path.join(path), 'a') as file:
         file.write(f'\n {time} \n')
 
         file.write(f'{"="*32 + comment + "="*32} \n')
         
+        content = map_order_to_str(order)
+
         file.write(f'{content}\n')
         
         file.write('='*32)
+
+
+def map_order_to_str(order:dict):
+    message = '\n'
+    for key, value in order.items():
+        message += f'{key}: {value} \n'
+    
+    return message
