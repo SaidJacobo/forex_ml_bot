@@ -93,7 +93,7 @@ class ABCTrader(ABC):
     df['change_percent_l'] = (((df['Low'] - df['Low'].shift(2)) / df['Low']) * 100).round(0)
     df['change_percent_l'] = (((df['Low'] - df['Low'].shift(3)) / df['Low']) * 100).round(0)
 
-    df = df.drop(columns=['Open','High','Low', 'spread', 'real_volume'])
+    df = df.drop(columns=['spread', 'real_volume'])
 
     df = df.dropna()
 
