@@ -1,4 +1,5 @@
 import pandas as pd
+from backbone.enums import OperationType
 from backbone.order import Order
 from backbone.trader import ABCTrader
 import MetaTrader5 as mt5
@@ -96,7 +97,7 @@ class RealtimeTrader(ABCTrader):
 
         symbol_info = mt5.symbol_info(ticker)
         # point = symbol_info.point
-        price = symbol_info.ask if operation_type=='buy' else symbol_info.bid
+        price = symbol_info.ask if operation_type == OperationType.BUY else symbol_info.bid
 
         lot = self._calculate_lot_size(
             self.money, 
@@ -161,7 +162,7 @@ class RealtimeTrader(ABCTrader):
 
         lot = position.volume
         
-        price = symbol_info.ask if position.type=='buy' else symbol_info.bid
+        price = symbol_info.ask if position.type == OperationType.BUY else symbol_info.bid
 
         action = self.operations_oposite_mapper[position.type]
 

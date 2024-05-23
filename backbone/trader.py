@@ -1,10 +1,10 @@
 from typing import List
 import talib
-import pandas as pd
 import numpy as np
 from backbone.order import Order
 from pandas import DataFrame
 from abc import ABC, abstractmethod
+from backbone.enums import ActionType, OperationType
 
 class ABCTrader(ABC):
   """Agente de Trading para tomar decisiones de compra y venta."""
@@ -126,10 +126,10 @@ class ABCTrader(ABC):
       pips = self.pips_per_value[ticker]
 
       price_sl = None
-      if operation_type == 'buy':
+      if operation_type == OperationType.BUY:
         price_sl = price - (self.stop_loss_in_pips * pips)
       
-      elif operation_type == 'sell':
+      elif operation_type == OperationType.SELL:
         price_sl = price + (self.stop_loss_in_pips * pips)
         
       return price_sl
@@ -140,10 +140,10 @@ class ABCTrader(ABC):
       pips = self.pips_per_value[ticker]
 
       price_tp = None
-      if operation_type == 'buy':
+      if operation_type == OperationType.BUY:
         price_tp = price + (self.take_profit_in_pips * pips)
       
-      elif operation_type == 'sell':
+      elif operation_type == OperationType.SELL:
         price_tp = price - (self.take_profit_in_pips * pips)
         
       return price_tp
@@ -192,10 +192,10 @@ class ABCTrader(ABC):
       self.threshold_down
     )
     print(ticker,  result)
-    if result.action != 'wait':
+    if result.action != ActionType.WAIT:
       price = actual_market_data['Close']
   
-      if result.action == 'open':
+      if result.action == ActionType.OPEN:
         self.open_position(
           operation_type=result.operation_type, 
           ticker=ticker, 
@@ -203,7 +203,7 @@ class ABCTrader(ABC):
           price=price
         )
         
-      elif result.action == 'close':
+      elif result.action == ActionType.CLOSE:
         self.close_position(
           order_id=result.order_id, 
           date=actual_date, 
