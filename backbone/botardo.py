@@ -159,9 +159,9 @@ class Botardo():
       print('Creando target')
       self.instruments[ticker] = self.instruments[ticker].sort_values(by='Date')
       self.instruments[ticker]['target'] = ((self.instruments[ticker]['Close'].shift(-period_forward_target) - self.instruments[ticker]['Close']) / self.instruments[ticker]['Close']) * 100
-
-      bins = [-1, 0, 1]
-      labels = [0, 1]
+      
+      bins = [-100000, -0.1, 0.1, 100000]
+      labels = [0, 1, 2]
 
       self.instruments[ticker]['target'] = pd.cut(self.instruments[ticker]['target'], bins, labels=labels)
 
@@ -246,12 +246,13 @@ class Botardo():
       else:
         self.ml_agent.days_from_train += 1
 
-      pred = self.ml_agent.predict_proba(today_market_data.drop(columns=['target', 'Date', 'ticker']))
+      calsses, probas = self.ml_agent.predict_proba(today_market_data.drop(columns=['target', 'Date', 'ticker']))
       
-      pred_per_ticker = pd.DataFrame({'ticker':today_market_data.ticker, 'pred':pred})
+      pred_per_ticker = pd.DataFrame({'ticker':today_market_data.ticker, 'class':calsses, 'proba':probas})
       print(f'Prediccion: {pred_per_ticker}')
 
-      today_market_data.loc[:, 'pred'] = pred
+      today_market_data.loc[:, 'pred_label'] = calsses
+      today_market_data.loc[:, 'proba'] = probas
     
     for _, stock in today_market_data.iterrows():
       if self.ml_agent is not None:
@@ -259,7 +260,7 @@ class Botardo():
           stock.Date,
           stock.ticker, 
           stock.target, 
-          stock.pred
+          stock.pred_label
         )
 
       result = self.trader.take_operation_decision(

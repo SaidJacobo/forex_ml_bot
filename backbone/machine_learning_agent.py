@@ -1,9 +1,10 @@
+import numpy as np
 from sklearn.linear_model import LogisticRegression
 from backbone.probability_transformer import ProbabilityTransformer 
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
-from sklearn.metrics import fbeta_score, make_scorer, auc, roc_curve
+from sklearn.metrics import f1_score, make_scorer, auc, precision_score, recall_score, roc_curve
 from sklearn.preprocessing import StandardScaler
 from backbone.utils import load_function
 from typing import Tuple
@@ -47,11 +48,22 @@ class MachineLearningAgent():
       self.stock_true_values[ticker] = {}
     
     self.train_results = {}
+    self.train_results['precision'] = {}
+    self.train_results['recall'] = {}
+    self.train_results['f1'] = {}
+
     self.best_params = {}
 
   def _create_pipeline(self):
     scaler = StandardScaler()
-    log_reg = LogisticRegression()
+
+    log_reg = LogisticRegression(
+      multi_class='multinomial', 
+      solver='lbfgs', 
+      class_weight='balanced', 
+      max_iter=1000,
+      random_state=42
+    )
 
     model = self.model()
 
@@ -84,14 +96,15 @@ class MachineLearningAgent():
     Returns:
         array: Predicciones de probabilidad del modelo.
     """
-    proba = self.pipeline.predict_proba(x)
+    predictions = self.pipeline.predict_proba(x)
 
-    try:
-      pred = proba[:,1] # si el array tiene dos valores agarro el segundo
-    except:
-      pred = proba[:,0] # si tiene uno solo es porque esta super seguro de una de las dos clases, y agarro ese valor
-      
-    return pred
+    # Obtener la probabilidad más grande para cada sub-array
+    max_probabilities = np.max(predictions, axis=1)
+
+    # Obtener los índices de la probabilidad más grande para cada sub-array
+    max_indices = np.argmax(predictions, axis=1)
+    
+    return max_indices, max_probabilities
 
   def train(
       self, 
@@ -111,7 +124,7 @@ class MachineLearningAgent():
           self.param_grid,
           n_jobs=-1,
           cv=stratified_kfold,
-          scoring=make_scorer(fbeta_score, beta=0.2)
+          scoring=make_scorer(f1_score, average='weighted')
       )
 
       # Tunear hiperparametros
@@ -137,16 +150,27 @@ class MachineLearningAgent():
     x_train['preds'] = self.pipeline.predict(x_train)
     x_train['target'] = y_train
 
-    fpr, tpr, _ = roc_curve(x_train['preds'], x_train['target'])
-    auc_score = auc(fpr, tpr)
-    
-    self.train_results[date_train] = auc_score
+    precision = precision_score(x_train['target'], x_train['preds'], average='macro')
+    recall = recall_score(x_train['target'], x_train['preds'], average='macro')
+    f1 = f1_score(x_train['target'], x_train['preds'], average='macro')
+
+    self.train_results['precision'][date_train] = precision
+    self.train_results['recall'][date_train] = recall
+    self.train_results['f1'][date_train] = f1
 
     if verbose:
-      print('train auc: ', auc_score)
+      print('train precision: ', precision)
+      print('train recall: ', recall)
+      print('train f1: ', f1)
 
 
-  def save_predictions(self, date:str, ticker:str, y_true:pd.DataFrame, y_pred:pd.DataFrame) -> None:
+  def save_predictions(
+      self, 
+      date:str, 
+      ticker:str, 
+      y_true:pd.DataFrame, 
+      pred_label:pd.DataFrame, 
+    ) -> None:
     """Guarda las predicciones del modelo.
 
     Args:
@@ -155,7 +179,7 @@ class MachineLearningAgent():
         y_true (array): Valores verdaderos.
         y_pred (array): Valores predichos.
     """
-    self.stock_predictions[ticker][date] = y_pred
+    self.stock_predictions[ticker][date] = pred_label
     self.stock_true_values[ticker][date] = y_true
 
   def get_results(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -167,14 +191,9 @@ class MachineLearningAgent():
     """
     stock_predictions_df = pd.DataFrame(self.stock_predictions)
     stock_true_values_df = pd.DataFrame(self.stock_true_values)
-    stock_train_results_df = pd.DataFrame(
-      {
-        'fecha': self.train_results.keys(), 
-        'auc': self.train_results.values()
-      }
-    )
+    stock_train_results_df = pd.DataFrame(self.train_results)
 
     stock_predictions_df = stock_predictions_df.reset_index().rename(columns={'index':'fecha'})
     stock_true_values_df = stock_true_values_df.reset_index().rename(columns={'index':'fecha'})
 
-    return stock_predictions_df, stock_true_values_df, stock_train_results_df, self.best_params, self.pipeline
+    return stock_predictions_df, stock_true_values_df, stock_train_results_df

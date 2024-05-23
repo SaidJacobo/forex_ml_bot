@@ -20,10 +20,13 @@ class BackTester():
     os.mkdir(results_path)
     # Guarda resultados
     if self.botardo.ml_agent is not None:
-      stock_predictions, stock_true_values, train_results_df, best_params, pipeline = self.botardo.ml_agent.get_results()
+      stock_predictions, stock_true_values, train_results_df = self.botardo.ml_agent.get_results()
       stock_predictions.to_csv(os.path.join(results_path, 'preds.csv'), index=False)
       stock_true_values.to_csv(os.path.join(results_path, 'truevals.csv'), index=False)
       train_results_df.to_csv(os.path.join(results_path, 'trainres.csv'), index=False)
+
+      pipeline = self.botardo.ml_agent.pipeline
+      best_params = self.botardo.ml_agent.best_params
 
       with open(os.path.join(results_path, 'pipe.pkl'), 'wb') as file:
         joblib.dump(pipeline, file)
