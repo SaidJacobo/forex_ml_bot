@@ -1,4 +1,5 @@
-import os
+from sklearn.linear_model import LogisticRegression
+from backbone.probability_transformer import ProbabilityTransformer 
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
@@ -50,11 +51,14 @@ class MachineLearningAgent():
 
   def _create_pipeline(self):
     scaler = StandardScaler()
+    log_reg = LogisticRegression()
+
     model = self.model()
 
     pipe = Pipeline([
         ('scaler', scaler),
-        ('model', model)
+        ('prob_transf', ProbabilityTransformer(model)),
+        ('log_reg', log_reg)
     ])
 
     return pipe

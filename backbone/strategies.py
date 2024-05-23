@@ -13,6 +13,9 @@ def operation_management_logic(
         today:str, 
         allowed_days_in_position:int,
         only_indicator_close_buy_condition:bool,
+        open_price:float,
+        high_price:float,
+        low_price:float,
         close_price:float,
         only_indicator_close_sell_condition:bool,
         model_with_indicator_open_buy_condition:bool,
@@ -33,10 +36,10 @@ def operation_management_logic(
             # if only_indicator_close_buy_condition:
             #     return "close", "sell", open_order, 'closed for indicator signal'
 
-            if close_price <= open_order.stop_loss:
+            if close_price <= open_order.stop_loss or low_price <= open_order.stop_loss:
                 return Result("close", "sell", open_order.id, 'closed for stop loss')
             
-            if close_price >= open_order.take_profit:
+            if close_price >= open_order.take_profit or high_price >= open_order.take_profit:
                 return Result("close", "sell", open_order.id, 'closed for take profit')
 
             # Si estás en posición pero no han pasado los días permitidos, espera
@@ -47,10 +50,10 @@ def operation_management_logic(
             # if only_indicator_close_sell_condition:
             #     return "close", "buy", open_order, 'closed for indicator signal'
             
-            if close_price >= open_order.stop_loss:
+            if close_price >= open_order.stop_loss or high_price >= open_order.stop_loss:
                 return Result("close", "sell", open_order.id, 'closed for stop loss')
             
-            if close_price <= open_order.take_profit:
+            if close_price <= open_order.take_profit or low_price <= open_order.take_profit:
                 return Result("close", "sell", open_order.id, 'closed for take profit')
 
         if allowed_days_in_position and days_in_position < allowed_days_in_position:
@@ -111,6 +114,10 @@ def ma_strategy(
     ema_12 = actual_market_data["ema_12"]
     ema_200 = actual_market_data["ema_200"]
     pred = actual_market_data["pred"]
+
+    open_price = actual_market_data["Open"]
+    high_price = actual_market_data["High"]
+    low_price = actual_market_data["Low"]
     close_price = actual_market_data["Close"]
 
     open_order = find_open_order(orders)
@@ -129,6 +136,9 @@ def ma_strategy(
         today=today,
         allowed_days_in_position=allowed_days_in_position,
         only_indicator_close_buy_condition=only_indicator_close_buy_condition,
+        open_price=open_price,
+        high_price=high_price,
+        low_price=low_price,
         close_price=close_price,
         only_indicator_close_sell_condition=only_indicator_close_sell_condition,
         model_with_indicator_open_buy_condition=model_with_indicator_open_buy_condition,
@@ -156,12 +166,15 @@ def bband_strategy(
     lo que sugiere una posible reversión a la baja.
     Mantener en cualquier otro caso.
     '''
-    close_price = actual_market_data["Close"]
     upper_bband = actual_market_data["upper_bband"]
     lower_bband = actual_market_data["lower_bband"]
     pred = actual_market_data["pred"]
     avg_bband = (upper_bband + lower_bband) / 2
 
+    open_price = actual_market_data["Open"]
+    high_price = actual_market_data["High"]
+    low_price = actual_market_data["Low"]
+    close_price = actual_market_data["Close"]
     
     model_with_indicator_open_buy_condition = np.isfinite(pred) and pred >= threshold_up and close_price < avg_bband
     model_with_indicator_open_sell_condition = np.isfinite(pred) and pred <= threshold_down and close_price > avg_bband
@@ -179,6 +192,9 @@ def bband_strategy(
         today=today,
         allowed_days_in_position=allowed_days_in_position,
         only_indicator_close_buy_condition=only_indicator_close_buy_condition,
+        open_price=open_price,
+        high_price=high_price,
+        low_price=low_price,
         close_price=close_price,
         only_indicator_close_sell_condition=only_indicator_close_sell_condition,
         model_with_indicator_open_buy_condition=model_with_indicator_open_buy_condition,
@@ -207,6 +223,10 @@ def macd_strategy(
     macd_signal = actual_market_data["macdsignal"]
     macd = actual_market_data["macd"]
     pred = actual_market_data["pred"]
+
+    open_price = actual_market_data["Open"]
+    high_price = actual_market_data["High"]
+    low_price = actual_market_data["Low"]
     close_price = actual_market_data["Close"]
 
     model_with_indicator_open_buy_condition = np.isfinite(pred) and pred >= threshold_up and macd > macd_signal
@@ -225,6 +245,9 @@ def macd_strategy(
         today=today,
         allowed_days_in_position=allowed_days_in_position,
         only_indicator_close_buy_condition=only_indicator_close_buy_condition,
+        open_price=open_price,
+        high_price=high_price,
+        low_price=low_price,
         close_price=close_price,
         only_indicator_close_sell_condition=only_indicator_close_sell_condition,
         model_with_indicator_open_buy_condition=model_with_indicator_open_buy_condition,

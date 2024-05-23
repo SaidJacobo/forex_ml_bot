@@ -71,6 +71,7 @@ def initialize_backtesting():
     )
 
     processes = []
+    first_time = True
     for combination in parameter_combinations:
         (
             model_name, 
@@ -137,16 +138,17 @@ def initialize_backtesting():
         backtester = BackTester(botardo)
 
         # si hay menos archivos de symbolos csv que la cantidad de tickers con la que trabajo
-        if len(os.listdir(symbols_path)) < len(tickers):
-            botardo.get_symbols_and_generate_indicators(
-                symbols_path=symbols_path, 
-                date_from=date_from,
-                date_to=date_to,
-                # Si no se guarda el dataset se descargara por cada configuracion
-                save=True,
-                # No se sobreescribe para poder correr varias veces con el mismo dataset
-                force_download=force_download_symbols,
-            )
+        botardo.get_symbols_and_generate_indicators(
+            symbols_path=symbols_path, 
+            date_from=date_from,
+            date_to=date_to,
+            # Si no se guarda el dataset se descargara por cada configuracion
+            save=first_time,
+            # No se sobreescribe para poder correr varias veces con el mismo dataset
+            force_download=first_time,
+        )
+
+        first_time = False
 
         if paralelize:
             process = multiprocessing.Process(
