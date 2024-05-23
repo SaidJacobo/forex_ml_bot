@@ -73,25 +73,25 @@ class ABCTrader(ABC):
     df['macd_flag'] = np.where((df['macdhist_yesterday'] < 0) & (df['macdhist'] > 0), 1, df['macd_flag'])
     df['macd_flag'] = np.where((df['macdhist_yesterday'] > 0) & (df['macdhist'] < 0), -1, df['macd_flag'])
 
-    df['change_percent_ch'] = (((df['Close'] - df['High']) / df['Close']) * 100).round(0)
-    df['change_percent_co'] = (((df['Close'] - df['Open']) / df['Close']) * 100).round(0)
-    df['change_percent_cl'] = (((df['Close'] - df['Low']) / df['Close']) * 100).round(0)
+    df['change_percent_ch'] = (((df['Close'] - df['High']) / df['Close']) * 100).round(2)
+    df['change_percent_co'] = (((df['Close'] - df['Open']) / df['Close']) * 100).round(2)
+    df['change_percent_cl'] = (((df['Close'] - df['Low']) / df['Close']) * 100).round(2)
 
-    df['change_percent_1_day'] = (((df['Close'] - df['Close'].shift(1)) / df['Close']) * 100).round(0)
-    df['change_percent_2_day'] = (((df['Close'] - df['Close'].shift(2)) / df['Close']) * 100).round(0)
-    df['change_percent_3_day'] = (((df['Close'] - df['Close'].shift(3)) / df['Close']) * 100).round(0)
+    df['change_percent_1_day'] = (((df['Close'] - df['Close'].shift(1)) / df['Close']) * 100).round(2)
+    df['change_percent_2_day'] = (((df['Close'] - df['Close'].shift(2)) / df['Close']) * 100).round(2)
+    df['change_percent_3_day'] = (((df['Close'] - df['Close'].shift(3)) / df['Close']) * 100).round(2)
 
-    df['change_percent_h'] = (((df['High'] - df['High'].shift(1)) / df['High']) * 100).round(0)
-    df['change_percent_h'] = (((df['High'] - df['High'].shift(2)) / df['High']) * 100).round(0)
-    df['change_percent_h'] = (((df['High'] - df['High'].shift(3)) / df['High']) * 100).round(0)
+    df['change_percent_h'] = (((df['High'] - df['High'].shift(1)) / df['High']) * 100).round(2)
+    df['change_percent_h'] = (((df['High'] - df['High'].shift(2)) / df['High']) * 100).round(2)
+    df['change_percent_h'] = (((df['High'] - df['High'].shift(3)) / df['High']) * 100).round(2)
     
-    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(1)) / df['Open']) * 100).round(0)
-    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(2)) / df['Open']) * 100).round(0)
-    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(3)) / df['Open']) * 100).round(0)
+    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(1)) / df['Open']) * 100).round(2)
+    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(2)) / df['Open']) * 100).round(2)
+    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(3)) / df['Open']) * 100).round(2)
     
-    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(1)) / df['Low']) * 100).round(0)
-    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(2)) / df['Low']) * 100).round(0)
-    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(3)) / df['Low']) * 100).round(0)
+    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(1)) / df['Low']) * 100).round(2)
+    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(2)) / df['Low']) * 100).round(2)
+    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(3)) / df['Low']) * 100).round(2)
 
     df = df.drop(columns=['spread', 'real_volume'])
 

@@ -71,6 +71,7 @@ def initialize_backtesting():
     )
 
     processes = []
+    first_time = True
     for combination in parameter_combinations:
         (
             model_name, 
@@ -142,10 +143,12 @@ def initialize_backtesting():
             date_from=date_from,
             date_to=date_to,
             # Si no se guarda el dataset se descargara por cada configuracion
-            save=True,
+            save=first_time,
             # No se sobreescribe para poder correr varias veces con el mismo dataset
-            force_download=force_download_symbols,
+            force_download=first_time,
         )
+
+        first_time = False
 
         if paralelize:
             process = multiprocessing.Process(
