@@ -12,9 +12,7 @@ tickers: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
 
 pipeline_path: 'C:/Users/SaidJ/OneDrive/Documentos/projects/forex_ml_bot/forex_ml_bot/backbone/data/backtest/experiments/Mode_train-Model_random_forest-TrainWw_360-TrainPd_1-TradingStgy_macd_strategy-PeriodsFwTg_5-SL_15-TP_30-UseDaysClose_False/pipe.pkl'
 
-threshold_up: 0.80
-
-threshold_down: 0.20
+threshold: 0.80
 
 risk_percentage: 1
 

@@ -4,7 +4,7 @@ from backbone.probability_transformer import ProbabilityTransformer
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
-from sklearn.metrics import f1_score, make_scorer, auc, precision_score, recall_score, roc_curve
+from sklearn.metrics import f1_score, make_scorer, precision_score, recall_score
 from sklearn.preprocessing import StandardScaler
 from backbone.utils import load_function
 from typing import Tuple
@@ -116,7 +116,7 @@ class MachineLearningAgent():
       verbose=False,
     ) -> None:
     if self.tunning:
-      n_splits = 2
+      n_splits = 3
       stratified_kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
       search = GridSearchCV(
@@ -147,12 +147,12 @@ class MachineLearningAgent():
       
       self.pipeline.fit(x_train, y_train)
 
-    x_train['preds'] = self.pipeline.predict(x_train)
-    x_train['target'] = y_train
+    train_preds = self.pipeline.predict(x_train)
+    train_target = y_train
 
-    precision = precision_score(x_train['target'], x_train['preds'], average='macro')
-    recall = recall_score(x_train['target'], x_train['preds'], average='macro')
-    f1 = f1_score(x_train['target'], x_train['preds'], average='macro')
+    precision = precision_score(train_target, train_preds, average='macro')
+    recall = recall_score(train_target, train_preds, average='macro')
+    f1 = f1_score(train_target, train_preds, average='macro')
 
     self.train_results['precision'][date_train] = precision
     self.train_results['recall'][date_train] = recall

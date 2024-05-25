@@ -1,31 +1,35 @@
 models: [
   'random_forest', 
+  'gradient_boosting',
+  'neural_network'
 ]
 
 train_window: [
+  # 360, # tres semanas
+  480, # un mes
   # 720, # mes y medio
-  # 480, # un mes
-  360 # tres semanas
   # 240, # dos semanas
   # 120, # una semana
 ] # tamanio de la ventana de entrenamiento
 
 train_period: [
-  1, 
+  12, 
 ] # frecuencia con la que se entrena
 
 stop_loss_in_pips: [
-  15, 
+  15,
+  # 10
 ]
 
 take_profits_in_pips: [
   30,
+  # 20,
 ]
 
 periods_forward_target: [
-  5,
+  # 5,
+  8,
   # 10,
-  # 15,
 ]
 
 use_days_in_position: [
@@ -35,5 +39,5 @@ use_days_in_position: [
 
 trading_strategy: [
   'backbone.strategies.macd_strategy',
-  # 'backbone.strategies.bband_strategy', 
+  'backbone.strategies.bband_strategy', 
 ]

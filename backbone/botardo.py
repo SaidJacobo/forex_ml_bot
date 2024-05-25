@@ -268,11 +268,5 @@ class Botardo():
         actual_date=actual_date
       )
 
-      # write_in_logs(
-      #     path=os.path.join(self.save_orders_path, 'orders.txt'), 
-      #     time=actual_date, 
-      #     comment="Close position", 
-      #     content=str(result._asdict())
-      # )
 
       

@@ -10,8 +10,7 @@ class BacktestingTrader(ABCTrader):
             self, 
             money: float, 
             trading_strategy, 
-            threshold_up: int, 
-            threshold_down: int, 
+            threshold: float, 
             allowed_days_in_position: int, 
             stop_loss_in_pips: int, 
             take_profit_in_pips: int, 
@@ -20,8 +19,7 @@ class BacktestingTrader(ABCTrader):
         
         super().__init__(
             trading_strategy, 
-            threshold_up, 
-            threshold_down, 
+            threshold, 
             allowed_days_in_position, 
             stop_loss_in_pips, 
             take_profit_in_pips, 

@@ -110,8 +110,7 @@ def initialize_backtesting():
         trader = BacktestingTrader(
             money=config['start_money'], 
             trading_strategy=strategy,
-            threshold_up=config['threshold_up'],
-            threshold_down=config['threshold_down'],
+            threshold=config['threshold'],
             allowed_days_in_position=period_forward_target if cancel_position_in_shift_days else None,
             stop_loss_in_pips=stop_loss_in_pips,
             take_profit_in_pips=take_profit_in_pips,

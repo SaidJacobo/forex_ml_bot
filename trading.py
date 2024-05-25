@@ -37,8 +37,7 @@ if __name__ == '__main__':
     mode = config['mode']
     user = config['user']
     pw = config['password']
-    threshold_up = config['threshold_up']
-    threshold_down = config['threshold_down']
+    threshold = config['threshold']
     risk_percentage = config['risk_percentage']
     train_window = config['train_window']
     train_period = config['train_period']
@@ -59,8 +58,7 @@ if __name__ == '__main__':
     strategy = load_function(trading_strategy)
     trader = RealtimeTrader(
         trading_strategy=strategy,
-        threshold_up=threshold_up,
-        threshold_down=threshold_down,
+        threshold=threshold,
         allowed_days_in_position=periods_forward_target if use_days_in_position else None,
         stop_loss_in_pips=stop_loss_in_pips,
         take_profit_in_pips=take_profit_in_pips,

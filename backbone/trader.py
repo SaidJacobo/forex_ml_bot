@@ -11,8 +11,7 @@ class ABCTrader(ABC):
 
   def __init__(self, 
                trading_strategy, 
-               threshold_up:int, 
-               threshold_down:int, 
+               threshold:float, 
                allowed_days_in_position:int,
                stop_loss_in_pips:int,
                take_profit_in_pips:int,
@@ -22,14 +21,12 @@ class ABCTrader(ABC):
     Args:
         start_money (float): Dinero inicial para realizar las operaciones.
         trading_strategy: Estrategia de trading.
-        threshold_up (int): Umbral superior.
-        threshold_down (int): Umbral inferior.
+        threshold (int): Umbral superior.
         allowed_days_in_position (int): Días permitidos en una posición.
     """
     self.allowed_days_in_position = allowed_days_in_position
     self.trading_strategy = trading_strategy
-    self.threshold_up = threshold_up
-    self.threshold_down = threshold_down
+    self.threshold = threshold
     self.stop_loss_in_pips = stop_loss_in_pips
     self.take_profit_in_pips = take_profit_in_pips
     self.risk_percentage = risk_percentage
@@ -188,8 +185,7 @@ class ABCTrader(ABC):
       actual_market_data, 
       open_positions,
       self.allowed_days_in_position,
-      self.threshold_up,
-      self.threshold_down
+      self.threshold,
     )
     print(ticker,  result)
     if result.action != ActionType.WAIT:
