@@ -14,4 +14,4 @@ class ActionType(Enum):
     OPEN = 0
     CLOSE = 1
     WAIT = 2
-    MODIFY = 3
+    UPDATE = 3

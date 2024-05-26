@@ -90,6 +90,9 @@ class ABCTrader(ABC):
     df['change_percent_l'] = (((df['Low'] - df['Low'].shift(2)) / df['Low']) * 100).round(2)
     df['change_percent_l'] = (((df['Low'] - df['Low'].shift(3)) / df['Low']) * 100).round(2)
 
+    df['hour'] = df.Date.dt.hour 
+    df['day'] = df.Date.dt.day 
+
     df = df.drop(columns=['spread', 'real_volume'])
 
     df = df.dropna()
@@ -168,7 +171,12 @@ class ABCTrader(ABC):
     """
     pass
 
+  
+  @abstractmethod
+  def update_position(self, order_id, actual_price, comment):
+    pass
 
+  
   def take_operation_decision(self, actual_market_data, actual_date):
     """Toma la decisión de operación basada en la estrategia de trading.
 
@@ -206,6 +214,13 @@ class ABCTrader(ABC):
           price=price, 
           comment=result.comment
         )
+
+      elif result.action == ActionType.UPDATE:
+        self.update_position(
+          order_id=result.order_id, 
+          actual_price=price, 
+          comment=result.comment
+        ) 
     
     return result
   

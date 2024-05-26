@@ -159,8 +159,11 @@ class Botardo():
       print('Creando target')
       self.instruments[ticker] = self.instruments[ticker].sort_values(by='Date')
       self.instruments[ticker]['target'] = ((self.instruments[ticker]['Close'].shift(-period_forward_target) - self.instruments[ticker]['Close']) / self.instruments[ticker]['Close']) * 100
-      
-      bins = [-100000, -0.1, 0.1, 100000]
+
+      cut_right = round(self.instruments[ticker]['target'].mean() + 1 * self.instruments[ticker]['target'].std(), 2)
+      cut_left = round(self.instruments[ticker]['target'].mean() - 1 * self.instruments[ticker]['target'].std(), 2)
+
+      bins = [-100000, cut_left, cut_right, 100000]
       labels = [0, 1, 2]
 
       self.instruments[ticker]['target'] = pd.cut(self.instruments[ticker]['target'], bins, labels=labels)
@@ -226,8 +229,13 @@ class Botardo():
     
     if self.ml_agent is not None:
       
+      hours_from_train = None
+      if self.ml_agent.last_date_train is not None:
+        time_difference  = actual_date - self.ml_agent.last_date_train
+        hours_from_train = time_difference.total_seconds() / 3600
+
       # si nunca entreno o si ya pasaron los dias
-      if (self.ml_agent.days_from_train is None or self.ml_agent.days_from_train >= train_period):
+      if (self.ml_agent.last_date_train is None or hours_from_train >= train_period):
 
         print(f'Se entrenaran con {market_data_window.shape[0]} registros')
         print(f'Value counts de ticker: {market_data_window.ticker.value_counts()}')
@@ -241,10 +249,8 @@ class Botardo():
             verbose=True,
         )
 
-        self.ml_agent.days_from_train = 1
+        self.ml_agent.last_date_train = actual_date
         print('Entrenamiento terminado! :)')
-      else:
-        self.ml_agent.days_from_train += 1
 
       calsses, probas = self.ml_agent.predict_proba(today_market_data.drop(columns=['target', 'Date', 'ticker']))
       
@@ -260,7 +266,8 @@ class Botardo():
           stock.Date,
           stock.ticker, 
           stock.target, 
-          stock.pred_label
+          stock.pred_label,
+          stock.proba
         )
 
       result = self.trader.take_operation_decision(

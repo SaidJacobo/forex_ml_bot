@@ -1,3 +1,4 @@
+from backbone.enums import OperationType
 from backbone.trader import ABCTrader
 import pandas as pd
 from backbone.order import Order
@@ -50,13 +51,13 @@ class BacktestingTrader(ABCTrader):
 
         return df_orders, df_wallet
     
-    def open_position(self, operation_type:str, ticker:str, date:str, price:float) -> None:
+    def open_position(self, operation_type:OperationType, ticker:str, date:str, price:float) -> None:
 
         units = self._calculate_units_size(
-        self.actual_money, 
-        self.risk_percentage,
-        self.stop_loss_in_pips,
-        currency_pair=ticker
+            self.actual_money, 
+            self.risk_percentage,
+            self.stop_loss_in_pips,
+            currency_pair=ticker
         )
 
         price_sl = self._calculate_stop_loss(operation_type, price, ticker)
@@ -85,6 +86,26 @@ class BacktestingTrader(ABCTrader):
         self.__update_wallet(order)
 
         print('='*16, f'se cerro una posicion el {date}', '='*16)
+
+    def update_position(self, order_id, actual_price, comment):
+        order = self.get_open_orders(ticket=order_id).pop()
+
+        new_sl = None
+        if order.operation_type == OperationType.BUY and actual_price > order.last_price:
+            new_sl = self._calculate_stop_loss(
+                operation_type=order.operation_type, 
+                price=actual_price, 
+                ticker=order.ticker
+            )
+        elif order.operation_type == OperationType.SELL and actual_price < order.last_price:
+            new_sl = self._calculate_stop_loss(
+                operation_type=order.operation_type, 
+                price=actual_price, 
+                ticker=order.ticker
+            )
+
+        if new_sl:
+            order.update(sl=new_sl, last_price=actual_price)
 
     def get_open_orders(self, ticket:int=None, symbol:str=None) -> List[Order]:
         open_orders = None

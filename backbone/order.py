@@ -19,6 +19,7 @@ class Order():
         self.open_time = open_time
         self.close_time = None
         self.open_price = open_price
+        self.last_price = open_price
         self.close_price = None
         self.profit = None
         self.stop_loss = stop_loss
@@ -26,6 +27,17 @@ class Order():
         self.units = units
         self.profit_in_pips = None
         self.comment=None
+
+    def update(self, sl=None, tp=None, last_price=None):
+        if sl:
+            self.stop_loss=sl
+        
+        if tp:
+            self.take_profit=tp
+            
+        if last_price:
+            self.last_price=last_price
+
 
     def close(self, close_price:float, close_time:str, comment:str) -> None:
         

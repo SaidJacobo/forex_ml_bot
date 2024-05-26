@@ -40,12 +40,12 @@ class MachineLearningAgent():
     # Si llega la param_grid, el pipeline se arma en la funcion train, sino lo armo directamente aca con 
     # los params que corresponda
     
-    self.days_from_train=None
-    self.stock_predictions = {}
-    self.stock_true_values = {}
+    self.last_date_train = None
+
+    self.test_results = {}
+
     for ticker in tickers:
-      self.stock_predictions[ticker] = {}
-      self.stock_true_values[ticker] = {}
+      self.test_results[ticker] = {}
     
     self.train_results = {}
     self.train_results['precision'] = {}
@@ -98,13 +98,15 @@ class MachineLearningAgent():
     """
     predictions = self.pipeline.predict_proba(x)
 
-    # Obtener la probabilidad más grande para cada sub-array
-    max_probabilities = np.max(predictions, axis=1)
+    # Obtener los nombres de las clases
+    class_names = self.pipeline.named_steps['log_reg'].classes_
 
-    # Obtener los índices de la probabilidad más grande para cada sub-array
-    max_indices = np.argmax(predictions, axis=1)
-    
-    return max_indices, max_probabilities
+    # Obtener la probabilidad más alta y la clase correspondiente
+    max_proba_indices = np.argmax(predictions, axis=1)
+    max_proba_values = np.max(predictions, axis=1)
+    predicted_classes = class_names[max_proba_indices]
+
+    return predicted_classes, max_proba_values
 
   def train(
       self, 
@@ -150,9 +152,9 @@ class MachineLearningAgent():
     train_preds = self.pipeline.predict(x_train)
     train_target = y_train
 
-    precision = precision_score(train_target, train_preds, average='macro')
-    recall = recall_score(train_target, train_preds, average='macro')
-    f1 = f1_score(train_target, train_preds, average='macro')
+    precision = precision_score(train_target, train_preds, average='weighted')
+    recall = recall_score(train_target, train_preds, average='weighted')
+    f1 = f1_score(train_target, train_preds, average='weighted')
 
     self.train_results['precision'][date_train] = precision
     self.train_results['recall'][date_train] = recall
@@ -170,6 +172,7 @@ class MachineLearningAgent():
       ticker:str, 
       y_true:pd.DataFrame, 
       pred_label:pd.DataFrame, 
+      proba:pd.DataFrame, 
     ) -> None:
     """Guarda las predicciones del modelo.
 
@@ -179,21 +182,22 @@ class MachineLearningAgent():
         y_true (array): Valores verdaderos.
         y_pred (array): Valores predichos.
     """
-    self.stock_predictions[ticker][date] = pred_label
-    self.stock_true_values[ticker][date] = y_true
+    # self.test_results[ticker] = {}
+    self.test_results[ticker][date] = {}
+    self.test_results[ticker][date]['y_true'] = y_true
+    self.test_results[ticker][date]['y_pred'] = pred_label
+    self.test_results[ticker][date]['proba'] = proba
 
-  def get_results(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+
+  def get_results(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Obtiene los resultados del modelo.
 
     Returns:
         DataFrame: Predicciones del modelo.
         DataFrame: Valores verdaderos.
     """
-    stock_predictions_df = pd.DataFrame(self.stock_predictions)
-    stock_true_values_df = pd.DataFrame(self.stock_true_values)
-    stock_train_results_df = pd.DataFrame(self.train_results)
+    test_results_df = pd.concat({k: pd.DataFrame(v).T for k, v in self.test_results.items()}, axis=0)
 
-    stock_predictions_df = stock_predictions_df.reset_index().rename(columns={'index':'fecha'})
-    stock_true_values_df = stock_true_values_df.reset_index().rename(columns={'index':'fecha'})
+    train_results_df = pd.DataFrame(self.train_results)
 
-    return stock_predictions_df, stock_true_values_df, stock_train_results_df
+    return train_results_df, test_results_df

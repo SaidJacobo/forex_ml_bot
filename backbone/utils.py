@@ -6,6 +6,20 @@ from datetime import datetime
 from collections import namedtuple
 import os
 
+def get_session(date:datetime):
+    hour = date.hour
+
+    if hour >= 8 and hour <= 16:
+        return 'London'
+    if hour >= 13 and hour < 22:
+        return 'NY'
+
+    if hour >= 22 and hour <= 7:
+        return 'Sidney'
+    if hour >= 0 and hour <= 9:
+        return 'Tokio'
+
+
 def load_function(dotpath: str):
     """Carga una función desde un módulo."""
     module_, func = dotpath.rsplit(".", maxsplit=1)

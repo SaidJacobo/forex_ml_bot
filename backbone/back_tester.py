@@ -1,7 +1,9 @@
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
 from backbone.botardo import Botardo
 import joblib
+from backbone.utils import get_session
+
 
 class BackTester():
   """Simulador de Backtesting para evaluar estrategias de trading."""
@@ -20,9 +22,8 @@ class BackTester():
     os.mkdir(results_path)
     # Guarda resultados
     if self.botardo.ml_agent is not None:
-      stock_predictions, stock_true_values, train_results_df = self.botardo.ml_agent.get_results()
-      stock_predictions.to_csv(os.path.join(results_path, 'preds.csv'), index=False)
-      stock_true_values.to_csv(os.path.join(results_path, 'truevals.csv'), index=False)
+      train_results_df, test_results_df = self.botardo.ml_agent.get_results()
+      test_results_df.to_csv(os.path.join(results_path, 'test_res.csv'), index=False)
       train_results_df.to_csv(os.path.join(results_path, 'trainres.csv'), index=False)
 
       pipeline = self.botardo.ml_agent.pipeline
@@ -41,7 +42,8 @@ class BackTester():
     wallet.to_csv(os.path.join(results_path, 'wallet.csv'), index=False)
 
   def start(
-      self, 
+      self,
+      start_date:datetime,
       symbols_path:str, 
       train_window:int, 
       train_period:int, 
@@ -69,22 +71,24 @@ class BackTester():
 
     train_window = timedelta(hours=train_window)
 
-    periods = df.Date.unique()
+    dates = df.Date.unique()
 
     print('='*16, 'Iniciando backtesting', '='*16)
 
-    start_date = periods[0] + train_window if mode=='train' else limit_date_train
-    periods = periods[periods > start_date]
+    start_date = start_date.strftime('%Y-%m-%d %H:00:00') if mode=='train' else limit_date_train
+    dates = dates[dates > start_date]
 
-    for period in periods:
-      actual_date = period
+    for actual_date in dates:
 
-      self.botardo.trading_bot_workflow(
-        actual_date, 
-        df, 
-        train_period, 
-        train_window, 
-        period_forward_target, 
-      )
+      session = get_session(actual_date)
+
+      if session == 'NY' or session == 'London':
+        self.botardo.trading_bot_workflow(
+          actual_date, 
+          df, 
+          train_period, 
+          train_window, 
+          period_forward_target, 
+        )
 
     self.save_results(results_path)

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import yaml
 import os
 from backbone.machine_learning_agent import MachineLearningAgent
@@ -55,8 +55,10 @@ def initialize_backtesting():
     trading_strategies = parameters['trading_strategy']
     periods_forward_target = parameters['periods_forward_target']
     stop_loses_in_pips = parameters['stop_loss_in_pips']
-    take_profits_in_pips = parameters['take_profits_in_pips']
+    risk_reward_ratios = parameters['risk_reward_ratio']
     use_days_in_position = parameters['use_days_in_position']
+
+    max_window = max(train_window)
 
     # Combinaciones de parámetros
     parameter_combinations = get_parameter_combinations(
@@ -66,7 +68,7 @@ def initialize_backtesting():
         trading_strategies, 
         periods_forward_target, 
         stop_loses_in_pips, 
-        take_profits_in_pips,
+        risk_reward_ratios,
         use_days_in_position
     )
 
@@ -80,11 +82,13 @@ def initialize_backtesting():
             trading_strategy, 
             period_forward_target, 
             stop_loss_in_pips, 
-            take_profit_in_pips, 
+            risk_reward_ratio, 
             cancel_position_in_shift_days
         ) = combination
 
         # Definición de la ruta de resultados
+        take_profit_in_pips = risk_reward_ratio * stop_loss_in_pips
+
         results_path = f'''
             Mode_{mode}
             -Model_{model_name}
@@ -93,7 +97,7 @@ def initialize_backtesting():
             -TradingStgy_{trading_strategy.split('.')[-1]}
             -PeriodsFwTg_{period_forward_target}
             -SL_{stop_loss_in_pips}
-            -TP_{take_profit_in_pips}
+            -RR_{risk_reward_ratio}
             -UseDaysClose_{cancel_position_in_shift_days}
         '''.replace("\n", "").strip().replace(" ", "")
         
@@ -139,7 +143,7 @@ def initialize_backtesting():
         # si hay menos archivos de symbolos csv que la cantidad de tickers con la que trabajo
         botardo.get_symbols_and_generate_indicators(
             symbols_path=symbols_path, 
-            date_from=date_from,
+            date_from=date_from - timedelta(hours=max_window),
             date_to=date_to,
             # Si no se guarda el dataset se descargara por cada configuracion
             save=first_time,
@@ -153,6 +157,7 @@ def initialize_backtesting():
             process = multiprocessing.Process(
                 target=backtester.start, 
                 args=(
+                    date_from,
                     symbols_path,
                     train_window, 
                     train_period,
@@ -166,6 +171,7 @@ def initialize_backtesting():
             processes.append(process)
         else:
             backtester.start(
+                start_date=date_from,
                 symbols_path=symbols_path,
                 train_window=train_window, 
                 train_period=train_period,

@@ -88,8 +88,15 @@ def operation_management_logic(
                 ActionType.WAIT, 
                 None, 
                 None, 
-                ''
+                None
             )
+        
+        return Result(
+            ActionType.UPDATE, 
+            None, 
+            open_order.id, 
+            ClosePositionType.STOP_LOSS
+        )
 
     # Si la predicción del mercado supera el umbral superior, compra
     elif model_with_indicator_open_buy_condition or only_indicator_open_buy_condition:
