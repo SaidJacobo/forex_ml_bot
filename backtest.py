@@ -7,6 +7,8 @@ from backbone.back_tester import BackTester
 from backbone.botardo import Botardo
 import multiprocessing
 from backbone.utils import load_function, get_parameter_combinations
+import random
+
 
 date_format = '%Y-%m-%d %H:00:00'
 
@@ -71,7 +73,7 @@ def initialize_backtesting():
         risk_reward_ratios,
         use_days_in_position
     )
-
+    random.shuffle(parameter_combinations)
     processes = []
     first_time = True
     for combination in parameter_combinations:
