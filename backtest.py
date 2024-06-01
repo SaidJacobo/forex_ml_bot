@@ -43,12 +43,13 @@ def initialize_backtesting():
     # Obtención de parámetros del proyecto
     mode = config['mode']
     paralelize = config['paralelize']
-    force_download_symbols = config['force_download_symbols']
     limit_date_train = config['limit_date_train']
     date_from = datetime.strptime(config['date_from'], date_format)
     date_to = datetime.strptime(config['date_to'], date_format)
     tickers = config["tickers"] 
     risk_percentage = config["risk_percentage"] 
+    undersampling = config['undersampling']
+    allowed_sessions = config['allowed_sessions']
     
     # Obtención de parámetros de entrenamiento
     models = parameters['models']
@@ -121,6 +122,7 @@ def initialize_backtesting():
             stop_loss_in_pips=stop_loss_in_pips,
             take_profit_in_pips=take_profit_in_pips,
             risk_percentage=risk_percentage,
+            allowed_sessions=allowed_sessions
         )
 
         # Configuración del modelo de machine learning
@@ -166,7 +168,7 @@ def initialize_backtesting():
                     mode,
                     limit_date_train,
                     this_experiment_path, 
-                    period_forward_target            
+                    period_forward_target
                 )
             )
 
@@ -180,7 +182,8 @@ def initialize_backtesting():
                 mode=mode,
                 limit_date_train=limit_date_train,
                 results_path=this_experiment_path, 
-                period_forward_target=period_forward_target
+                period_forward_target=period_forward_target,
+                undersampling=undersampling
             )
 
     if processes:

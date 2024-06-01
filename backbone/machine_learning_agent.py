@@ -8,6 +8,7 @@ from sklearn.metrics import f1_score, make_scorer, precision_score, recall_score
 from sklearn.preprocessing import StandardScaler
 from backbone.utils import load_function
 from typing import Tuple
+from imblearn.under_sampling import RandomUnderSampler
 
 class MachineLearningAgent():
   """Agente de Aprendizaje Automático para entrenar y predecir."""
@@ -116,7 +117,13 @@ class MachineLearningAgent():
       y_test:pd.DataFrame, 
       date_train:str, 
       verbose=False,
+      undersampling=False
+
     ) -> None:
+    if undersampling:
+      rus = RandomUnderSampler(random_state=42)
+      x_train, y_train = rus.fit_resample(x_train, y_train)
+
     if self.tunning:
       n_splits = 3
       stratified_kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)

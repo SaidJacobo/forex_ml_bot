@@ -8,7 +8,6 @@ from datetime import datetime
 from datetime import timedelta
 from backbone.utils import write_in_logs
 
-
 class Botardo():
   """Clase base de bot de trading y aprendizaje automático.
 
@@ -197,7 +196,8 @@ class Botardo():
       df:pd.DataFrame, 
       train_period:int, 
       train_window:int, 
-      period_forward_target:int
+      period_forward_target:int,
+      undersampling:bool
     ) -> None:
     """Flujo de trabajo del bot de trading y aprendizaje automático.
 
@@ -247,6 +247,7 @@ class Botardo():
             y_test = today_market_data.target,
             date_train=actual_date,
             verbose=True,
+            undersampling=undersampling
         )
 
         self.ml_agent.last_date_train = actual_date

@@ -20,7 +20,7 @@ random_forest:
 gradient_boosting:
   model: 'xgboost.XGBClassifier'
   param_grid:
-      "prob_transf__model__objective": ['binary:logistic']
+      "prob_transf__model__objective": ['multi:softprob']
       "prob_transf__model__max_depth": [2, 5, 10, 15, 20]
       "prob_transf__model__n_estimators": [5, 10, 20, 30, 40, 50]
       "prob_transf__model__learning_rate": [0.05, 0.01, 0.1]

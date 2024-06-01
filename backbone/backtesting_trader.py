@@ -15,7 +15,9 @@ class BacktestingTrader(ABCTrader):
             allowed_days_in_position: int, 
             stop_loss_in_pips: int, 
             take_profit_in_pips: int, 
-            risk_percentage: int
+            risk_percentage: int,
+            allowed_sessions:List[str]
+
         ):
         
         super().__init__(
@@ -24,7 +26,9 @@ class BacktestingTrader(ABCTrader):
             allowed_days_in_position, 
             stop_loss_in_pips, 
             take_profit_in_pips, 
-            risk_percentage
+            risk_percentage,
+            allowed_sessions
+
         )
 
         self.actual_money = money

@@ -21,7 +21,9 @@ class RealtimeTrader(ABCTrader):
             take_profit_in_pips: int, 
             risk_percentage: int,
             save_orders_path:str,
-            telegram_bot: TelegramBot
+            telegram_bot: TelegramBot,
+            allowed_sessions:List[str]
+            
         ):
 
         super().__init__(
@@ -30,7 +32,8 @@ class RealtimeTrader(ABCTrader):
             allowed_days_in_position, 
             stop_loss_in_pips, 
             take_profit_in_pips, 
-            risk_percentage
+            risk_percentage,
+            allowed_sessions
         )
         # display data on the MetaTrader 5 package
         print("MetaTrader5 package author: ", mt5.__author__)

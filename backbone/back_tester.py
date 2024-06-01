@@ -2,7 +2,6 @@ import os
 from datetime import datetime, timedelta
 from backbone.botardo import Botardo
 import joblib
-from backbone.utils import get_session
 
 
 class BackTester():
@@ -50,7 +49,8 @@ class BackTester():
       mode:str, 
       limit_date_train:str, 
       results_path:str, 
-      period_forward_target:int
+      period_forward_target:int,
+      undersampling:bool
   ) -> None:
     """Inicia el proceso de backtesting.
 
@@ -80,15 +80,13 @@ class BackTester():
 
     for actual_date in dates:
 
-      session = get_session(actual_date)
-
-      if session == 'NY' or session == 'London':
-        self.botardo.trading_bot_workflow(
-          actual_date, 
-          df, 
-          train_period, 
-          train_window, 
-          period_forward_target, 
-        )
+      self.botardo.trading_bot_workflow(
+        actual_date, 
+        df, 
+        train_period, 
+        train_window, 
+        period_forward_target,
+        undersampling=undersampling
+      )
 
     self.save_results(results_path)

@@ -48,6 +48,7 @@ if __name__ == '__main__':
     trading_strategy = config['trading_strategy']
     telegram_bot_token = config['telegram_bot_token']
     telegram_chat_id = config['telegram_chat_id']
+    allowed_sessions = config['allowed_sessions']
 
     tickers = config["tickers"] 
 
@@ -64,7 +65,8 @@ if __name__ == '__main__':
         take_profit_in_pips=take_profit_in_pips,
         risk_percentage=risk_percentage,
         save_orders_path=logs_path,
-        telegram_bot=telegram_bot
+        telegram_bot=telegram_bot,
+        allowed_sessions=allowed_sessions
     )
 
     # Cargar el pipeline desde el archivo .pkl
