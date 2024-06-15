@@ -6,6 +6,7 @@ models: [
 
 train_window: [
   # 1440, # tres meses
+  # 1200, # dos meses
   960, # dos meses
   # 720, # mes y medio
   # 360, # tres semanas 
@@ -19,26 +20,29 @@ train_period: [
 ] # frecuencia con la que se entrena
 
 stop_loss_in_pips: [
+  # 5,
+  10,
   # 15,
-  20,
+  # 20,
   # 25
 ]
 
 risk_reward_ratio: [
-  # 3,
+  2,
+  3,
   # 4,
   # 5,
   # 6, 
-  7,
+  # 7,
   # 8,
   # 9
 ]
 
 periods_forward_target: [
   # 3,
-  # 5,
+  5,
   # 8,
-  10,
+  # 10,
 ]
 
 use_days_in_position: [
@@ -48,6 +52,7 @@ use_days_in_position: [
 
 trading_strategy: [
   # 'backbone.strategies.macd_strategy',
+  'backbone.strategies.ml_strategy', 
   'backbone.strategies.bband_strategy', 
   # 'backbone.strategies.bband_macd_strategy', 
 ]

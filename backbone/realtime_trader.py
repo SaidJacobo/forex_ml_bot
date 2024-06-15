@@ -22,7 +22,10 @@ class RealtimeTrader(ABCTrader):
             risk_percentage: int,
             save_orders_path:str,
             telegram_bot: TelegramBot,
-            allowed_sessions:List[str]
+            allowed_sessions:List[str],
+            pips_per_value:dict,
+            use_trailing_stop:bool,
+            trade_with:List[str]
             
         ):
 
@@ -33,7 +36,10 @@ class RealtimeTrader(ABCTrader):
             stop_loss_in_pips, 
             take_profit_in_pips, 
             risk_percentage,
-            allowed_sessions
+            allowed_sessions,
+            pips_per_value,
+            use_trailing_stop,
+            trade_with
         )
         # display data on the MetaTrader 5 package
         print("MetaTrader5 package author: ", mt5.__author__)

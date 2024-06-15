@@ -122,32 +122,59 @@ def operation_management_logic(
         ''
     )
 
-# def ml_strategy(
-#     today,
-#     actual_market_data,
-#     orders: list,
-#     allowed_days_in_position: int,
-#     threshold: float,
-# ):
-#     pred = actual_market_data["pred"]
-#     open_order = find_open_order(orders)
+def ml_strategy(
+    today,
+    actual_market_data,
+    orders: list,
+    allowed_days_in_position: int,
+    threshold: float,
+):
+    '''
+    Comprar si la predicción del modelo indica una alta probabilidad de que el precio suba 
+    y el precio actual está cerca de la banda inferior de las Bandas de Bollinger, 
+    lo que sugiere una posible reversión al alza.
+    Vender si la predicción del modelo indica una alta probabilidad de que el precio baje 
+    y el precio actual está cerca de la banda superior de las Bandas de Bollinger, 
+    lo que sugiere una posible reversión a la baja.
+    Mantener en cualquier otro caso.
+    '''
+    
+    class_ = actual_market_data["pred_label"]
+    proba = actual_market_data["proba"]
 
-#     if open_order:
-#         days_in_position = (today - open_order.open_time).days
+    open_price = actual_market_data["Open"]
+    high_price = actual_market_data["High"]
+    low_price = actual_market_data["Low"]
+    close_price = actual_market_data["Close"]
+    
+    model_with_indicator_open_buy_condition = class_ == 2 and proba >= threshold
+    model_with_indicator_open_sell_condition = class_ == 0 and proba >= threshold
+    
+    only_indicator_open_buy_condition = None
+    only_indicator_close_buy_condition = None
+    
+    only_indicator_open_sell_condition = None
+    only_indicator_close_sell_condition = None
 
-#         # Si estás en posición pero no han pasado los días permitidos, espera
+    open_order = find_open_order(orders)
 
-#         if days_in_position < allowed_days_in_position:
-#             return "wait", None, None
-#         # Si estás en posición y han pasado los días permitidos, vende
+    result = operation_management_logic(
+        open_order=open_order,
+        today=today,
+        allowed_days_in_position=allowed_days_in_position,
+        only_indicator_close_buy_condition=only_indicator_close_buy_condition,
+        open_price=open_price,
+        high_price=high_price,
+        low_price=low_price,
+        close_price=close_price,
+        only_indicator_close_sell_condition=only_indicator_close_sell_condition,
+        model_with_indicator_open_buy_condition=model_with_indicator_open_buy_condition,
+        only_indicator_open_buy_condition=only_indicator_open_buy_condition,
+        model_with_indicator_open_sell_condition=model_with_indicator_open_sell_condition,
+        only_indicator_open_sell_condition=only_indicator_open_sell_condition
+    )
 
-#         elif days_in_position == allowed_days_in_position:
-#             return ActionType.CLOSE, OperationType.SELL, open_order
-#     # Si la predicción del mercado supera el umbral superior, compra
-
-#     elif pred >= threshold:
-#         return ActionType.OPEN, OperationType.BUY, None
-#     return "wait", None, None
+    return result
 
 def ma_strategy(
     today,
@@ -219,11 +246,11 @@ def bband_strategy(
     '''
     upper_bband = actual_market_data["upper_bband"]
     lower_bband = actual_market_data["lower_bband"]
+    avg_bband = actual_market_data["middle_bband"]
     
     class_ = actual_market_data["pred_label"]
     proba = actual_market_data["proba"]
     
-    avg_bband = (upper_bband + lower_bband) / 2
 
     open_price = actual_market_data["Open"]
     high_price = actual_market_data["High"]

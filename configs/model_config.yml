@@ -20,11 +20,16 @@ random_forest:
 gradient_boosting:
   model: 'xgboost.XGBClassifier'
   param_grid:
-      "prob_transf__model__objective": ['multi:softprob']
-      "prob_transf__model__max_depth": [2, 5, 10, 15, 20]
-      "prob_transf__model__n_estimators": [5, 10, 20, 30, 40, 50]
+      "prob_transf__model__objective": ['multi:softmax']
+      "prob_transf__model__max_depth": [2, 3, 4, 5, 6]
+      "prob_transf__model__n_estimators": [5, 10, 15, 20]
       "prob_transf__model__learning_rate": [0.05, 0.01, 0.1]
       'prob_transf__model__random_state': [42]
+      'prob_transf__model__lambda': [1.0]
+      'prob_transf__model__alpha': [0.0]
+      'prob_transf__model__gamma': [0.1]
+      'prob_transf__model__colsample_bytree': [0.8]
+      'prob_transf__model__subsample': [0.8]
 
 neural_network:
   model: 'sklearn.neural_network.MLPClassifier'

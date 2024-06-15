@@ -17,7 +17,10 @@ class ABCTrader(ABC):
                stop_loss_in_pips:int,
                take_profit_in_pips:int,
                risk_percentage:int,
-               allowed_sessions:List[str]
+               allowed_sessions:List[str],
+               pips_per_value:dict,
+               use_trailing_stop:bool,
+               trade_with:List[str]
     ):
     """
     Inicializa el Agente de Trading.
@@ -35,15 +38,10 @@ class ABCTrader(ABC):
     self.take_profit_in_pips = take_profit_in_pips
     self.risk_percentage = risk_percentage
 
-    self.pips_per_value = {
-          "EURUSD": 0.0001,
-          "GBPUSD": 0.0001,
-          "USDJPY": 0.01,
-          "USDCAD": 0.0001,
-          "AUDUSD": 0.0001,
-          "USDCHF": 0.0001,
-      }
-    
+    self.pips_per_value = pips_per_value
+    self.use_trailing_stop = use_trailing_stop
+    self.trade_with = trade_with
+  
   def calculate_indicators(self, df:DataFrame):
     """Calcula indicadores técnicos para el DataFrame dado.
 
@@ -64,6 +62,12 @@ class ABCTrader(ABC):
     df['middle_bband'] = middle_band
     df['lower_bband'] = lower_band
 
+    df['atr'] = talib.ATR(df['High'], df['Low'], df['Close'], timeperiod=14)
+
+    df['mfi'] = talib.MFI(df['High'], df['Low'], df['Close'], df['Volume'], timeperiod=14)
+
+    df['adx'] = talib.ADX(df['High'], df['Low'], df['Close'], timeperiod=14)
+
     macd, macdsignal, macdhist = talib.MACD(df['Close'], fastperiod=12, slowperiod=26, signalperiod=9)
     df['macd'] = macd
     df['macdsignal'] = macdsignal
@@ -74,39 +78,39 @@ class ABCTrader(ABC):
     df['macd_flag'] = np.where((df['macdhist_yesterday'] < 0) & (df['macdhist'] > 0), 1, df['macd_flag'])
     df['macd_flag'] = np.where((df['macdhist_yesterday'] > 0) & (df['macdhist'] < 0), -1, df['macd_flag'])
 
-    df['change_percent_ch'] = (((df['Close'] - df['High']) / df['Close']) * 100)
-    df['change_percent_co'] = (((df['Close'] - df['Open']) / df['Close']) * 100)
-    df['change_percent_cl'] = (((df['Close'] - df['Low']) / df['Close']) * 100)
-    df['change_percent_1_day'] = (((df['Close'] - df['Close'].shift(1)) / df['Close']) * 100)
-    df['change_percent_2_day'] = (((df['Close'] - df['Close'].shift(2)) / df['Close']) * 100)
-    df['change_percent_3_day'] = (((df['Close'] - df['Close'].shift(3)) / df['Close']) * 100)
-    df['change_percent_h'] = (((df['High'] - df['High'].shift(1)) / df['High']) * 100)
-    df['change_percent_h'] = (((df['High'] - df['High'].shift(2)) / df['High']) * 100)
-    df['change_percent_h'] = (((df['High'] - df['High'].shift(3)) / df['High']) * 100)
-    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(1)) / df['Open']) * 100)
-    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(2)) / df['Open']) * 100)
-    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(3)) / df['Open']) * 100)
-    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(1)) / df['Low']) * 100)
-    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(2)) / df['Low']) * 100)
-    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(3)) / df['Low']) * 100)
+    df['change_percent_ch'] = (((df['Close'] - df['High']) / df['Close']) * 100).round(2)
+    df['change_percent_co'] = (((df['Close'] - df['Open']) / df['Close']) * 100).round(2)
+    df['change_percent_cl'] = (((df['Close'] - df['Low']) / df['Close']) * 100).round(2)
+    df['change_percent_1_day'] = (((df['Close'] - df['Close'].shift(1)) / df['Close']) * 100).round(2)
+    df['change_percent_2_day'] = (((df['Close'] - df['Close'].shift(2)) / df['Close']) * 100).round(2)
+    df['change_percent_3_day'] = (((df['Close'] - df['Close'].shift(3)) / df['Close']) * 100).round(2)
+    df['change_percent_h'] = (((df['High'] - df['High'].shift(1)) / df['High']) * 100).round(2)
+    df['change_percent_h'] = (((df['High'] - df['High'].shift(2)) / df['High']) * 100).round(2)
+    df['change_percent_h'] = (((df['High'] - df['High'].shift(3)) / df['High']) * 100).round(2)
+    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(1)) / df['Open']) * 100).round(2)
+    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(2)) / df['Open']) * 100).round(2)
+    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(3)) / df['Open']) * 100).round(2)
+    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(1)) / df['Low']) * 100).round(2)
+    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(2)) / df['Low']) * 100).round(2)
+    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(3)) / df['Low']) * 100).round(2)
 
     df['hour'] = df.Date.dt.hour 
     df['day'] = df.Date.dt.day 
 
     df['day'] = df.Date.dt.day 
 
-    # df['three_stars'] = talib.CDL3STARSINSOUTH(df.Open, df.High, df.Low, df.Close)
-    # df['closing_marubozu'] = talib.CDLCLOSINGMARUBOZU(df.Open, df.High, df.Low, df.Close)
-    # df['doji'] = talib.CDLDOJI(df.Open, df.High, df.Low, df.Close)
-    # df['doji_star'] = talib.CDLDOJISTAR(df.Open, df.High, df.Low, df.Close)
-    # df['dragon_fly'] = talib.CDLDRAGONFLYDOJI(df.Open, df.High, df.Low, df.Close)
-    # df['engulfing'] = talib.CDLENGULFING(df.Open, df.High, df.Low, df.Close)
-    # df['evening_doji_star'] = talib.CDLEVENINGDOJISTAR(df.Open, df.High, df.Low, df.Close)
-    # df['hammer'] = talib.CDLHAMMER(df.Open, df.High, df.Low, df.Close)
-    # df['hanging_man'] = talib.CDLHANGINGMAN(df.Open, df.High, df.Low, df.Close)
-    # df['marubozu'] = talib.CDLMARUBOZU(df.Open, df.High, df.Low, df.Close)
-    # df['morning_star'] = talib.CDLMORNINGSTAR(df.Open, df.High, df.Low, df.Close)
-    # df['shooting_star'] = talib.CDLSHOOTINGSTAR(df.Open, df.High, df.Low, df.Close)
+    df['three_stars'] = talib.CDL3STARSINSOUTH(df.Open, df.High, df.Low, df.Close)
+    df['closing_marubozu'] = talib.CDLCLOSINGMARUBOZU(df.Open, df.High, df.Low, df.Close)
+    df['doji'] = talib.CDLDOJI(df.Open, df.High, df.Low, df.Close)
+    df['doji_star'] = talib.CDLDOJISTAR(df.Open, df.High, df.Low, df.Close)
+    df['dragon_fly'] = talib.CDLDRAGONFLYDOJI(df.Open, df.High, df.Low, df.Close)
+    df['engulfing'] = talib.CDLENGULFING(df.Open, df.High, df.Low, df.Close)
+    df['evening_doji_star'] = talib.CDLEVENINGDOJISTAR(df.Open, df.High, df.Low, df.Close)
+    df['hammer'] = talib.CDLHAMMER(df.Open, df.High, df.Low, df.Close)
+    df['hanging_man'] = talib.CDLHANGINGMAN(df.Open, df.High, df.Low, df.Close)
+    df['marubozu'] = talib.CDLMARUBOZU(df.Open, df.High, df.Low, df.Close)
+    df['morning_star'] = talib.CDLMORNINGSTAR(df.Open, df.High, df.Low, df.Close)
+    df['shooting_star'] = talib.CDLSHOOTINGSTAR(df.Open, df.High, df.Low, df.Close)
 
     df = df.drop(columns=['spread', 'real_volume'])
 
@@ -199,47 +203,48 @@ class ABCTrader(ABC):
         actual_market_data (DataFrame): Datos del mercado actual.
         actual_date (datetime): Fecha actual.
     """
-
+    result = None
     ticker = actual_market_data['ticker']
     
-    open_positions = self.get_open_orders(symbol=ticker)
+    if ticker in self.trade_with:
+      open_positions = self.get_open_orders(symbol=ticker)
 
-    result = self.trading_strategy(
-      actual_date,
-      actual_market_data, 
-      open_positions,
-      self.allowed_days_in_position,
-      self.threshold,
-    )
-    print(ticker,  result)
-    actual_session = get_session(actual_date)
+      result = self.trading_strategy(
+        actual_date,
+        actual_market_data, 
+        open_positions,
+        self.allowed_days_in_position,
+        self.threshold,
+      )
+      print(ticker,  result)
+      actual_session = get_session(actual_date)
+      
+      if result.action != ActionType.WAIT:
+        price = actual_market_data['Close']
     
-    if result.action != ActionType.WAIT:
-      price = actual_market_data['Close']
-  
-      if result.action == ActionType.OPEN and actual_session in self.allowed_sessions:
-        self.open_position(
-          operation_type=result.operation_type, 
-          ticker=ticker, 
-          date=actual_date, 
-          price=price
-        )
-        
-      elif result.action == ActionType.CLOSE:
-        self.close_position(
-          order_id=result.order_id, 
-          date=actual_date, 
-          price=price, 
-          comment=result.comment
-        )
+        if result.action == ActionType.OPEN and actual_session in self.allowed_sessions:
+          self.open_position(
+            operation_type=result.operation_type, 
+            ticker=ticker, 
+            date=actual_date, 
+            price=price
+          )
+          
+        elif result.action == ActionType.CLOSE:
+          self.close_position(
+            order_id=result.order_id, 
+            date=actual_date, 
+            price=price, 
+            comment=result.comment
+          )
 
-      elif result.action == ActionType.UPDATE:
-        self.update_position(
-          order_id=result.order_id, 
-          actual_price=price, 
-          comment=result.comment
-        ) 
-    
+        elif result.action == ActionType.UPDATE:
+          self.update_position(
+            order_id=result.order_id, 
+            actual_price=price, 
+            comment=result.comment
+          ) 
+      
     return result
   
   @abstractmethod

@@ -50,6 +50,10 @@ def initialize_backtesting():
     risk_percentage = config["risk_percentage"] 
     undersampling = config['undersampling']
     allowed_sessions = config['allowed_sessions']
+
+    use_trailing_stop = config['use_trailing_stop']
+    pips_per_value = config['pips_per_value']
+    trade_with = config['trade_with']
     
     # Obtención de parámetros de entrenamiento
     models = parameters['models']
@@ -122,7 +126,10 @@ def initialize_backtesting():
             stop_loss_in_pips=stop_loss_in_pips,
             take_profit_in_pips=take_profit_in_pips,
             risk_percentage=risk_percentage,
-            allowed_sessions=allowed_sessions
+            allowed_sessions=allowed_sessions, 
+            use_trailing_stop=use_trailing_stop, 
+            pips_per_value=pips_per_value, 
+            trade_with=trade_with
         )
 
         # Configuración del modelo de machine learning
