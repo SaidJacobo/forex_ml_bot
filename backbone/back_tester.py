@@ -66,7 +66,8 @@ class BackTester():
       # Levanta los simbolos que guardo en la carpeta de simbolos, deberia funcionar tambien con lo que
       # tiene en memoria pisandolo, pero hay que testearlo.
       load_symbols_from_disk=True,
-      drop_nulls=True
+      drop_nulls=True,
+      save=True
     )
 
     train_window = timedelta(hours=train_window)
