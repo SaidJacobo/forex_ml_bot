@@ -6,6 +6,8 @@ from pandas import DataFrame
 from abc import ABC, abstractmethod
 from backbone.enums import ActionType, OperationType
 from backbone.utils import get_session
+from backbone.triple_barrier_utils import bbands
+
 
 class ABCTrader(ABC):
   """Agente de Trading para tomar decisiones de compra y venta."""
@@ -57,7 +59,13 @@ class ABCTrader(ABC):
     df['ema_200'] = talib.EMA(df['Close'], timeperiod=200)
     df['rsi'] = talib.RSI(df['Close'])
 
-    upper_band, middle_band, lower_band = talib.BBANDS(df['Close'], timeperiod=50)
+    # upper_band, middle_band, lower_band = talib.BBANDS(df['Close'], timeperiod=50)
+    # df['upper_bband'] = upper_band
+    # df['middle_bband'] = middle_band
+    # df['lower_bband'] = lower_band
+
+    window = 50
+    middle_band, upper_band, lower_band = bbands(df['Close'], window, no_of_stdev=1.5)
     df['upper_bband'] = upper_band
     df['middle_bband'] = middle_band
     df['lower_bband'] = lower_band

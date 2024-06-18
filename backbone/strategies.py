@@ -141,15 +141,15 @@ def ml_strategy(
     
     class_ = actual_market_data["pred_label"]
     proba = actual_market_data["proba"]
-    side = actual_market_data["side"]
 
     open_price = actual_market_data["Open"]
     high_price = actual_market_data["High"]
     low_price = actual_market_data["Low"]
     close_price = actual_market_data["Close"]
     
-    model_with_indicator_open_buy_condition = side == 1 and class_ == 1 and proba >= threshold
-    model_with_indicator_open_sell_condition = side == -1 and class_ == 1 and proba >= threshold
+    model_with_indicator_open_buy_condition = class_ == 2 and proba >= threshold
+    # model_with_indicator_open_sell_condition = class_ == 0 and proba >= threshold
+    model_with_indicator_open_sell_condition = None
     
     only_indicator_open_buy_condition = None
     only_indicator_close_buy_condition = None

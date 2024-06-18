@@ -5,6 +5,9 @@ models: [
 ]
 
 train_window: [
+  # 11520, # dos anios
+  # 5760, # un anio
+  # 1920, # cuatro meses
   # 1440, # tres meses
   # 1200, # dos meses
   960, # dos meses
@@ -29,7 +32,7 @@ stop_loss_in_pips: [
 
 risk_reward_ratio: [
   2,
-  3,
+  # 3,
   # 4,
   # 5,
   # 6, 
@@ -53,6 +56,6 @@ use_days_in_position: [
 trading_strategy: [
   # 'backbone.strategies.macd_strategy',
   'backbone.strategies.ml_strategy', 
-  'backbone.strategies.bband_strategy', 
+  # 'backbone.strategies.bband_strategy', 
   # 'backbone.strategies.bband_macd_strategy', 
 ]

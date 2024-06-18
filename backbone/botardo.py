@@ -1,4 +1,3 @@
-import numpy as np
 from backbone.machine_learning_agent import MachineLearningAgent
 from backbone.trader import ABCTrader
 import pandas as pd
@@ -8,7 +7,6 @@ import pytz
 from datetime import datetime
 from datetime import timedelta
 import pandas as pd
-from backbone.triple_barrier_utils import get_daily_vol, get_bins, get_events, get_t_events, add_vertical_barrier, bbands
 
 class Botardo():
   """Clase base de bot de trading y aprendizaje automático.
@@ -32,6 +30,39 @@ class Botardo():
     self.tickers = tickers
     self.instruments = {}
     self.date_format = '%Y-%m-%d %H:00:00'
+
+  # Función para calcular la volatilidad diaria
+  def get_daily_volatility(self, close_prices, span=100):
+      returns = close_prices.pct_change()
+      volatility = returns.ewm(span=span).std()
+      return volatility
+
+  # Función para aplicar las barreras de triple límite
+  def apply_triple_barrier(self, close_prices, daily_volatility, upper_barrier=0.02, lower_barrier=0.02, max_holding_period=50):
+      barriers = []
+      for index in range(len(close_prices)):
+          # Definir niveles de toma de ganancias y stop-loss basados en el precio actual
+          upper_barrier_level = close_prices[index] * (1 + upper_barrier)
+          lower_barrier_level = close_prices[index] * (1 - lower_barrier)
+          # Evaluar los precios futuros dentro del período máximo de mantenimiento
+          for j in range(index + 1, min(index + max_holding_period, len(close_prices))):
+              if close_prices[j] >= upper_barrier_level:
+                  barriers.append((index, 2))
+                  break
+              elif close_prices[j] <= lower_barrier_level:
+                  barriers.append((index, 0))
+                  break
+          else:
+              barriers.append((index, 1))
+      return barriers
+
+  # Función principal para etiquetar los datos
+  def triple_barrier_labeling(self, data, upper_barrier=0.02, lower_barrier=0.02, max_holding_period=50, span=100):
+      close_prices = data['Close']
+      daily_volatility = self.get_daily_volatility(close_prices, span=span)
+      labels = self.apply_triple_barrier(close_prices, daily_volatility, upper_barrier, lower_barrier, max_holding_period)
+      data['target'] = [label for _, label in labels]
+      return data['target']
 
   def _get_symbols_from_provider(self, date_from:str, date_to:str, ticker:str) -> None:
     print("MetaTrader5 package author: ", mt5.__author__)
@@ -158,77 +189,20 @@ class Botardo():
       print('Creando target')
       self.instruments[ticker] = self.instruments[ticker].sort_values(by='Date')
 
-      # ----------------- Triple barrier method ----------------- 
-      # Create Primary Bollinger Band Model
-      self.instruments[ticker]['Date'] = pd.to_datetime((self.instruments[ticker]['Date']))
-      self.instruments[ticker] = self.instruments[ticker].set_index('Date')
-      # compute sides
-      window = 50
-      (
-        self.instruments[ticker]['middle_bband'], 
-        self.instruments[ticker]['upper_bband'], 
-        self.instruments[ticker]['lower_bband']
-      ) = bbands(self.instruments[ticker]['Close'], window, no_of_stdev=1.5)
+      self.instruments[ticker]['target'] = self.triple_barrier_labeling(
+        self.instruments[ticker], 
+        upper_barrier=0.02, 
+        lower_barrier=0.01, 
+        max_holding_period=120, 
+        span=120
+      )
       
-      self.instruments[ticker]['side'] = np.nan
-      long_signals = (self.instruments[ticker]['Close'] <= self.instruments[ticker]['lower_bband'])
-      short_signals = (self.instruments[ticker]['Close'] >= self.instruments[ticker]['upper_bband'])
-
-      self.instruments[ticker].loc[long_signals, 'side'] = 1
-      self.instruments[ticker].loc[short_signals, 'side'] = -1
-
-      print(self.instruments[ticker].side.value_counts())
-
-      # Remove Look ahead biase by lagging the signal
-      self.instruments[ticker]['side'] = self.instruments[ticker]['side'].shift(1)
-
-      # Drop the NaN values from our data set
-      self.instruments[ticker].dropna(axis=0, how='any', inplace=True)
-
-      close = self.instruments[ticker]['Close']
-
-      # determining daily volatility using the last 50 days
-      daily_vol = get_daily_vol(close_prices=close, lookback=50)
-
-      # creating our event triggers using the CUSUM filter
-      cusum_events = get_t_events(close, threshold=daily_vol.mean()*0.1)
-
-      # adding vertical barriers with a half day expiration window
-      vertical_barriers = add_vertical_barrier(
-          event_timestamps=cusum_events,
-          close_prices=close,
-          max_holding_days=12
-      )
-
-      # determining timestamps of first touch
-
-      pt_sl = [1, 2] # setting profit-take and stop-loss at 1% and 2%
-      min_ret = 0.0005 # setting a minimum return of 0.05%
-
-      triple_barrier_events = get_events(
-        close_prices=close, 
-        event_timestamps=cusum_events,
-        profit_take_stop_loss=pt_sl,
-        target_returns=daily_vol,
-        minimum_return=min_ret,
-        num_threads=2,
-        vertical_barrier_times=vertical_barriers,
-        bet_side=self.instruments[ticker]['side']
-      )
-
-      labels = get_bins(triple_barrier_events, self.instruments[ticker]['Close'])
-
-      self.instruments[ticker]['target'] = labels.bin
-      # self.instruments[ticker]['side'] = labels.side
-
       df = pd.concat(
         [
           df,
           self.instruments[ticker]
         ]
       )
-
-    df = df.reset_index()
 
     if drop_nulls:
       df = df.dropna()
