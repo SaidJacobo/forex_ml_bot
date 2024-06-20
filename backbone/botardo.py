@@ -8,6 +8,8 @@ from datetime import datetime
 from datetime import timedelta
 import pandas as pd
 
+from backbone.triple_barrier_utils import triple_barrier_labeling
+
 class Botardo():
   """Clase base de bot de trading y aprendizaje automático.
 
@@ -30,39 +32,6 @@ class Botardo():
     self.tickers = tickers
     self.instruments = {}
     self.date_format = '%Y-%m-%d %H:00:00'
-
-  # Función para calcular la volatilidad diaria
-  def get_daily_volatility(self, close_prices, span=100):
-      returns = close_prices.pct_change()
-      volatility = returns.ewm(span=span).std()
-      return volatility
-
-  # Función para aplicar las barreras de triple límite
-  def apply_triple_barrier(self, close_prices, daily_volatility, upper_barrier=0.02, lower_barrier=0.02, max_holding_period=50):
-      barriers = []
-      for index in range(len(close_prices)):
-          # Definir niveles de toma de ganancias y stop-loss basados en el precio actual
-          upper_barrier_level = close_prices[index] * (1 + upper_barrier)
-          lower_barrier_level = close_prices[index] * (1 - lower_barrier)
-          # Evaluar los precios futuros dentro del período máximo de mantenimiento
-          for j in range(index + 1, min(index + max_holding_period, len(close_prices))):
-              if close_prices[j] >= upper_barrier_level:
-                  barriers.append((index, 2))
-                  break
-              elif close_prices[j] <= lower_barrier_level:
-                  barriers.append((index, 0))
-                  break
-          else:
-              barriers.append((index, 1))
-      return barriers
-
-  # Función principal para etiquetar los datos
-  def triple_barrier_labeling(self, data, upper_barrier=0.02, lower_barrier=0.02, max_holding_period=50, span=100):
-      close_prices = data['Close']
-      daily_volatility = self.get_daily_volatility(close_prices, span=span)
-      labels = self.apply_triple_barrier(close_prices, daily_volatility, upper_barrier, lower_barrier, max_holding_period)
-      data['target'] = [label for _, label in labels]
-      return data['target']
 
   def _get_symbols_from_provider(self, date_from:str, date_to:str, ticker:str) -> None:
     print("MetaTrader5 package author: ", mt5.__author__)
@@ -189,12 +158,15 @@ class Botardo():
       print('Creando target')
       self.instruments[ticker] = self.instruments[ticker].sort_values(by='Date')
 
-      self.instruments[ticker]['target'] = self.triple_barrier_labeling(
-        self.instruments[ticker], 
-        upper_barrier=0.02, 
-        lower_barrier=0.01, 
-        max_holding_period=120, 
-        span=120
+      self.instruments[ticker]['target'] = triple_barrier_labeling(
+        close_prices=self.instruments[ticker]['Close'], 
+        min_prices=self.instruments[ticker]['Low'], 
+        max_prices=self.instruments[ticker]['High'], 
+        upper_barrier_pips=self.trader.take_profit_in_pips, 
+        lower_barrier_pips=self.trader.stop_loss_in_pips, 
+        max_holding_period=self.trader.allowed_days_in_position, 
+        span=120,
+        pip_size=self.trader.pips_per_value[ticker]
       )
       
       df = pd.concat(

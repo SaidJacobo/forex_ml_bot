@@ -3,13 +3,11 @@ paralelize: False
 date_from: '2023-01-01 00:00:00'
 date_to: '2024-01-01 00:00:00'
 limit_date_train: '2024-05-01 00:00:00'
-tickers: [EURUSD, GBPUSD, USDCAD, AUDUSD, USDCHF]
-# tickers: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
-trade_with: [EURUSD, GBPUSD, USDCAD, AUDUSD, USDCHF]
-# trade_with: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
+tickers: [EURUSD]
+trade_with: [EURUSD]
 allowed_sessions: [NY, London, 'Sidney', 'Tokio']
 start_money: 1000
-threshold: 0.9
+threshold: 0.85
 risk_percentage: 1
 undersampling: False
 

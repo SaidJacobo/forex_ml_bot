@@ -27,7 +27,7 @@ def operation_management_logic(
 
     if open_order:
 
-        days_in_position = (today - open_order.open_time).days
+        days_in_position = (today - open_order.open_time).seconds // 3600
         
         if open_order.operation_type == OperationType.BUY:
             if allowed_days_in_position and days_in_position == allowed_days_in_position:
@@ -147,7 +147,7 @@ def ml_strategy(
     low_price = actual_market_data["Low"]
     close_price = actual_market_data["Close"]
     
-    model_with_indicator_open_buy_condition = class_ == 2 and proba >= threshold
+    model_with_indicator_open_buy_condition = class_ == 1 and proba >= threshold
     # model_with_indicator_open_sell_condition = class_ == 0 and proba >= threshold
     model_with_indicator_open_sell_condition = None
     

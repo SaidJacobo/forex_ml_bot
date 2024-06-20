@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.ensemble import StackingClassifier
 from sklearn.linear_model import LogisticRegression
 from backbone.probability_transformer import ProbabilityTransformer 
 import pandas as pd
@@ -59,7 +60,7 @@ class MachineLearningAgent():
     scaler = StandardScaler()
 
     log_reg = LogisticRegression(
-      multi_class='multinomial', 
+      multi_class='auto', 
       solver='lbfgs', 
       class_weight='balanced', 
       max_iter=1000,
@@ -69,9 +70,13 @@ class MachineLearningAgent():
     model = self.model()
 
     pipe = Pipeline([
-        ('scaler', scaler),
-        ('prob_transf', ProbabilityTransformer(model)),
-        ('log_reg', log_reg)
+        ('scaler', StandardScaler()),  # Normalizar características
+        ('stacking', StackingClassifier(
+            estimators=[
+                ('prob_transf', ProbabilityTransformer(model)),
+            ],
+            final_estimator=log_reg
+        ))
     ])
 
     return pipe
@@ -100,7 +105,7 @@ class MachineLearningAgent():
     predictions = self.pipeline.predict_proba(x)
 
     # Obtener los nombres de las clases
-    class_names = self.pipeline.named_steps['log_reg'].classes_
+    class_names = self.pipeline.named_steps['stacking'].classes_
 
     # Obtener la probabilidad más alta y la clase correspondiente
     max_proba_indices = np.argmax(predictions, axis=1)
