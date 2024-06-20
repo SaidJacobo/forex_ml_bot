@@ -8,12 +8,12 @@ train_window: [
   # 11520, # dos anios
   # 5760, # un anio
   # 1920, # cuatro meses
-  # 1440, # tres meses
+  1440, # tres meses
   # 1200, # dos meses y medio
   # 960, # dos meses
   # 720, # mes y medio
+  # 480, # un mes
   # 360, # tres semanas 
-  480, # un mes
   # 240, # dos semanas
   # 120, # una semana
 ] # tamanio de la ventana de entrenamiento

@@ -65,7 +65,7 @@ class ABCTrader(ABC):
     # df['lower_bband'] = lower_band
 
     window = 50
-    middle_band, upper_band, lower_band = bbands(df['Close'], window, no_of_stdev=1.5)
+    middle_band, upper_band, lower_band = bbands(df['Close'], window, no_of_stdev=1)
     df['upper_bband'] = upper_band
     df['middle_bband'] = middle_band
     df['lower_bband'] = lower_band

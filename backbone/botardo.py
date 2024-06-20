@@ -1,3 +1,4 @@
+import numpy as np
 from backbone.machine_learning_agent import MachineLearningAgent
 from backbone.trader import ABCTrader
 import pandas as pd
@@ -157,18 +158,41 @@ class Botardo():
       
       print('Creando target')
       self.instruments[ticker] = self.instruments[ticker].sort_values(by='Date')
+      self.instruments[ticker] = self.instruments[ticker].set_index('Date')
 
-      self.instruments[ticker]['target'] = triple_barrier_labeling(
-        close_prices=self.instruments[ticker]['Close'], 
-        min_prices=self.instruments[ticker]['Low'], 
-        max_prices=self.instruments[ticker]['High'], 
+      instrument = self.instruments[ticker].copy()
+      # compute sides
+      instrument['side'] = np.nan
+      long_signals = (instrument['Close'] <= instrument['lower_bband'])
+      short_signals = (instrument['Close'] >= instrument['upper_bband'])
+      instrument.loc[long_signals, 'side'] = 1
+      instrument.loc[short_signals, 'side'] = -1
+
+      print(instrument.side.value_counts())
+
+      # Remove Look ahead biase by lagging the signal
+      instrument['side'] = instrument['side'].shift(1)
+
+      # Drop the NaN values from our data set
+      instrument.dropna(axis=0, how='any', inplace=True)
+
+      instrument['target'] = triple_barrier_labeling(
+        close_prices=instrument['Close'], 
+        min_prices=instrument['Low'], 
+        max_prices=instrument['High'], 
         upper_barrier_pips=self.trader.take_profit_in_pips, 
         lower_barrier_pips=self.trader.stop_loss_in_pips, 
         max_holding_period=self.trader.allowed_days_in_position, 
         span=120,
-        pip_size=self.trader.pips_per_value[ticker]
+        pip_size=self.trader.pips_per_value[ticker],
+        side=instrument['side']
       )
+
       
+      self.instruments[ticker].loc[instrument.index, 'side'] = instrument.side
+      self.instruments[ticker].loc[instrument.index, 'target'] = instrument.target
+      self.instruments[ticker].fillna(0)
+
       df = pd.concat(
         [
           df,
@@ -179,10 +203,12 @@ class Botardo():
     if drop_nulls:
       df = df.dropna()
 
+    df = df.reset_index()
     df['Date'] = pd.to_datetime(df['Date'], format=self.date_format)
     df = df.sort_values(by='Date')
 
-    print(f'df value_counts {df["target"].value_counts()}')
+    print(f'df target value_counts {df["target"].value_counts()}')
+    print(f'df side value_counts {df["side"].value_counts()}')
 
     path = os.path.join(symbols_path, 'dataset.csv')
 
@@ -223,11 +249,15 @@ class Botardo():
     print('Datos para la fecha actual', today_market_data[['Date', 'ticker', 'target']])
 
     # Si no tiene datos para entrenar en esa ventana que pase al siguiente periodo
-    market_data_window = df[(df.Date >= date_from) & (df.Date < date_to)].dropna()
+    market_data_window = df[
+      (df.Date >= date_from) 
+      & (df.Date < date_to) 
+      & (df.side != 0)
+    ].dropna()
     
-    if market_data_window.shape[0] < 70:
-      print(f'No existen datos para el intervalo {date_from}-{actual_date}, se procedera con el siguiente')
-      return
+    # if market_data_window.shape[0] < 70:
+    #   print(f'No existen datos para el intervalo {date_from}-{actual_date}, se procedera con el siguiente')
+    #   return
     
     if self.ml_agent is not None:
       

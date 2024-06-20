@@ -13,40 +13,69 @@ def apply_triple_barrier(
     daily_volatility, 
     upper_barrier_pips, 
     lower_barrier_pips, 
+    side,
     max_holding_period=50, 
     pip_size=0.0001
     ):
 
     barriers = []
     for index in range(len(close_prices)):
-        # Convertir barreras de pips a niveles porcentuales
-        upper_barrier_level = close_prices[index] * (1 + (upper_barrier_pips * pip_size))
-        lower_barrier_level = close_prices[index] * (1 - (lower_barrier_pips * pip_size))
+        if side[index] == 1:
+            # Para una señal de compra
+            upper_barrier_level = close_prices[index] * (1 + (upper_barrier_pips * pip_size))
+            lower_barrier_level = close_prices[index] * (1 - (lower_barrier_pips * pip_size))
+        elif side[index] == -1:
+            # Para una señal de venta
+            upper_barrier_level = close_prices[index] * (1 - (lower_barrier_pips * pip_size))
+            lower_barrier_level = close_prices[index] * (1 + (upper_barrier_pips * pip_size))
+        else:
+            # Si no hay señal, saltar al siguiente índice
+            continue
         
         # Evaluar los precios futuros dentro del período máximo de mantenimiento
         for j in range(index + 1, min(index + max_holding_period, len(close_prices))):
-            if close_prices[j] >= upper_barrier_level or max_prices[j] >= upper_barrier_level:
-                barriers.append((index, 1))  # Etiqueta 1 para toma de ganancias
-                break
-            elif close_prices[j] <= lower_barrier_level or min_prices[j] <= lower_barrier_level:
-                barriers.append((index, 0))  # Etiqueta 0 para stop-loss
-                break
+            if side[index] == 1:
+                # Señal de compra: tomar ganancias si se alcanza la barrera superior
+                if close_prices[j] >= upper_barrier_level or max_prices[j] >= upper_barrier_level:
+                    barriers.append((index, 1))  # Etiqueta 1 para toma de ganancias
+                    break
+                elif close_prices[j] <= lower_barrier_level or min_prices[j] <= lower_barrier_level:
+                    barriers.append((index, 0))  # Etiqueta 0 para stop-loss
+                    break
+            elif side[index] == -1:
+                # Señal de venta: tomar ganancias si se alcanza la barrera inferior
+                if close_prices[j] <= upper_barrier_level or min_prices[j] <= upper_barrier_level:
+                    barriers.append((index, 1))  # Etiqueta 1 para toma de ganancias
+                    break
+                elif close_prices[j] >= lower_barrier_level or max_prices[j] >= lower_barrier_level:
+                    barriers.append((index, 0))  # Etiqueta 0 para stop-loss
+                    break
         else:
             barriers.append((index, 2))  # Etiqueta 2 si no se alcanza ninguna barrera
     
-    # Revisar los eventos etiquetados como 1 para determinar si son ganancias o pérdidas
+    # Revisar los eventos etiquetados como 2 para determinar si son ganancias o pérdidas
     for idx, (event_index, label) in enumerate(barriers):
         if label == 2:
             # Determinar si el precio final fue una ganancia o una pérdida
             final_price = close_prices[min(event_index + max_holding_period, len(close_prices) - 1)]
             initial_price = close_prices[event_index]
             
-            if final_price >= initial_price:
-                barriers[idx] = (event_index, 1)  # Etiqueta 1 para toma de ganancias
-            elif final_price < initial_price:
-                barriers[idx] = (event_index, 0)  # Etiqueta 0 para stop-loss
+            if side[event_index] == 1:
+                # Para una señal de compra
+                if final_price >= initial_price:
+                    barriers[idx] = (event_index, 1)  # Etiqueta 1 para toma de ganancias
+                elif final_price < initial_price:
+                    barriers[idx] = (event_index, 0)  # Etiqueta 0 para stop-loss
+            elif side[event_index] == -1:
+                # Para una señal de venta
+                if final_price <= initial_price:
+                    barriers[idx] = (event_index, 1)  # Etiqueta 1 para toma de ganancias
+                elif final_price > initial_price:
+                    barriers[idx] = (event_index, 0)  # Etiqueta 0 para stop-loss
 
     return barriers
+
+
 
 def triple_barrier_labeling(
         close_prices, 
@@ -54,9 +83,10 @@ def triple_barrier_labeling(
         min_prices,  
         upper_barrier_pips, 
         lower_barrier_pips, 
+        side,
         max_holding_period=50, 
         span=100, 
-        pip_size=0.0001
+        pip_size=0.0001,
     ):
 
     daily_volatility = get_daily_volatility(close_prices, span=span)
@@ -68,6 +98,7 @@ def triple_barrier_labeling(
         daily_volatility, 
         upper_barrier_pips, 
         lower_barrier_pips, 
+        side,
         max_holding_period, 
         pip_size
     )
