@@ -1,18 +1,18 @@
 models: [
   'random_forest', 
-  # 'gradient_boosting',
+  'gradient_boosting',
   # 'neural_network'
 ]
 
 train_window: [
   # 11520, # dos anios
-  # 5760, # un anio
-  # 1920, # cuatro meses
+  5760, # un anio
+  1920, # cuatro meses
   1440, # tres meses
   # 1200, # dos meses y medio
-  # 960, # dos meses
+  960, # dos meses
   # 720, # mes y medio
-  # 480, # un mes
+  480, # un mes
   # 360, # tres semanas 
   # 240, # dos semanas
   # 120, # una semana
@@ -36,15 +36,15 @@ risk_reward_ratio: [
   # 4,
   5,
   # 6, 
-  # 7,
+  7,
   # 8,
   # 9
 ]
 
 periods_forward_target: [
-  # 6,
-  # 12,
-  # 24,
+  6,
+  12,
+  24,
   48,
   # 10,
 ]

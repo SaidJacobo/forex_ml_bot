@@ -161,12 +161,24 @@ class Botardo():
       self.instruments[ticker] = self.instruments[ticker].set_index('Date')
 
       instrument = self.instruments[ticker].copy()
-      # compute sides
+      # compute bband sides
       instrument['side'] = np.nan
       long_signals = (instrument['Close'] <= instrument['lower_bband'])
       short_signals = (instrument['Close'] >= instrument['upper_bband'])
       instrument.loc[long_signals, 'side'] = 1
       instrument.loc[short_signals, 'side'] = -1
+
+      # compute macd sides
+      long_signals = (instrument['macd'] > instrument['macdsignal']) & (instrument['macd'].shift(1) <= instrument['macdsignal'].shift(1))
+      instrument.loc[long_signals, 'side'] = 1
+      short_signals = (instrument['macd'] < instrument['macdsignal']) & (instrument['macd'].shift(1) >= instrument['macdsignal'].shift(1))
+      instrument.loc[short_signals, 'side'] = -1
+
+      # compute sma sides
+      # long_signals = (instrument['ema_12'] > instrument['ema_200']) & (instrument['ema_12'].shift(1) <= instrument['ema_200'].shift(1))
+      # instrument.loc[long_signals, 'side'] = 1
+      # short_signals = (instrument['ema_12'] < instrument['ema_200']) & (instrument['ema_12'].shift(1) >= instrument['ema_200'].shift(1))
+      # instrument.loc[short_signals, 'side'] = -1
 
       print(instrument.side.value_counts())
 
@@ -174,14 +186,14 @@ class Botardo():
       instrument['side'] = instrument['side'].shift(1)
 
       # Drop the NaN values from our data set
-      instrument.dropna(axis=0, how='any', inplace=True)
+      instrument.dropna(inplace=True)
 
       instrument['target'] = triple_barrier_labeling(
         close_prices=instrument['Close'], 
         min_prices=instrument['Low'], 
         max_prices=instrument['High'], 
-        upper_barrier_pips=self.trader.take_profit_in_pips, 
-        lower_barrier_pips=self.trader.stop_loss_in_pips, 
+        take_profit_in_pips=self.trader.take_profit_in_pips, 
+        stop_loss_in_pips=self.trader.stop_loss_in_pips, 
         max_holding_period=self.trader.allowed_days_in_position, 
         span=120,
         pip_size=self.trader.pips_per_value[ticker],
@@ -191,7 +203,7 @@ class Botardo():
       
       self.instruments[ticker].loc[instrument.index, 'side'] = instrument.side
       self.instruments[ticker].loc[instrument.index, 'target'] = instrument.target
-      self.instruments[ticker].fillna(0)
+      self.instruments[ticker].fillna(0, inplace=True)
 
       df = pd.concat(
         [
@@ -258,8 +270,14 @@ class Botardo():
     # if market_data_window.shape[0] < 70:
     #   print(f'No existen datos para el intervalo {date_from}-{actual_date}, se procedera con el siguiente')
     #   return
+    today_market_data.loc[:, 'pred_label'] = np.nan
+    today_market_data.loc[:, 'proba'] = np.nan
+    side = today_market_data.iloc[0].side                     # ALERTA esto no funciona cuando tengo mas de un ticker
     
-    if self.ml_agent is not None:
+    if side == -1:
+      print('aksd')
+    
+    if self.ml_agent is not None and side != 0:
       
       hours_from_train = None
       if self.ml_agent.last_date_train is not None:
@@ -285,7 +303,13 @@ class Botardo():
         self.ml_agent.last_date_train = actual_date
         print('Entrenamiento terminado! :)')
 
-      calsses, probas = self.ml_agent.predict_proba(today_market_data.drop(columns=['target', 'Date', 'ticker']))
+      calsses, probas = self.ml_agent.predict_proba(today_market_data.drop(columns=[
+        'target', 
+        'Date', 
+        'ticker',
+        'pred_label', 
+        'proba'
+      ]))
       
       pred_per_ticker = pd.DataFrame({'ticker':today_market_data.ticker, 'class':calsses, 'proba':probas})
       print(f'Prediccion: {pred_per_ticker}')

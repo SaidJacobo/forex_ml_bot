@@ -151,8 +151,6 @@ def ml_strategy(
     model_with_indicator_open_buy_condition = side == 1 and class_ == 1 and proba >= threshold
     model_with_indicator_open_sell_condition = side == -1 and class_ == 1 and proba >= threshold
 
-    model_with_indicator_open_sell_condition = None
-    
     only_indicator_open_buy_condition = None
     only_indicator_close_buy_condition = None
     

@@ -11,8 +11,8 @@ def apply_triple_barrier(
     max_prices, 
     min_prices, 
     daily_volatility, 
-    upper_barrier_pips, 
-    lower_barrier_pips, 
+    take_profit_in_pips, 
+    stop_loss_in_pips, 
     side,
     max_holding_period=50, 
     pip_size=0.0001
@@ -22,12 +22,12 @@ def apply_triple_barrier(
     for index in range(len(close_prices)):
         if side[index] == 1:
             # Para una señal de compra
-            upper_barrier_level = close_prices[index] * (1 + (upper_barrier_pips * pip_size))
-            lower_barrier_level = close_prices[index] * (1 - (lower_barrier_pips * pip_size))
+            upper_barrier_level = close_prices[index] * (1 + (take_profit_in_pips * pip_size))
+            lower_barrier_level = close_prices[index] * (1 - (stop_loss_in_pips * pip_size))
         elif side[index] == -1:
             # Para una señal de venta
-            upper_barrier_level = close_prices[index] * (1 - (lower_barrier_pips * pip_size))
-            lower_barrier_level = close_prices[index] * (1 + (upper_barrier_pips * pip_size))
+            upper_barrier_level = close_prices[index] * (1 + (stop_loss_in_pips * pip_size))
+            lower_barrier_level = close_prices[index] * (1 - (take_profit_in_pips * pip_size))
         else:
             # Si no hay señal, saltar al siguiente índice
             continue
@@ -44,10 +44,10 @@ def apply_triple_barrier(
                     break
             elif side[index] == -1:
                 # Señal de venta: tomar ganancias si se alcanza la barrera inferior
-                if close_prices[j] <= upper_barrier_level or min_prices[j] <= upper_barrier_level:
+                if close_prices[j] <= lower_barrier_level or min_prices[j] <= lower_barrier_level:
                     barriers.append((index, 1))  # Etiqueta 1 para toma de ganancias
                     break
-                elif close_prices[j] >= lower_barrier_level or max_prices[j] >= lower_barrier_level:
+                elif close_prices[j] >= upper_barrier_level or max_prices[j] >= upper_barrier_level:
                     barriers.append((index, 0))  # Etiqueta 0 para stop-loss
                     break
         else:
@@ -81,8 +81,8 @@ def triple_barrier_labeling(
         close_prices, 
         max_prices, 
         min_prices,  
-        upper_barrier_pips, 
-        lower_barrier_pips, 
+        take_profit_in_pips, 
+        stop_loss_in_pips, 
         side,
         max_holding_period=50, 
         span=100, 
@@ -96,8 +96,8 @@ def triple_barrier_labeling(
         max_prices,
         min_prices,
         daily_volatility, 
-        upper_barrier_pips, 
-        lower_barrier_pips, 
+        take_profit_in_pips, 
+        stop_loss_in_pips, 
         side,
         max_holding_period, 
         pip_size
