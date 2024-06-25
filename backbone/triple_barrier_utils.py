@@ -1,4 +1,40 @@
+import numpy as np
 import pandas as pd
+from tqdm import tqdm
+
+def apply_cusum_filter(raw_price, threshold):
+    """
+    :param raw_price: (series) of close prices.
+    :param threshold: (float) when the abs(change) is larger than the threshold, the
+    function captures it as an event.
+    :return: (datetime index vector) vector of datetimes when the events occurred. This is used later to sample.
+    """
+    print('Applying Symmetric CUSUM filter.')
+
+    t_events = []
+    s_pos = 0
+    s_neg = 0
+
+    # log returns
+    diff = np.log(raw_price).diff().dropna()
+
+    # Get event time stamps for the entire series
+    for i in tqdm(diff.index[1:]):
+        pos = float(s_pos + diff.loc[i])
+        neg = float(s_neg + diff.loc[i])
+        s_pos = max(0.0, pos)
+        s_neg = min(0.0, neg)
+
+        if s_neg < -threshold:
+            s_neg = 0
+            t_events.append(i)
+
+        elif s_pos > threshold:
+            s_pos = 0
+            t_events.append(i)
+
+    event_timestamps = pd.DatetimeIndex(t_events)
+    return event_timestamps
 
 # Función para calcular la volatilidad diaria
 def get_daily_volatility(close_prices, span=100):
@@ -10,7 +46,6 @@ def apply_triple_barrier(
     close_prices, 
     max_prices, 
     min_prices, 
-    daily_volatility, 
     take_profit_in_pips, 
     stop_loss_in_pips, 
     side,
@@ -85,17 +120,13 @@ def triple_barrier_labeling(
         stop_loss_in_pips, 
         side,
         max_holding_period=50, 
-        span=100, 
         pip_size=0.0001,
     ):
 
-    daily_volatility = get_daily_volatility(close_prices, span=span)
-    
     labels = apply_triple_barrier(
         close_prices,
         max_prices,
         min_prices,
-        daily_volatility, 
         take_profit_in_pips, 
         stop_loss_in_pips, 
         side,

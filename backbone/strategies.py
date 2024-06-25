@@ -13,6 +13,7 @@ def operation_management_logic(
         open_order:Order, 
         today:str, 
         allowed_days_in_position:int,
+        use_trailing_stop:bool,
         only_indicator_close_buy_condition:bool,
         open_price:float,
         high_price:float,
@@ -84,19 +85,21 @@ def operation_management_logic(
                 )
 
         if allowed_days_in_position and days_in_position < allowed_days_in_position:
-            return Result(
-                ActionType.WAIT, 
-                None, 
-                None, 
-                None
-            )
+            if use_trailing_stop:
+                return Result(
+                    ActionType.UPDATE, 
+                    None, 
+                    open_order.id, 
+                    ClosePositionType.STOP_LOSS
+                )
+            else:
+                return Result(
+                    ActionType.WAIT, 
+                    None, 
+                    None, 
+                    None
+                )
         
-        return Result(
-            ActionType.UPDATE, 
-            None, 
-            open_order.id, 
-            ClosePositionType.STOP_LOSS
-        )
 
     # Si la predicción del mercado supera el umbral superior, compra
     elif model_with_indicator_open_buy_condition or only_indicator_open_buy_condition:
@@ -127,6 +130,7 @@ def ml_strategy(
     actual_market_data,
     orders: list,
     allowed_days_in_position: int,
+    use_trailing_stop: bool,
     threshold: float,
 ):
     '''
@@ -163,6 +167,7 @@ def ml_strategy(
         open_order=open_order,
         today=today,
         allowed_days_in_position=allowed_days_in_position,
+        use_trailing_stop=use_trailing_stop,
         only_indicator_close_buy_condition=only_indicator_close_buy_condition,
         open_price=open_price,
         high_price=high_price,

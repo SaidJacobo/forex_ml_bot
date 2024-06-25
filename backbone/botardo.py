@@ -9,7 +9,7 @@ from datetime import datetime
 from datetime import timedelta
 import pandas as pd
 
-from backbone.triple_barrier_utils import triple_barrier_labeling
+from backbone.triple_barrier_utils import get_daily_volatility, triple_barrier_labeling, apply_cusum_filter
 
 class Botardo():
   """Clase base de bot de trading y aprendizaje automático.
@@ -157,6 +157,7 @@ class Botardo():
       self.instruments[ticker]['ticker'] = ticker
       
       print('Creando target')
+      self.instruments[ticker]['Date'] = pd.to_datetime(self.instruments[ticker]['Date'])
       self.instruments[ticker] = self.instruments[ticker].sort_values(by='Date')
       self.instruments[ticker] = self.instruments[ticker].set_index('Date')
 
@@ -174,16 +175,14 @@ class Botardo():
       short_signals = (instrument['macd'] < instrument['macdsignal']) & (instrument['macd'].shift(1) >= instrument['macdsignal'].shift(1))
       instrument.loc[short_signals, 'side'] = -1
 
-      # compute sma sides
-      # long_signals = (instrument['ema_12'] > instrument['ema_200']) & (instrument['ema_12'].shift(1) <= instrument['ema_200'].shift(1))
-      # instrument.loc[long_signals, 'side'] = 1
-      # short_signals = (instrument['ema_12'] < instrument['ema_200']) & (instrument['ema_12'].shift(1) >= instrument['ema_200'].shift(1))
-      # instrument.loc[short_signals, 'side'] = -1
-
       print(instrument.side.value_counts())
 
       # Remove Look ahead biase by lagging the signal
       instrument['side'] = instrument['side'].shift(1)
+      
+      # volatility = get_daily_volatility(instrument.Close, span=120)
+      # cusum_events = apply_cusum_filter(instrument.Close, threshold=volatility.mean()*0.05)
+      # instrument = instrument.loc[cusum_events]
 
       # Drop the NaN values from our data set
       instrument.dropna(inplace=True)
@@ -195,7 +194,6 @@ class Botardo():
         take_profit_in_pips=self.trader.take_profit_in_pips, 
         stop_loss_in_pips=self.trader.stop_loss_in_pips, 
         max_holding_period=self.trader.allowed_days_in_position, 
-        span=120,
         pip_size=self.trader.pips_per_value[ticker],
         side=instrument['side']
       )

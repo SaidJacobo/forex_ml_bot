@@ -5,7 +5,7 @@ from backbone.probability_transformer import ProbabilityTransformer
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
-from sklearn.metrics import f1_score, make_scorer, precision_score, recall_score
+from sklearn.metrics import f1_score, fbeta_score, make_scorer, precision_score, recall_score
 from sklearn.preprocessing import StandardScaler
 from backbone.utils import load_function
 from typing import Tuple
@@ -138,9 +138,8 @@ class MachineLearningAgent():
           self.param_grid,
           n_jobs=-1,
           cv=stratified_kfold,
-          scoring=make_scorer(f1_score, average='weighted')
+          scoring=make_scorer(fbeta_score, beta=0.1, average='weighted')
       )
-
       # Tunear hiperparametros
       search.fit(x_train, y_train)
 

@@ -216,6 +216,7 @@ class ABCTrader(ABC):
         actual_market_data, 
         open_positions,
         self.allowed_days_in_position,
+        self.use_trailing_stop,
         self.threshold,
       )
       print(ticker,  result)

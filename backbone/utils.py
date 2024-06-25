@@ -34,7 +34,8 @@ def get_parameter_combinations(
         periods_forward_target, 
         stop_loses_in_pips, 
         take_profits_in_pips,
-        use_days_in_position
+        use_days_in_position,
+        use_trailing_stop_option
     ):
     parameter_combinations = []
     if None in models:
@@ -53,7 +54,8 @@ def get_parameter_combinations(
         periods_forward_target, 
         stop_loses_in_pips, 
         take_profits_in_pips,
-        use_days_in_position
+        use_days_in_position,
+        use_trailing_stop_option
     ))
 
     return parameter_combinations

@@ -6,13 +6,13 @@ models: [
 
 train_window: [
   # 11520, # dos anios
-  5760, # un anio
+  # 5760, # un anio
   1920, # cuatro meses
   1440, # tres meses
-  # 1200, # dos meses y medio
+  # # 1200, # dos meses y medio
   960, # dos meses
   # 720, # mes y medio
-  480, # un mes
+  # 480, # un mes
   # 360, # tres semanas 
   # 240, # dos semanas
   # 120, # una semana
@@ -23,7 +23,7 @@ train_period: [
 ] # frecuencia con la que se entrena
 
 stop_loss_in_pips: [
-  # 5,
+  5,
   10,
   # 15,
   # 20,
@@ -31,21 +31,23 @@ stop_loss_in_pips: [
 ]
 
 risk_reward_ratio: [
-  # 2,
-  # 3,
+  2,
+  3,
   # 4,
-  5,
+  # 5,
   # 6, 
-  7,
+  # 7,
   # 8,
   # 9
 ]
 
 periods_forward_target: [
+  # 4,
+  # 5,
   6,
-  12,
-  24,
-  48,
+  # 12,
+  # 24,
+  # 48,
   # 10,
 ]
 

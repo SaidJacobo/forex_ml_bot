@@ -51,7 +51,6 @@ def initialize_backtesting():
     undersampling = config['undersampling']
     allowed_sessions = config['allowed_sessions']
 
-    use_trailing_stop = config['use_trailing_stop']
     pips_per_value = config['pips_per_value']
     trade_with = config['trade_with']
     
@@ -64,6 +63,7 @@ def initialize_backtesting():
     stop_loses_in_pips = parameters['stop_loss_in_pips']
     risk_reward_ratios = parameters['risk_reward_ratio']
     use_days_in_position = parameters['use_days_in_position']
+    use_trailing_stop_option = parameters['use_trailing_stop']
 
     max_window = max(train_window)
 
@@ -76,7 +76,8 @@ def initialize_backtesting():
         periods_forward_target, 
         stop_loses_in_pips, 
         risk_reward_ratios,
-        use_days_in_position
+        use_days_in_position,
+        use_trailing_stop_option
     )
     random.shuffle(parameter_combinations)
     processes = []
@@ -90,7 +91,8 @@ def initialize_backtesting():
             period_forward_target, 
             stop_loss_in_pips, 
             risk_reward_ratio, 
-            cancel_position_in_shift_days
+            cancel_position_in_shift_days,
+            use_trailing_stop
         ) = combination
 
         # Definición de la ruta de resultados
@@ -101,11 +103,12 @@ def initialize_backtesting():
             -Model_{model_name}
             -TrainWw_{train_window}
             -TrainPd_{train_period}
-            -TradingStgy_{trading_strategy.split('.')[-1]}
-            -PeriodsFwTg_{period_forward_target}
+            -TradStgy_{trading_strategy.split('.')[-1]}
+            -PerFwTg_{period_forward_target}
             -SL_{stop_loss_in_pips}
             -RR_{risk_reward_ratio}
-            -UseDaysClose_{cancel_position_in_shift_days}
+            -CloseByTime{cancel_position_in_shift_days}
+            -TS_{use_trailing_stop}
         '''.replace("\n", "").strip().replace(" ", "")
         
         this_experiment_path = os.path.join(experiments_path, results_path)
