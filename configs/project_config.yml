@@ -7,7 +7,7 @@ tickers: [EURUSD]
 trade_with: [EURUSD]
 allowed_sessions: [NY, London, 'Sidney', 'Tokio']
 start_money: 1000
-threshold: 0.5
+threshold: 0.45
 risk_percentage: 1
 undersampling: False
 

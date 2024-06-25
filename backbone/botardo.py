@@ -8,7 +8,7 @@ import pytz
 from datetime import datetime
 from datetime import timedelta
 import pandas as pd
-
+from statsmodels.tsa.filters.hp_filter import hpfilter
 from backbone.triple_barrier_utils import get_daily_volatility, triple_barrier_labeling, apply_cusum_filter
 
 class Botardo():
@@ -162,17 +162,25 @@ class Botardo():
       self.instruments[ticker] = self.instruments[ticker].set_index('Date')
 
       instrument = self.instruments[ticker].copy()
-      # compute bband sides
-      instrument['side'] = np.nan
-      long_signals = (instrument['Close'] <= instrument['lower_bband'])
-      short_signals = (instrument['Close'] >= instrument['upper_bband'])
-      instrument.loc[long_signals, 'side'] = 1
-      instrument.loc[short_signals, 'side'] = -1
+      # # compute bband sides
+      # instrument['side'] = np.nan
+      # long_signals = (instrument['Close'] <= instrument['lower_bband'])
+      # short_signals = (instrument['Close'] >= instrument['upper_bband'])
+      # instrument.loc[long_signals, 'side'] = 1
+      # instrument.loc[short_signals, 'side'] = -1
 
-      # compute macd sides
-      long_signals = (instrument['macd'] > instrument['macdsignal']) & (instrument['macd'].shift(1) <= instrument['macdsignal'].shift(1))
+      # # compute macd sides
+      # long_signals = (instrument['macd'] > instrument['macdsignal']) & (instrument['macd'].shift(1) <= instrument['macdsignal'].shift(1))
+      # instrument.loc[long_signals, 'side'] = 1
+      # short_signals = (instrument['macd'] < instrument['macdsignal']) & (instrument['macd'].shift(1) >= instrument['macdsignal'].shift(1))
+      # instrument.loc[short_signals, 'side'] = -1
+ 
+      _, trend = hpfilter(instrument['Close'], lamb=1000)
+      instrument['trend'] = trend
+      instrument['SMA20'] = instrument['trend'].rolling(window=20).mean()
+      long_signals = (instrument['trend'] > instrument['SMA20']) & (instrument['trend'].shift(1) <= instrument['SMA20'].shift(1))
+      short_signals = (instrument['trend'] < instrument['SMA20']) & (instrument['trend'].shift(1) >= instrument['SMA20'].shift(1))
       instrument.loc[long_signals, 'side'] = 1
-      short_signals = (instrument['macd'] < instrument['macdsignal']) & (instrument['macd'].shift(1) >= instrument['macdsignal'].shift(1))
       instrument.loc[short_signals, 'side'] = -1
 
       print(instrument.side.value_counts())
