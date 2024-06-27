@@ -1,37 +1,33 @@
 mode: paper
-
 user: blablabla
-
 password: 1234
-
 telegram_bot_token: 7169280958:AAGzEP6lpNZMC7w_KEntUAQTEUdX2dnYe98
-
 telegram_chat_id : '-4201375396'
 
-allowed_sessions: [NY, London]
-
 tickers: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
-
-pipeline_path: 'C:/Users/SaidJ/OneDrive/Documentos/projects/forex_ml_bot/forex_ml_bot/backbone/data/backtest/experiments/Mode_train-Model_random_forest-TrainWw_360-TrainPd_1-TradingStgy_macd_strategy-PeriodsFwTg_5-SL_15-TP_30-UseDaysClose_False/pipe.pkl'
-
-threshold: 0.80
-
-risk_percentage: 1
+trade_with: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
+allowed_sessions: [NY, London, 'Sidney', 'Tokio']
 
 models: 'random_forest'
-
-train_window: 480
-
+train_window: 5760
 train_period: 1 # frecuencia con la que se entrena
-
 stop_loss_in_pips: 15
-
 take_profits_in_pips: 30
-
-periods_forward_target: 10
-
-use_days_in_position: False
-
-trading_strategy: backbone.strategies.macd_strategy
-
+periods_forward_target: 24
+use_trailing_stop: False
+trading_strategy: backbone.strategies.ml_strategy
 risk_percentage: 1
+
+use_days_in_position: True
+undersampling: False
+
+pipeline_path: 'C:/Users/SaidJ/OneDrive/Documentos/projects/forex_ml_bot/forex_ml_bot/backbone/data/backtest/experiments/Mode_train-Model_gradient_boosting-TrainWw_5760-TrainPd_24-TradStgy_ml_strategy-PerFwTg_24-SL_15-RR_2-CloseByTimeTrue-TS_False/pipe.pkl'
+threshold: 0.499291802702681
+
+pips_per_value:
+  'EURUSD': 0.0001
+  'GBPUSD': 0.0001
+  'USDJPY': 0.01
+  'USDCAD': 0.0001
+  'AUDUSD': 0.0001
+  'USDCHF': 0.0001

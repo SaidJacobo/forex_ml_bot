@@ -6,17 +6,18 @@ from datetime import datetime
 from collections import namedtuple
 import os
 
-def get_session(date:datetime):
+def get_session(date: datetime):
     hour = date.hour
 
-    if hour >= 8 and hour <= 16:
+    if 8 <= hour < 16:
         return 'London'
-    if hour >= 13 and hour < 22:
+    elif 16 <= hour < 22:
         return 'NY'
-
-    if hour >= 22 and hour <= 7:
+    elif 22 <= hour or hour < 7:
         return 'Sidney'
-    if hour >= 0 and hour <= 9:
+    elif 7 <= hour < 8:
+        return 'Sidney'  # Confirmamos que 7-8 también es Sídney para cubrir todo el periodo
+    else:  # Esto incluye 0 <= hour < 8 y 22 <= hour < 24
         return 'Tokio'
 
 

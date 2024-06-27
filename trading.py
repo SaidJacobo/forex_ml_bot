@@ -49,10 +49,12 @@ if __name__ == '__main__':
     telegram_bot_token = config['telegram_bot_token']
     telegram_chat_id = config['telegram_chat_id']
     allowed_sessions = config['allowed_sessions']
-
+    pips_per_value = config['pips_per_value']
+    trade_with = config['trade_with']
+    use_trailing_stop = config['use_trailing_stop']
     tickers = config["tickers"] 
-
     risk_percentage = config["risk_percentage"] 
+    undersampling = config["undersampling"] 
 
     telegram_bot = TelegramBot(bot_token=telegram_bot_token, chat_id=telegram_chat_id)
 
@@ -66,7 +68,10 @@ if __name__ == '__main__':
         risk_percentage=risk_percentage,
         save_orders_path=logs_path,
         telegram_bot=telegram_bot,
-        allowed_sessions=allowed_sessions
+        allowed_sessions=allowed_sessions,
+        use_trailing_stop=use_trailing_stop,
+        pips_per_value=pips_per_value,
+        trade_with=trade_with
     )
 
     # Cargar el pipeline desde el archivo .pkl
@@ -117,9 +122,16 @@ if __name__ == '__main__':
 
     print('='*16, 'Iniciando backtesting', '='*16)
 
-    botardo.trading_bot_workflow(actual_date, df, train_period, train_window, periods_forward_target)
+    botardo.trading_bot_workflow(
+        actual_date, 
+        df, 
+        train_period, 
+        train_window, 
+        periods_forward_target, 
+        undersampling=undersampling
+    )
     
     # sobreescribo el pipeline recien entrenado
-    with open(pipeline_path, 'wb') as file:
-        joblib.dump(botardo.ml_agent.pipeline, file)
+    # with open(pipeline_path, 'wb') as file:
+    #     joblib.dump(botardo.ml_agent.pipeline, file)
     

@@ -6,7 +6,7 @@ from pandas import DataFrame
 from abc import ABC, abstractmethod
 from backbone.enums import ActionType, OperationType
 from backbone.utils import get_session
-from backbone.triple_barrier_utils import bbands
+from statsmodels.tsa.filters.hp_filter import hpfilter
 
 
 class ABCTrader(ABC):
@@ -114,12 +114,33 @@ class ABCTrader(ABC):
     df['morning_star'] = talib.CDLMORNINGSTAR(df.Open, df.High, df.Low, df.Close)
     df['shooting_star'] = talib.CDLSHOOTINGSTAR(df.Open, df.High, df.Low, df.Close)
 
+    _, trend = hpfilter(df['Close'], lamb=1000)
+    df['trend'] = trend
+    df['SMA20'] = df['trend'].rolling(window=20).mean()
+
     df = df.drop(columns=['spread', 'real_volume'])
 
     df = df.dropna()
 
     return df
   
+  def calculate_operation_sides(self, instrument):
+      # Esto deberia estar parametrizado
+      long_signals = (instrument['trend'] > instrument['SMA20']) & (instrument['trend'].shift(1) <= instrument['SMA20'].shift(1))
+      short_signals = (instrument['trend'] < instrument['SMA20']) & (instrument['trend'].shift(1) >= instrument['SMA20'].shift(1))
+      instrument.loc[long_signals, 'side'] = 1
+      instrument.loc[short_signals, 'side'] = -1
+
+      print(instrument.side.value_counts())
+
+      # Remove Look ahead biase by lagging the signal
+      instrument['side'] = instrument['side'].shift(1)
+      
+      # Drop the NaN values from our data set
+      instrument.dropna(inplace=True)
+
+      return instrument
+
   def _calculate_units_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair):
       # Get the pip value for the given currency pair
       pip_value = self.pips_per_value.get(currency_pair, None)

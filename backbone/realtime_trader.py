@@ -54,8 +54,8 @@ class RealtimeTrader(ABCTrader):
         self.money = mt5.account_info().balance
 
         self.operations_mapper = {
-            'buy': mt5.ORDER_TYPE_BUY,
-            'sell': mt5.ORDER_TYPE_SELL,
+            OperationType.BUY: mt5.ORDER_TYPE_BUY,
+            OperationType.SELL: mt5.ORDER_TYPE_SELL,
         }
 
         self.operations_oposite_mapper = {
@@ -138,14 +138,16 @@ class RealtimeTrader(ABCTrader):
 
         mt5.shutdown()
 
+        result_dict = result._asdict()
+        
         write_in_logs(
             path=os.path.join(self.save_orders_path, 'orders.txt'),
             time=date, 
             comment="Open position", 
-            order=result._asdict()
+            order=result_dict
         )
 
-        self.telegram_bot.send_order_by_telegram(result)
+        self.telegram_bot.send_order_by_telegram(result_dict)
 
 
     def close_position(self, order_id:int, date:str, price:float, comment:str) -> None:
@@ -180,7 +182,7 @@ class RealtimeTrader(ABCTrader):
             "type": action,
             "price": price,
             "position":order_id,
-            "comment": comment,
+            "comment": 'comentario',
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": mt5.ORDER_FILLING_IOC,
         }
@@ -189,14 +191,18 @@ class RealtimeTrader(ABCTrader):
         print(result)
         mt5.shutdown()
 
+        result_dict = result._asdict()
         write_in_logs(
             path=os.path.join(self.save_orders_path, 'orders.txt'), 
             time=date, 
             comment="Close position", 
-            order=result._asdict()
+            order=result_dict
         )
 
-        self.telegram_bot.send_order_by_telegram(result)
+        self.telegram_bot.send_order_by_telegram(result_dict)
+
+    def update_position(self, order_id, actual_price, comment):
+        pass
 
 
             

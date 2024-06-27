@@ -25,7 +25,7 @@ def operation_management_logic(
         model_with_indicator_open_sell_condition:bool,
         only_indicator_open_sell_condition:bool
     ) -> Result:
-
+    
     if open_order:
 
         days_in_position = (today - open_order.open_time).seconds // 3600
@@ -99,7 +99,6 @@ def operation_management_logic(
                     None, 
                     None
                 )
-        
 
     # Si la predicción del mercado supera el umbral superior, compra
     elif model_with_indicator_open_buy_condition or only_indicator_open_buy_condition:

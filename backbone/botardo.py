@@ -162,38 +162,7 @@ class Botardo():
       self.instruments[ticker] = self.instruments[ticker].set_index('Date')
 
       instrument = self.instruments[ticker].copy()
-      # # compute bband sides
-      # instrument['side'] = np.nan
-      # long_signals = (instrument['Close'] <= instrument['lower_bband'])
-      # short_signals = (instrument['Close'] >= instrument['upper_bband'])
-      # instrument.loc[long_signals, 'side'] = 1
-      # instrument.loc[short_signals, 'side'] = -1
-
-      # # compute macd sides
-      # long_signals = (instrument['macd'] > instrument['macdsignal']) & (instrument['macd'].shift(1) <= instrument['macdsignal'].shift(1))
-      # instrument.loc[long_signals, 'side'] = 1
-      # short_signals = (instrument['macd'] < instrument['macdsignal']) & (instrument['macd'].shift(1) >= instrument['macdsignal'].shift(1))
-      # instrument.loc[short_signals, 'side'] = -1
- 
-      _, trend = hpfilter(instrument['Close'], lamb=1000)
-      instrument['trend'] = trend
-      instrument['SMA20'] = instrument['trend'].rolling(window=20).mean()
-      long_signals = (instrument['trend'] > instrument['SMA20']) & (instrument['trend'].shift(1) <= instrument['SMA20'].shift(1))
-      short_signals = (instrument['trend'] < instrument['SMA20']) & (instrument['trend'].shift(1) >= instrument['SMA20'].shift(1))
-      instrument.loc[long_signals, 'side'] = 1
-      instrument.loc[short_signals, 'side'] = -1
-
-      print(instrument.side.value_counts())
-
-      # Remove Look ahead biase by lagging the signal
-      instrument['side'] = instrument['side'].shift(1)
-      
-      # volatility = get_daily_volatility(instrument.Close, span=120)
-      # cusum_events = apply_cusum_filter(instrument.Close, threshold=volatility.mean()*0.05)
-      # instrument = instrument.loc[cusum_events]
-
-      # Drop the NaN values from our data set
-      instrument.dropna(inplace=True)
+      instrument = self.trader.calculate_operation_sides(instrument=instrument)
 
       instrument['target'] = triple_barrier_labeling(
         close_prices=instrument['Close'], 
@@ -206,7 +175,6 @@ class Botardo():
         side=instrument['side']
       )
 
-      
       self.instruments[ticker].loc[instrument.index, 'side'] = instrument.side
       self.instruments[ticker].loc[instrument.index, 'target'] = instrument.target
       self.instruments[ticker].fillna(0, inplace=True)
@@ -273,17 +241,10 @@ class Botardo():
       & (df.side != 0)
     ].dropna()
     
-    # if market_data_window.shape[0] < 70:
-    #   print(f'No existen datos para el intervalo {date_from}-{actual_date}, se procedera con el siguiente')
-    #   return
-    today_market_data.loc[:, 'pred_label'] = np.nan
-    today_market_data.loc[:, 'proba'] = np.nan
-    side = today_market_data.iloc[0].side                     # ALERTA esto no funciona cuando tengo mas de un ticker
-    
-    if side == -1:
-      print('aksd')
-    
-    if self.ml_agent is not None and side != 0:
+    side = (today_market_data.side != 0).any()
+   
+    # if self.ml_agent is not None and side != 0:
+    if side and self.ml_agent is not None:
       
       hours_from_train = None
       if self.ml_agent.last_date_train is not None:
@@ -308,35 +269,35 @@ class Botardo():
 
         self.ml_agent.last_date_train = actual_date
         print('Entrenamiento terminado! :)')
-
-      calsses, probas = self.ml_agent.predict_proba(today_market_data.drop(columns=[
-        'target', 
-        'Date', 
-        'ticker',
-        'pred_label', 
-        'proba'
-      ]))
-      
-      pred_per_ticker = pd.DataFrame({'ticker':today_market_data.ticker, 'class':calsses, 'proba':probas})
-      print(f'Prediccion: {pred_per_ticker}')
-
-      today_market_data.loc[:, 'pred_label'] = calsses
-      today_market_data.loc[:, 'proba'] = probas
     
-    for _, stock in today_market_data.iterrows():
-      if self.ml_agent is not None:
-        self.ml_agent.save_predictions(
-          stock.Date,
-          stock.ticker, 
-          stock.target, 
-          stock.pred_label,
-          stock.proba
-        )
+    today_market_data['pred_label'] = np.nan
+    today_market_data['proba'] = np.nan
+
+    for index, stock in today_market_data.iterrows():
+      
+      if side and self.ml_agent is not None:
+          # Drop the specified columns before prediction
+          stock_features = stock.drop(labels=['target', 'Date', 'ticker', 'pred_label', 'proba'])
+          
+          stock_features_df = pd.DataFrame([stock_features])
+
+          # Predict the class and probability
+          _class, proba = self.ml_agent.predict_proba(stock_features_df)
+          
+          # Assign the predicted class and probability to the DataFrame
+          today_market_data.at[index, 'pred_label'] = _class
+          today_market_data.at[index, 'proba'] = proba
+
+          self.ml_agent.save_predictions(
+            today_market_data.loc[index].Date,
+            today_market_data.loc[index].ticker, 
+            today_market_data.loc[index].target, 
+            today_market_data.loc[index].pred_label,
+            today_market_data.proba
+          )
 
       result = self.trader.take_operation_decision(
-        actual_market_data=stock.drop(columns=['target']),
+        actual_market_data=today_market_data.loc[index].drop(labels=['target']),
         actual_date=actual_date
       )
 
-
-      
