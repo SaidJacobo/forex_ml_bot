@@ -111,7 +111,8 @@ class RealtimeTrader(ABCTrader):
             self.risk_percentage,
             self.stop_loss_in_pips,
             currency_pair=ticker,
-            lot_size_standard=100000
+            lot_size_standard=100000,
+            price=price
         )
 
         price_sl = self._calculate_stop_loss(operation_type, price, ticker)

@@ -53,6 +53,8 @@ class ABCTrader(ABC):
     Returns:
         DataFrame: DataFrame con los indicadores calculados.
     """
+    df.sort_values(by='Date', ascending=True, inplace=True)
+
     df['ema_12'] = talib.EMA(df['Close'], timeperiod=12)
     df['ema_26'] = talib.EMA(df['Close'], timeperiod=26)
     df['ema_50'] = talib.EMA(df['Close'], timeperiod=50)
@@ -141,7 +143,7 @@ class ABCTrader(ABC):
 
       return instrument
 
-  def _calculate_units_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair):
+  def _calculate_units_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair, price):
       # Get the pip value for the given currency pair
       pip_value = self.pips_per_value.get(currency_pair, None)
       if pip_value is None:
@@ -150,14 +152,21 @@ class ABCTrader(ABC):
       # Calculate risk in account currency
       account_currency_risk = account_size * (risk_percentage / 100)
       
+      pip_value = pip_value / price
+
       # Calculate lot size in units
       units = round(account_currency_risk / (pip_value * stop_loss_pips))
       
       return units
 
-
-  def _calculate_lot_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair, lot_size_standard):
-    units = self._calculate_units_size(account_size, risk_percentage, stop_loss_pips, currency_pair)
+  def _calculate_lot_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair, lot_size_standard, price):
+    units = self._calculate_units_size(
+      account_size, 
+      risk_percentage, 
+      stop_loss_pips, 
+      currency_pair, 
+      price=price
+    )
     
     decimals = 2
     number_of_lots = round(units / lot_size_standard, decimals)
@@ -174,7 +183,7 @@ class ABCTrader(ABC):
       elif operation_type == OperationType.SELL:
         price_sl = price + (self.stop_loss_in_pips * pips)
         
-      return price_sl
+      return round(price_sl, 4)
   
 
   def _calculate_take_profit(self, operation_type, price, ticker):

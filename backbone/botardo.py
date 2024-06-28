@@ -71,7 +71,7 @@ class Botardo():
     })
 
     self.instruments[ticker] = df
-    self.instruments[ticker]['Date'] = self.instruments[ticker]['Date']    
+    self.instruments[ticker]['Date'] = self.instruments[ticker]['Date']   # ??? 
 
   def get_symbols_and_generate_indicators(
       self, 

@@ -66,7 +66,8 @@ class BacktestingTrader(ABCTrader):
             self.actual_money, 
             self.risk_percentage,
             self.stop_loss_in_pips,
-            currency_pair=ticker
+            currency_pair=ticker,
+            price=price
         )
 
         price_sl = self._calculate_stop_loss(operation_type, price, ticker)
