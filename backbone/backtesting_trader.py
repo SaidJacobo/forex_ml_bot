@@ -97,25 +97,37 @@ class BacktestingTrader(ABCTrader):
         print('='*16, f'se cerro una posicion el {date}', '='*16)
 
     def update_position(self, order_id, actual_price, comment):
-        if self.use_trailing_stop:
-            order = self.get_open_orders(ticket=order_id).pop()
+        try:
+            if self.use_trailing_stop:
+                open_orders = self.get_open_orders(ticket=order_id)
+                
+                if not open_orders:
+                    raise ValueError(f"No open orders found for ticket {order_id}")
+                
+                order = open_orders.pop()
 
-            new_sl = None
-            if order.operation_type == OperationType.BUY and actual_price > order.last_price:
-                new_sl = self._calculate_stop_loss(
-                    operation_type=order.operation_type, 
-                    price=actual_price, 
-                    ticker=order.ticker
-                )
-            elif order.operation_type == OperationType.SELL and actual_price < order.last_price:
-                new_sl = self._calculate_stop_loss(
-                    operation_type=order.operation_type, 
-                    price=actual_price, 
-                    ticker=order.ticker
-                )
+                new_sl = None
+                if order.operation_type == OperationType.BUY and actual_price > order.last_price:
+                    new_sl = self._calculate_stop_loss(
+                        operation_type=order.operation_type, 
+                        price=actual_price, 
+                        ticker=order.ticker
+                    )
+                elif order.operation_type == OperationType.SELL and actual_price < order.last_price:
+                    new_sl = self._calculate_stop_loss(
+                        operation_type=order.operation_type, 
+                        price=actual_price, 
+                        ticker=order.ticker
+                    )
 
-            if new_sl:
-                order.update(sl=new_sl, last_price=actual_price)
+                if new_sl is not None:
+                    order.update(sl=new_sl, last_price=actual_price)
+                    print(f"Updated order {order_id}: new SL = {new_sl}, last price = {actual_price}")
+                else:
+                    print(f"No update needed for order {order_id}: actual price = {actual_price}, last price = {order.last_price}")
+
+        except Exception as e:
+            print(f"An error occurred while updating position for order {order_id}: {e}")
 
     def get_open_orders(self, ticket:int=None, symbol:str=None) -> List[Order]:
         open_orders = None

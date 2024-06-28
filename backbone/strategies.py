@@ -1,5 +1,6 @@
 from collections import namedtuple
 import numpy as np
+import pandas as pd
 from backbone.order import Order
 from backbone.enums import ClosePositionType, OperationType, ActionType
 
@@ -31,7 +32,7 @@ def operation_management_logic(
         days_in_position = (today - open_order.open_time).seconds // 3600
         
         if open_order.operation_type == OperationType.BUY:
-            if allowed_days_in_position and days_in_position == allowed_days_in_position:
+            if allowed_days_in_position and days_in_position >= allowed_days_in_position:
                 return Result(
                     ActionType.CLOSE, 
                     OperationType.SELL, 
@@ -57,7 +58,7 @@ def operation_management_logic(
 
             # Si estás en posición pero no han pasado los días permitidos, espera
         elif open_order.operation_type == OperationType.SELL: 
-            if allowed_days_in_position and days_in_position == allowed_days_in_position:
+            if allowed_days_in_position and days_in_position >= allowed_days_in_position:
                 return Result(
                     ActionType.CLOSE, 
                     OperationType.BUY, 
@@ -126,21 +127,12 @@ def operation_management_logic(
 
 def ml_strategy(
     today,
-    actual_market_data,
+    actual_market_data: pd.DataFrame,
     orders: list,
     allowed_days_in_position: int,
     use_trailing_stop: bool,
     threshold: float,
 ):
-    '''
-    Comprar si la predicción del modelo indica una alta probabilidad de que el precio suba 
-    y el precio actual está cerca de la banda inferior de las Bandas de Bollinger, 
-    lo que sugiere una posible reversión al alza.
-    Vender si la predicción del modelo indica una alta probabilidad de que el precio baje 
-    y el precio actual está cerca de la banda superior de las Bandas de Bollinger, 
-    lo que sugiere una posible reversión a la baja.
-    Mantener en cualquier otro caso.
-    '''
     
     class_ = actual_market_data["pred_label"]
     proba = actual_market_data["proba"]

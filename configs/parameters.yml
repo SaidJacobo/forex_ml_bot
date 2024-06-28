@@ -42,7 +42,8 @@ risk_reward_ratio: [
 ]
 
 periods_forward_target: [
-  # 4,
+  4,
+  
   # 5,
   8,
   12,
