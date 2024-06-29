@@ -51,7 +51,7 @@ class Order():
         self.close_price = close_price
         self.close_time = close_time
         self.profit_in_pips = self.get_profit()
-        self.profit =  self.profit_in_pips * self.units
+        self.profit =  round(self.profit_in_pips * self.units, 4)
         self.comment=comment
         
     def get_profit(self) -> float:

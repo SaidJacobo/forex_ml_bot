@@ -104,7 +104,10 @@ class RealtimeTrader(ABCTrader):
 
         symbol_info = mt5.symbol_info(ticker)
         # point = symbol_info.point
-        price = symbol_info.ask if operation_type == OperationType.BUY else symbol_info.bid
+        if ticker in ['EURUSD', 'GBPUSD','AUDUSD']:
+            price = (symbol_info.bid + symbol_info.ask) / 2
+        else:
+            price = symbol_info.ask if operation_type == OperationType.BUY else symbol_info.bid
 
         lot = self._calculate_lot_size(
             self.money, 

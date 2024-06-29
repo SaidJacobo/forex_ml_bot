@@ -197,7 +197,7 @@ class ABCTrader(ABC):
       elif operation_type == OperationType.SELL:
         price_tp = price - (self.take_profit_in_pips * pips)
         
-      return price_tp
+      return round(price_tp, 4)
 
   @abstractmethod
   def open_position(self, operation_type:str, ticker:str, date:str, price:float) -> None:
