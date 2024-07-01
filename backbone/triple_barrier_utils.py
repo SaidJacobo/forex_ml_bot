@@ -55,34 +55,39 @@ def apply_triple_barrier(
 
     barriers = []
     for index in range(len(close_prices)):
+        actual_close_price = close_prices[index]
+        
         if side[index] == 1:
             # Para una señal de compra
-            upper_barrier_level = close_prices[index] * (1 + (take_profit_in_pips * pip_size))
-            lower_barrier_level = close_prices[index] * (1 - (stop_loss_in_pips * pip_size))
+            upper_barrier_level = round(actual_close_price + (take_profit_in_pips * pip_size), 4)
+            lower_barrier_level = round(actual_close_price - (stop_loss_in_pips * pip_size), 4)
         elif side[index] == -1:
             # Para una señal de venta
-            upper_barrier_level = close_prices[index] * (1 + (stop_loss_in_pips * pip_size))
-            lower_barrier_level = close_prices[index] * (1 - (take_profit_in_pips * pip_size))
+            upper_barrier_level = round(actual_close_price + (stop_loss_in_pips * pip_size), 4)
+            lower_barrier_level = round(actual_close_price - (take_profit_in_pips * pip_size), 4)
         else:
             # Si no hay señal, saltar al siguiente índice
             continue
         
         # Evaluar los precios futuros dentro del período máximo de mantenimiento
         for j in range(index + 1, min(index + max_holding_period, len(close_prices))):
+            future_close_price = close_prices[j]
+            future_max_price = max_prices[j]
+            future_min_price = min_prices[j]
             if side[index] == 1:
                 # Señal de compra: tomar ganancias si se alcanza la barrera superior
-                if close_prices[j] >= upper_barrier_level or max_prices[j] >= upper_barrier_level:
+                if future_close_price >= upper_barrier_level or future_max_price >= upper_barrier_level:
                     barriers.append((index, 1))  # Etiqueta 1 para toma de ganancias
                     break
-                elif close_prices[j] <= lower_barrier_level or min_prices[j] <= lower_barrier_level:
+                elif future_close_price <= lower_barrier_level or future_min_price <= lower_barrier_level:
                     barriers.append((index, 0))  # Etiqueta 0 para stop-loss
                     break
             elif side[index] == -1:
                 # Señal de venta: tomar ganancias si se alcanza la barrera inferior
-                if close_prices[j] <= lower_barrier_level or min_prices[j] <= lower_barrier_level:
+                if future_close_price <= lower_barrier_level or future_min_price <= lower_barrier_level:
                     barriers.append((index, 1))  # Etiqueta 1 para toma de ganancias
                     break
-                elif close_prices[j] >= upper_barrier_level or max_prices[j] >= upper_barrier_level:
+                elif future_close_price >= upper_barrier_level or future_max_price >= upper_barrier_level:
                     barriers.append((index, 0))  # Etiqueta 0 para stop-loss
                     break
         else:
