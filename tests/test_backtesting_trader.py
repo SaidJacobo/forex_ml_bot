@@ -105,15 +105,15 @@ def test_no_future_data_leak(sample_data):
     assert missing_dates == False, "Future data leak detected"
 
 
-@pytest.mark.parametrize("account_size, risk_percentage, stop_loss_pips, currency_pair, price, expected_units", [
-    (10000, 2, 50, 'EURUSD', 1.07158, 42863),
-    (5000, 1, 25, 'GBPUSD', 1.26441, 25288),
-    (10000, 1, 15, 'USDJPY', 160.848, 107232),
+@pytest.mark.parametrize("account_size, risk_percentage, stop_loss_pips, currency_pair, expected_units", [
+    (10000, 2, 50, 'EURUSD', 40000),
+    (5000, 1, 25, 'GBPUSD', 20000),
+    (10000, 1, 15, 'USDJPY', 667),
     # Agrega más casos de prueba según sea necesario
 ])
-def test_calculate_units_size(account_size, risk_percentage, stop_loss_pips, currency_pair, price,  expected_units):
+def test_calculate_units_size(account_size, risk_percentage, stop_loss_pips, currency_pair, expected_units):
     # Llama a la función _calculate_units_size
-    units = trader._calculate_units_size(account_size, risk_percentage, stop_loss_pips, currency_pair, price)
+    units = trader._calculate_units_size(account_size, risk_percentage, stop_loss_pips, currency_pair)
 
     # Verifica que el resultado sea igual al esperado
     assert units == expected_units, f"Expected units: {expected_units}, but got: {units}"
@@ -121,13 +121,13 @@ def test_calculate_units_size(account_size, risk_percentage, stop_loss_pips, cur
 
 @pytest.mark.parametrize(
     "account_size, risk_percentage, stop_loss_pips, currency_pair, lot_size_standard, price, expected_lot_size", [
-        (10000, 2, 50, 'EURUSD', 100000, 1.07158, 0.43),
-        (5000, 1, 25, 'GBPUSD', 100000, 1.26441, 0.25),
-        (10000, 1, 15, 'USDJPY', 100000, 160.848, 1.07)
+        (10000, 2, 50, 'EURUSD', 100000, 1.07158, 0.4),
+        (5000, 1, 25, 'GBPUSD', 100000, 1.26441, 0.2),
+        (10000, 1, 15, 'USDJPY', 100000, 160.848, 0.01)
     ]
 )
 def test_calculate_lot_size(account_size, risk_percentage, stop_loss_pips, currency_pair, lot_size_standard, price, expected_lot_size):
-    calculated_lot_size = trader._calculate_lot_size(account_size, risk_percentage, stop_loss_pips, currency_pair, lot_size_standard, price)
+    calculated_lot_size = trader._calculate_lot_size(account_size, risk_percentage, stop_loss_pips, currency_pair, lot_size_standard)
     assert calculated_lot_size == expected_lot_size
 
 
@@ -177,10 +177,10 @@ def test_take_operation_decision(actual_market_data, actual_date, expected_actio
 @pytest.mark.parametrize(
     "operation_type, ticker, date, price, expected_units, expected_stop_loss, expected_take_profit",
     [
-        (OperationType.BUY, 'EURUSD', datetime(2024, 6, 28), 1.2, 48000, 1.195, 1.205),
-        (OperationType.SELL, 'GBPUSD', datetime(2024, 6, 28), 1.3, 52000, 1.305, 1.295),
-        (OperationType.BUY, 'USDJPY', datetime(2024, 6, 28), 110.0, 44000, 109.5, 110.5),
-        (OperationType.SELL, 'USDCHF', datetime(2024, 6, 28), 0.9, 36000, 0.905, 0.895),
+        (OperationType.BUY, 'EURUSD', datetime(2024, 6, 28), 1.2, 40000, 1.195, 1.205),
+        (OperationType.SELL, 'GBPUSD', datetime(2024, 6, 28), 1.3, 40000, 1.305, 1.295),
+        (OperationType.BUY, 'USDJPY', datetime(2024, 6, 28), 110.0, 400, 109.5, 110.5),
+        (OperationType.SELL, 'USDCHF', datetime(2024, 6, 28), 0.9, 40000, 0.905, 0.895),
     ]
 )
 def test_open_position(operation_type, ticker, date, price, expected_units, expected_stop_loss, expected_take_profit):

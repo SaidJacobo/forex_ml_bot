@@ -42,7 +42,6 @@ if __name__ == '__main__':
     train_window = config['train_window']
     train_period = config['train_period']
     stop_loss_in_pips = config['stop_loss_in_pips']
-    take_profit_in_pips = config['take_profits_in_pips']
     periods_forward_target = config['periods_forward_target']
     use_days_in_position = config['use_days_in_position']
     trading_strategy = config['trading_strategy']
@@ -53,8 +52,10 @@ if __name__ == '__main__':
     trade_with = config['trade_with']
     use_trailing_stop = config['use_trailing_stop']
     tickers = config["tickers"] 
-    risk_percentage = config["risk_percentage"] 
+    risk_reward_ratio = config['risk_reward_ratio']
     undersampling = config["undersampling"] 
+
+    take_profit_in_pips = stop_loss_in_pips * risk_reward_ratio
 
     telegram_bot = TelegramBot(bot_token=telegram_bot_token, chat_id=telegram_chat_id)
 
