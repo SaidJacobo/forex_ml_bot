@@ -152,7 +152,7 @@ class ABCTrader(ABC):
       # Calculate risk in account currency
       account_currency_risk = account_size * (risk_percentage / 100)
       
-      pip_value = pip_value / price
+      # pip_value = pip_value / price
 
       # Calculate lot size in units
       units = round(account_currency_risk / (pip_value * stop_loss_pips))

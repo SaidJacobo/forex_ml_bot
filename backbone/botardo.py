@@ -8,8 +8,7 @@ import pytz
 from datetime import datetime
 from datetime import timedelta
 import pandas as pd
-from statsmodels.tsa.filters.hp_filter import hpfilter
-from backbone.triple_barrier_utils import get_daily_volatility, triple_barrier_labeling, apply_cusum_filter
+from backbone.triple_barrier_utils import triple_barrier_labeling
 
 class Botardo():
   """Clase base de bot de trading y aprendizaje automático.
@@ -293,7 +292,7 @@ class Botardo():
             today_market_data.loc[index].ticker, 
             today_market_data.loc[index].target, 
             today_market_data.loc[index].pred_label,
-            today_market_data.proba
+            today_market_data.loc[index].proba
           )
 
       result = self.trader.take_operation_decision(
