@@ -1,10 +1,24 @@
 from importlib import import_module
 import itertools
+from backbone.enums import OperationType
 from backbone.order import Order
 from datetime import datetime
 from collections import namedtuple
 import os
 
+def get_session(date: datetime):
+    hour = date.hour
+
+    if 8 <= hour < 16:
+        return 'London'
+    elif 16 <= hour < 22:
+        return 'NY'
+    elif 22 <= hour or hour < 7:
+        return 'Sidney'
+    elif 7 <= hour < 8:
+        return 'Sidney'  # Confirmamos que 7-8 también es Sídney para cubrir todo el periodo
+    else:  # Esto incluye 0 <= hour < 8 y 22 <= hour < 24
+        return 'Tokio'
 
 
 def load_function(dotpath: str):
@@ -21,7 +35,8 @@ def get_parameter_combinations(
         periods_forward_target, 
         stop_loses_in_pips, 
         take_profits_in_pips,
-        use_days_in_position
+        use_days_in_position,
+        use_trailing_stop_option
     ):
     parameter_combinations = []
     if None in models:
@@ -40,7 +55,8 @@ def get_parameter_combinations(
         periods_forward_target, 
         stop_loses_in_pips, 
         take_profits_in_pips,
-        use_days_in_position
+        use_days_in_position,
+        use_trailing_stop_option
     ))
 
     return parameter_combinations
@@ -48,7 +64,7 @@ def get_parameter_combinations(
 def from_mt_order_to_order(mt_order) -> Order:
     order = Order(
         id=mt_order.ticket, 
-        order_type='buy' if mt_order.type == 0 else 'sell', 
+        order_type=OperationType.BUY if mt_order.type == 0 else OperationType.SELL, 
         ticker=mt_order.symbol, 
         open_time=datetime.fromtimestamp(mt_order.time),
         open_price=mt_order.price_open,
@@ -66,7 +82,7 @@ def from_order_to_mt_order(order:Order) -> dict:
 
     mt_order = MtOrder(
         order.id,
-        0 if order.operation_type == 'buy' else 1, 
+        0 if order.operation_type == OperationType.BUY else 1, 
         order.ticker, 
         order.open_time,
         order.open_price,

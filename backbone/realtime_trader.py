@@ -1,4 +1,5 @@
 import pandas as pd
+from backbone.enums import OperationType
 from backbone.order import Order
 from backbone.trader import ABCTrader
 import MetaTrader5 as mt5
@@ -14,24 +15,31 @@ class RealtimeTrader(ABCTrader):
     def __init__(
             self, 
             trading_strategy, 
-            threshold_up: int, 
-            threshold_down: int, 
+            threshold: int, 
             allowed_days_in_position: int, 
             stop_loss_in_pips: int, 
             take_profit_in_pips: int, 
             risk_percentage: int,
             save_orders_path:str,
-            telegram_bot: TelegramBot
+            telegram_bot: TelegramBot,
+            allowed_sessions:List[str],
+            pips_per_value:dict,
+            use_trailing_stop:bool,
+            trade_with:List[str]
+            
         ):
 
         super().__init__(
             trading_strategy, 
-            threshold_up, 
-            threshold_down, 
+            threshold, 
             allowed_days_in_position, 
             stop_loss_in_pips, 
             take_profit_in_pips, 
-            risk_percentage
+            risk_percentage,
+            allowed_sessions,
+            pips_per_value,
+            use_trailing_stop,
+            trade_with
         )
         # display data on the MetaTrader 5 package
         print("MetaTrader5 package author: ", mt5.__author__)
@@ -46,8 +54,8 @@ class RealtimeTrader(ABCTrader):
         self.money = mt5.account_info().balance
 
         self.operations_mapper = {
-            'buy': mt5.ORDER_TYPE_BUY,
-            'sell': mt5.ORDER_TYPE_SELL,
+            OperationType.BUY: mt5.ORDER_TYPE_BUY,
+            OperationType.SELL: mt5.ORDER_TYPE_SELL,
         }
 
         self.operations_oposite_mapper = {
@@ -96,7 +104,10 @@ class RealtimeTrader(ABCTrader):
 
         symbol_info = mt5.symbol_info(ticker)
         # point = symbol_info.point
-        price = symbol_info.ask if operation_type=='buy' else symbol_info.bid
+        if ticker in ['EURUSD', 'GBPUSD','AUDUSD']:
+            price = (symbol_info.bid + symbol_info.ask) / 2
+        else:
+            price = symbol_info.ask if operation_type == OperationType.BUY else symbol_info.bid
 
         lot = self._calculate_lot_size(
             self.money, 
@@ -130,14 +141,16 @@ class RealtimeTrader(ABCTrader):
 
         mt5.shutdown()
 
+        result_dict = result._asdict()
+        
         write_in_logs(
             path=os.path.join(self.save_orders_path, 'orders.txt'),
             time=date, 
             comment="Open position", 
-            order=result._asdict()
+            order=result_dict
         )
 
-        self.telegram_bot.send_order_by_telegram(result)
+        self.telegram_bot.send_order_by_telegram(result_dict)
 
 
     def close_position(self, order_id:int, date:str, price:float, comment:str) -> None:
@@ -161,7 +174,7 @@ class RealtimeTrader(ABCTrader):
 
         lot = position.volume
         
-        price = symbol_info.ask if position.type=='buy' else symbol_info.bid
+        price = symbol_info.ask if position.type == OperationType.BUY else symbol_info.bid
 
         action = self.operations_oposite_mapper[position.type]
 
@@ -172,7 +185,7 @@ class RealtimeTrader(ABCTrader):
             "type": action,
             "price": price,
             "position":order_id,
-            "comment": comment,
+            "comment": 'comentario',
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": mt5.ORDER_FILLING_IOC,
         }
@@ -181,14 +194,18 @@ class RealtimeTrader(ABCTrader):
         print(result)
         mt5.shutdown()
 
+        result_dict = result._asdict()
         write_in_logs(
             path=os.path.join(self.save_orders_path, 'orders.txt'), 
             time=date, 
             comment="Close position", 
-            order=result._asdict()
+            order=result_dict
         )
 
-        self.telegram_bot.send_order_by_telegram(result)
+        self.telegram_bot.send_order_by_telegram(result_dict)
+
+    def update_position(self, order_id, actual_price, comment):
+        pass
 
 
             

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import yaml
 import os
 from backbone.machine_learning_agent import MachineLearningAgent
@@ -7,6 +7,8 @@ from backbone.back_tester import BackTester
 from backbone.botardo import Botardo
 import multiprocessing
 from backbone.utils import load_function, get_parameter_combinations
+import random
+
 
 date_format = '%Y-%m-%d %H:00:00'
 
@@ -41,12 +43,16 @@ def initialize_backtesting():
     # Obtención de parámetros del proyecto
     mode = config['mode']
     paralelize = config['paralelize']
-    force_download_symbols = config['force_download_symbols']
     limit_date_train = config['limit_date_train']
     date_from = datetime.strptime(config['date_from'], date_format)
     date_to = datetime.strptime(config['date_to'], date_format)
     tickers = config["tickers"] 
     risk_percentage = config["risk_percentage"] 
+    undersampling = config['undersampling']
+    allowed_sessions = config['allowed_sessions']
+
+    pips_per_value = config['pips_per_value']
+    trade_with = config['trade_with']
     
     # Obtención de parámetros de entrenamiento
     models = parameters['models']
@@ -55,8 +61,11 @@ def initialize_backtesting():
     trading_strategies = parameters['trading_strategy']
     periods_forward_target = parameters['periods_forward_target']
     stop_loses_in_pips = parameters['stop_loss_in_pips']
-    take_profits_in_pips = parameters['take_profits_in_pips']
+    risk_reward_ratios = parameters['risk_reward_ratio']
     use_days_in_position = parameters['use_days_in_position']
+    use_trailing_stop_option = parameters['use_trailing_stop']
+
+    max_window = max(train_window)
 
     # Combinaciones de parámetros
     parameter_combinations = get_parameter_combinations(
@@ -66,10 +75,11 @@ def initialize_backtesting():
         trading_strategies, 
         periods_forward_target, 
         stop_loses_in_pips, 
-        take_profits_in_pips,
-        use_days_in_position
+        risk_reward_ratios,
+        use_days_in_position,
+        use_trailing_stop_option
     )
-
+    random.shuffle(parameter_combinations)
     processes = []
     first_time = True
     for combination in parameter_combinations:
@@ -80,21 +90,25 @@ def initialize_backtesting():
             trading_strategy, 
             period_forward_target, 
             stop_loss_in_pips, 
-            take_profit_in_pips, 
-            cancel_position_in_shift_days
+            risk_reward_ratio, 
+            cancel_position_in_shift_days,
+            use_trailing_stop
         ) = combination
 
         # Definición de la ruta de resultados
+        take_profit_in_pips = risk_reward_ratio * stop_loss_in_pips
+
         results_path = f'''
             Mode_{mode}
             -Model_{model_name}
             -TrainWw_{train_window}
             -TrainPd_{train_period}
-            -TradingStgy_{trading_strategy.split('.')[-1]}
-            -PeriodsFwTg_{period_forward_target}
+            -TradStgy_{trading_strategy.split('.')[-1]}
+            -PerFwTg_{period_forward_target}
             -SL_{stop_loss_in_pips}
-            -TP_{take_profit_in_pips}
-            -UseDaysClose_{cancel_position_in_shift_days}
+            -RR_{risk_reward_ratio}
+            -CloseByTime{cancel_position_in_shift_days}
+            -TS_{use_trailing_stop}
         '''.replace("\n", "").strip().replace(" ", "")
         
         this_experiment_path = os.path.join(experiments_path, results_path)
@@ -110,12 +124,15 @@ def initialize_backtesting():
         trader = BacktestingTrader(
             money=config['start_money'], 
             trading_strategy=strategy,
-            threshold_up=config['threshold_up'],
-            threshold_down=config['threshold_down'],
+            threshold=config['threshold'],
             allowed_days_in_position=period_forward_target if cancel_position_in_shift_days else None,
             stop_loss_in_pips=stop_loss_in_pips,
             take_profit_in_pips=take_profit_in_pips,
             risk_percentage=risk_percentage,
+            allowed_sessions=allowed_sessions, 
+            use_trailing_stop=use_trailing_stop, 
+            pips_per_value=pips_per_value, 
+            trade_with=trade_with
         )
 
         # Configuración del modelo de machine learning
@@ -140,7 +157,7 @@ def initialize_backtesting():
         # si hay menos archivos de symbolos csv que la cantidad de tickers con la que trabajo
         botardo.get_symbols_and_generate_indicators(
             symbols_path=symbols_path, 
-            date_from=date_from,
+            date_from=date_from - timedelta(hours=max_window),
             date_to=date_to,
             # Si no se guarda el dataset se descargara por cada configuracion
             save=first_time,
@@ -154,26 +171,29 @@ def initialize_backtesting():
             process = multiprocessing.Process(
                 target=backtester.start, 
                 args=(
+                    date_from,
                     symbols_path,
                     train_window, 
                     train_period,
                     mode,
                     limit_date_train,
                     this_experiment_path, 
-                    period_forward_target            
+                    period_forward_target
                 )
             )
 
             processes.append(process)
         else:
             backtester.start(
+                start_date=date_from,
                 symbols_path=symbols_path,
                 train_window=train_window, 
                 train_period=train_period,
                 mode=mode,
                 limit_date_train=limit_date_train,
                 results_path=this_experiment_path, 
-                period_forward_target=period_forward_target
+                period_forward_target=period_forward_target,
+                undersampling=undersampling
             )
 
     if processes:

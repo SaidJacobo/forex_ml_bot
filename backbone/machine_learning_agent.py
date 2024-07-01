@@ -1,12 +1,15 @@
+import numpy as np
+from sklearn.ensemble import StackingClassifier
 from sklearn.linear_model import LogisticRegression
 from backbone.probability_transformer import ProbabilityTransformer 
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
-from sklearn.metrics import fbeta_score, make_scorer, auc, roc_curve
+from sklearn.metrics import f1_score, fbeta_score, make_scorer, precision_score, recall_score
 from sklearn.preprocessing import StandardScaler
 from backbone.utils import load_function
 from typing import Tuple
+from imblearn.under_sampling import RandomUnderSampler
 
 class MachineLearningAgent():
   """Agente de Aprendizaje Automático para entrenar y predecir."""
@@ -39,26 +42,41 @@ class MachineLearningAgent():
     # Si llega la param_grid, el pipeline se arma en la funcion train, sino lo armo directamente aca con 
     # los params que corresponda
     
-    self.days_from_train=None
-    self.stock_predictions = {}
-    self.stock_true_values = {}
+    self.last_date_train = None
+
+    self.test_results = {}
+
     for ticker in tickers:
-      self.stock_predictions[ticker] = {}
-      self.stock_true_values[ticker] = {}
+      self.test_results[ticker] = {}
     
     self.train_results = {}
+    self.train_results['precision'] = {}
+    self.train_results['recall'] = {}
+    self.train_results['f1'] = {}
+
     self.best_params = {}
 
   def _create_pipeline(self):
     scaler = StandardScaler()
-    log_reg = LogisticRegression()
+
+    log_reg = LogisticRegression(
+      multi_class='auto', 
+      solver='lbfgs', 
+      class_weight='balanced', 
+      max_iter=1000,
+      random_state=42
+    )
 
     model = self.model()
 
     pipe = Pipeline([
-        ('scaler', scaler),
-        ('prob_transf', ProbabilityTransformer(model)),
-        ('log_reg', log_reg)
+        ('scaler', StandardScaler()),  # Normalizar características
+        ('stacking', StackingClassifier(
+            estimators=[
+                ('prob_transf', ProbabilityTransformer(model)),
+            ],
+            final_estimator=log_reg
+        ))
     ])
 
     return pipe
@@ -84,14 +102,17 @@ class MachineLearningAgent():
     Returns:
         array: Predicciones de probabilidad del modelo.
     """
-    proba = self.pipeline.predict_proba(x)
+    predictions = self.pipeline.predict_proba(x)
 
-    try:
-      pred = proba[:,1] # si el array tiene dos valores agarro el segundo
-    except:
-      pred = proba[:,0] # si tiene uno solo es porque esta super seguro de una de las dos clases, y agarro ese valor
-      
-    return pred
+    # Obtener los nombres de las clases
+    class_names = self.pipeline.named_steps['stacking'].classes_
+
+    # Obtener la probabilidad más alta y la clase correspondiente
+    max_proba_indices = np.argmax(predictions, axis=1)
+    max_proba_values = np.max(predictions, axis=1)
+    predicted_classes = class_names[max_proba_indices]
+
+    return predicted_classes, max_proba_values
 
   def train(
       self, 
@@ -101,9 +122,15 @@ class MachineLearningAgent():
       y_test:pd.DataFrame, 
       date_train:str, 
       verbose=False,
+      undersampling=False
+
     ) -> None:
+    if undersampling:
+      rus = RandomUnderSampler(random_state=42)
+      x_train, y_train = rus.fit_resample(x_train, y_train)
+
     if self.tunning:
-      n_splits = 2
+      n_splits = 3
       stratified_kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
       search = GridSearchCV(
@@ -111,9 +138,8 @@ class MachineLearningAgent():
           self.param_grid,
           n_jobs=-1,
           cv=stratified_kfold,
-          scoring=make_scorer(fbeta_score, beta=0.2)
+          scoring=make_scorer(fbeta_score, beta=0.1, average='weighted')
       )
-
       # Tunear hiperparametros
       search.fit(x_train, y_train)
 
@@ -134,19 +160,31 @@ class MachineLearningAgent():
       
       self.pipeline.fit(x_train, y_train)
 
-    x_train['preds'] = self.pipeline.predict(x_train)
-    x_train['target'] = y_train
+    train_preds = self.pipeline.predict(x_train)
+    train_target = y_train
 
-    fpr, tpr, _ = roc_curve(x_train['preds'], x_train['target'])
-    auc_score = auc(fpr, tpr)
-    
-    self.train_results[date_train] = auc_score
+    precision = precision_score(train_target, train_preds, average='weighted')
+    recall = recall_score(train_target, train_preds, average='weighted')
+    f1 = f1_score(train_target, train_preds, average='weighted')
+
+    self.train_results['precision'][date_train] = precision
+    self.train_results['recall'][date_train] = recall
+    self.train_results['f1'][date_train] = f1
 
     if verbose:
-      print('train auc: ', auc_score)
+      print('train precision: ', precision)
+      print('train recall: ', recall)
+      print('train f1: ', f1)
 
 
-  def save_predictions(self, date:str, ticker:str, y_true:pd.DataFrame, y_pred:pd.DataFrame) -> None:
+  def save_predictions(
+      self, 
+      date:str, 
+      ticker:str, 
+      y_true:pd.DataFrame, 
+      pred_label:pd.DataFrame, 
+      proba:pd.DataFrame, 
+    ) -> None:
     """Guarda las predicciones del modelo.
 
     Args:
@@ -155,26 +193,22 @@ class MachineLearningAgent():
         y_true (array): Valores verdaderos.
         y_pred (array): Valores predichos.
     """
-    self.stock_predictions[ticker][date] = y_pred
-    self.stock_true_values[ticker][date] = y_true
+    # self.test_results[ticker] = {}
+    self.test_results[ticker][date] = {}
+    self.test_results[ticker][date]['y_true'] = y_true
+    self.test_results[ticker][date]['y_pred'] = pred_label
+    self.test_results[ticker][date]['proba'] = proba
 
-  def get_results(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+
+  def get_results(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Obtiene los resultados del modelo.
 
     Returns:
         DataFrame: Predicciones del modelo.
         DataFrame: Valores verdaderos.
     """
-    stock_predictions_df = pd.DataFrame(self.stock_predictions)
-    stock_true_values_df = pd.DataFrame(self.stock_true_values)
-    stock_train_results_df = pd.DataFrame(
-      {
-        'fecha': self.train_results.keys(), 
-        'auc': self.train_results.values()
-      }
-    )
+    test_results_df = pd.concat({k: pd.DataFrame(v).T for k, v in self.test_results.items()}, axis=0)
 
-    stock_predictions_df = stock_predictions_df.reset_index().rename(columns={'index':'fecha'})
-    stock_true_values_df = stock_true_values_df.reset_index().rename(columns={'index':'fecha'})
+    train_results_df = pd.DataFrame(self.train_results)
 
-    return stock_predictions_df, stock_true_values_df, stock_train_results_df, self.best_params, self.pipeline
+    return train_results_df, test_results_df

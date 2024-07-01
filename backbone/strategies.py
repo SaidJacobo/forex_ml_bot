@@ -1,6 +1,8 @@
 from collections import namedtuple
 import numpy as np
+import pandas as pd
 from backbone.order import Order
+from backbone.enums import ClosePositionType, OperationType, ActionType
 
 Result = namedtuple('Result', ['action','operation_type','order_id','comment'])
 
@@ -12,6 +14,7 @@ def operation_management_logic(
         open_order:Order, 
         today:str, 
         allowed_days_in_position:int,
+        use_trailing_stop:bool,
         only_indicator_close_buy_condition:bool,
         open_price:float,
         high_price:float,
@@ -23,86 +26,159 @@ def operation_management_logic(
         model_with_indicator_open_sell_condition:bool,
         only_indicator_open_sell_condition:bool
     ) -> Result:
-
+    
     if open_order:
 
-        days_in_position = (today - open_order.open_time).days
+        days_in_position = (today - open_order.open_time).seconds // 3600
         
-        if open_order.operation_type == 'buy':
-            if allowed_days_in_position and days_in_position == allowed_days_in_position:
-                return Result("close", "sell", open_order.id, 'closed for days in position')
+        if open_order.operation_type == OperationType.BUY:
+            if allowed_days_in_position and days_in_position >= allowed_days_in_position:
+                return Result(
+                    ActionType.CLOSE, 
+                    OperationType.SELL, 
+                    open_order.id, 
+                    ClosePositionType.DAYS
+                )
             
-            # Si estás en posición y han pasado los días permitidos, vende
-            # if only_indicator_close_buy_condition:
-            #     return "close", "sell", open_order, 'closed for indicator signal'
-
             if close_price <= open_order.stop_loss or low_price <= open_order.stop_loss:
-                return Result("close", "sell", open_order.id, 'closed for stop loss')
+                return Result(
+                    ActionType.CLOSE, 
+                    OperationType.SELL, 
+                    open_order.id, 
+                    ClosePositionType.STOP_LOSS
+                )
             
             if close_price >= open_order.take_profit or high_price >= open_order.take_profit:
-                return Result("close", "sell", open_order.id, 'closed for take profit')
+                return Result(
+                    ActionType.CLOSE, 
+                    OperationType.SELL, 
+                    open_order.id, 
+                    ClosePositionType.TAKE_PROFIT
+                )
 
             # Si estás en posición pero no han pasado los días permitidos, espera
-        elif open_order.operation_type == 'sell': 
-            if allowed_days_in_position and days_in_position == allowed_days_in_position:
-                return Result("close", "buy", open_order.id, 'closed for days in position')
+        elif open_order.operation_type == OperationType.SELL: 
+            if allowed_days_in_position and days_in_position >= allowed_days_in_position:
+                return Result(
+                    ActionType.CLOSE, 
+                    OperationType.BUY, 
+                    open_order.id, 
+                    ClosePositionType.DAYS
+                )
             
             # if only_indicator_close_sell_condition:
-            #     return "close", "buy", open_order, 'closed for indicator signal'
+            #     return ActionType.CLOSE, OperationType.BUY, open_order, 'closed for indicator signal'
             
             if close_price >= open_order.stop_loss or high_price >= open_order.stop_loss:
-                return Result("close", "sell", open_order.id, 'closed for stop loss')
+                return Result(
+                    ActionType.CLOSE, 
+                    OperationType.SELL, 
+                    open_order.id, 
+                    ClosePositionType.STOP_LOSS
+                )
             
             if close_price <= open_order.take_profit or low_price <= open_order.take_profit:
-                return Result("close", "sell", open_order.id, 'closed for take profit')
+                return Result(
+                    ActionType.CLOSE, 
+                    OperationType.SELL, 
+                    open_order.id, 
+                    ClosePositionType.TAKE_PROFIT
+                )
 
         if allowed_days_in_position and days_in_position < allowed_days_in_position:
-            return Result("wait", None, None, '')
+            if use_trailing_stop:
+                return Result(
+                    ActionType.UPDATE, 
+                    None, 
+                    open_order.id, 
+                    ClosePositionType.STOP_LOSS
+                )
+            else:
+                return Result(
+                    ActionType.WAIT, 
+                    None, 
+                    None, 
+                    None
+                )
 
     # Si la predicción del mercado supera el umbral superior, compra
     elif model_with_indicator_open_buy_condition or only_indicator_open_buy_condition:
-        return Result("open", "buy", None, '')
+        return Result(
+            ActionType.OPEN, 
+            OperationType.BUY,
+             None, 
+             ''
+        )
     
     elif model_with_indicator_open_sell_condition or only_indicator_open_sell_condition:
-        return Result("open", "sell", None, '')
+        return Result(
+            ActionType.OPEN, 
+            OperationType.SELL,
+             None, 
+             ''
+        )
     
-    return Result("wait", None, None, '')
+    return Result(
+        ActionType.WAIT, 
+        None, 
+        None, 
+        ''
+    )
 
-# def ml_strategy(
-#     today,
-#     actual_market_data,
-#     orders: list,
-#     allowed_days_in_position: int,
-#     threshold_up: float,
-#     threshold_down: float,
-# ):
-#     pred = actual_market_data["pred"]
-#     open_order = find_open_order(orders)
+def ml_strategy(
+    today,
+    actual_market_data: pd.DataFrame,
+    orders: list,
+    allowed_days_in_position: int,
+    use_trailing_stop: bool,
+    threshold: float,
+):
+    
+    class_ = actual_market_data["pred_label"]
+    proba = actual_market_data["proba"]
+    side = actual_market_data["side"]
 
-#     if open_order:
-#         days_in_position = (today - open_order.open_time).days
+    open_price = actual_market_data["Open"]
+    high_price = actual_market_data["High"]
+    low_price = actual_market_data["Low"]
+    close_price = actual_market_data["Close"]
+    
+    model_with_indicator_open_buy_condition = side == 1 and class_ == 1 and proba >= threshold
+    model_with_indicator_open_sell_condition = side == -1 and class_ == 1 and proba >= threshold
 
-#         # Si estás en posición pero no han pasado los días permitidos, espera
+    only_indicator_open_buy_condition = None
+    only_indicator_close_buy_condition = None
+    
+    only_indicator_open_sell_condition = None
+    only_indicator_close_sell_condition = None
 
-#         if days_in_position < allowed_days_in_position:
-#             return "wait", None, None
-#         # Si estás en posición y han pasado los días permitidos, vende
+    open_order = find_open_order(orders)
 
-#         elif days_in_position == allowed_days_in_position:
-#             return "close", "sell", open_order
-#     # Si la predicción del mercado supera el umbral superior, compra
+    result = operation_management_logic(
+        open_order=open_order,
+        today=today,
+        allowed_days_in_position=allowed_days_in_position,
+        use_trailing_stop=use_trailing_stop,
+        only_indicator_close_buy_condition=only_indicator_close_buy_condition,
+        open_price=open_price,
+        high_price=high_price,
+        low_price=low_price,
+        close_price=close_price,
+        only_indicator_close_sell_condition=only_indicator_close_sell_condition,
+        model_with_indicator_open_buy_condition=model_with_indicator_open_buy_condition,
+        only_indicator_open_buy_condition=only_indicator_open_buy_condition,
+        model_with_indicator_open_sell_condition=model_with_indicator_open_sell_condition,
+        only_indicator_open_sell_condition=only_indicator_open_sell_condition
+    )
 
-#     elif pred >= threshold_up:
-#         return "open", "buy", None
-#     return "wait", None, None
+    return result
 
 def ma_strategy(
     today,
     actual_market_data,
     orders: list,
     allowed_days_in_position: int,
-    threshold_up: float,
-    threshold_down: float,
+    threshold: float,
 ):
     """
     Comprar si la predicción del modelo indica una alta probabilidad de que el precio suba y el RSI es bajo,
@@ -122,8 +198,8 @@ def ma_strategy(
 
     open_order = find_open_order(orders)
 
-    model_with_indicator_open_buy_condition = np.isfinite(pred) and pred >= threshold_up and ema_12 > ema_200
-    model_with_indicator_open_sell_condition = np.isfinite(pred) and pred <= threshold_down and ema_12 < ema_200
+    model_with_indicator_open_buy_condition = np.isfinite(pred) and pred >= threshold and ema_12 > ema_200
+    model_with_indicator_open_sell_condition = np.isfinite(pred) and pred >= threshold and ema_12 < ema_200
 
     only_indicator_open_buy_condition = np.isnan(pred) and ema_12 > ema_200
     only_indicator_close_buy_condition = ema_12 < ema_200
@@ -154,8 +230,7 @@ def bband_strategy(
     actual_market_data,
     orders: list,
     allowed_days_in_position: int,
-    threshold_up: float,
-    threshold_down: float,
+    threshold: float,
 ):
     '''
     Comprar si la predicción del modelo indica una alta probabilidad de que el precio suba 
@@ -168,21 +243,24 @@ def bband_strategy(
     '''
     upper_bband = actual_market_data["upper_bband"]
     lower_bband = actual_market_data["lower_bband"]
-    pred = actual_market_data["pred"]
-    avg_bband = (upper_bband + lower_bband) / 2
+    avg_bband = actual_market_data["middle_bband"]
+    
+    class_ = actual_market_data["pred_label"]
+    proba = actual_market_data["proba"]
+    
 
     open_price = actual_market_data["Open"]
     high_price = actual_market_data["High"]
     low_price = actual_market_data["Low"]
     close_price = actual_market_data["Close"]
     
-    model_with_indicator_open_buy_condition = np.isfinite(pred) and pred >= threshold_up and close_price < avg_bband
-    model_with_indicator_open_sell_condition = np.isfinite(pred) and pred <= threshold_down and close_price > avg_bband
+    model_with_indicator_open_buy_condition = class_ == 2 and proba >= threshold and close_price < avg_bband
+    model_with_indicator_open_sell_condition = class_ == 0 and proba >= threshold and close_price > avg_bband
     
-    only_indicator_open_buy_condition = np.isnan(pred) and close_price < avg_bband
+    only_indicator_open_buy_condition = None
     only_indicator_close_buy_condition = close_price > avg_bband
     
-    only_indicator_open_sell_condition = np.isnan(pred) and close_price > avg_bband
+    only_indicator_open_sell_condition = None
     only_indicator_close_sell_condition = close_price < avg_bband
 
     open_order = find_open_order(orders)
@@ -210,8 +288,7 @@ def macd_strategy(
     actual_market_data,
     orders: list,
     allowed_days_in_position: int,
-    threshold_up: float,
-    threshold_down: float,
+    threshold: float,
 ):
     '''
     Comprar si la predicción del modelo indica una alta probabilidad de que el precio suba y hay un cruce alcista 
@@ -222,20 +299,21 @@ def macd_strategy(
     '''
     macd_signal = actual_market_data["macdsignal"]
     macd = actual_market_data["macd"]
-    pred = actual_market_data["pred"]
+    class_ = actual_market_data["pred_label"]
+    proba = actual_market_data["proba"]
 
     open_price = actual_market_data["Open"]
     high_price = actual_market_data["High"]
     low_price = actual_market_data["Low"]
     close_price = actual_market_data["Close"]
 
-    model_with_indicator_open_buy_condition = np.isfinite(pred) and pred >= threshold_up and macd > macd_signal
-    model_with_indicator_open_sell_condition = np.isfinite(pred) and pred <= threshold_down and macd < macd_signal
+    model_with_indicator_open_buy_condition = class_ == 2 and proba >= threshold and macd > macd_signal
+    model_with_indicator_open_sell_condition = class_ == 0 and proba >= threshold and macd < macd_signal
     
-    only_indicator_open_buy_condition = np.isnan(pred) and macd > macd_signal
+    only_indicator_open_buy_condition = None
     only_indicator_close_buy_condition = macd < macd_signal
 
-    only_indicator_open_sell_condition = np.isnan(pred) and macd < macd_signal
+    only_indicator_open_sell_condition = None
     only_indicator_close_sell_condition = macd > macd_signal
 
     open_order = find_open_order(orders)

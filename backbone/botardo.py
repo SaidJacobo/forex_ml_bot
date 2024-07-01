@@ -1,3 +1,4 @@
+import numpy as np
 from backbone.machine_learning_agent import MachineLearningAgent
 from backbone.trader import ABCTrader
 import pandas as pd
@@ -6,8 +7,8 @@ import MetaTrader5 as mt5
 import pytz
 from datetime import datetime
 from datetime import timedelta
-from backbone.utils import write_in_logs
-
+import pandas as pd
+from backbone.triple_barrier_utils import triple_barrier_labeling
 
 class Botardo():
   """Clase base de bot de trading y aprendizaje automático.
@@ -31,7 +32,6 @@ class Botardo():
     self.tickers = tickers
     self.instruments = {}
     self.date_format = '%Y-%m-%d %H:00:00'
-
 
   def _get_symbols_from_provider(self, date_from:str, date_to:str, ticker:str) -> None:
     print("MetaTrader5 package author: ", mt5.__author__)
@@ -70,7 +70,7 @@ class Botardo():
     })
 
     self.instruments[ticker] = df
-    self.instruments[ticker]['Date'] = self.instruments[ticker]['Date']    
+    self.instruments[ticker]['Date'] = self.instruments[ticker]['Date']   # ??? 
 
   def get_symbols_and_generate_indicators(
       self, 
@@ -129,7 +129,6 @@ class Botardo():
         
         print(f'Dataset {ticker} guardado correctamente')
   
-
   def generate_dataset(
       self, 
       symbols_path:str, 
@@ -157,13 +156,27 @@ class Botardo():
       self.instruments[ticker]['ticker'] = ticker
       
       print('Creando target')
+      self.instruments[ticker]['Date'] = pd.to_datetime(self.instruments[ticker]['Date'])
       self.instruments[ticker] = self.instruments[ticker].sort_values(by='Date')
-      self.instruments[ticker]['target'] = ((self.instruments[ticker]['Close'].shift(-period_forward_target) - self.instruments[ticker]['Close']) / self.instruments[ticker]['Close']) * 100
+      self.instruments[ticker] = self.instruments[ticker].set_index('Date')
 
-      bins = [-1, 0, 1]
-      labels = [0, 1]
+      instrument = self.instruments[ticker].copy()
+      instrument = self.trader.calculate_operation_sides(instrument=instrument)
 
-      self.instruments[ticker]['target'] = pd.cut(self.instruments[ticker]['target'], bins, labels=labels)
+      instrument['target'] = triple_barrier_labeling(
+        close_prices=instrument['Close'], 
+        min_prices=instrument['Low'], 
+        max_prices=instrument['High'], 
+        take_profit_in_pips=self.trader.take_profit_in_pips, 
+        stop_loss_in_pips=self.trader.stop_loss_in_pips, 
+        max_holding_period=self.trader.allowed_days_in_position, 
+        pip_size=self.trader.pips_per_value[ticker],
+        side=instrument['side']
+      )
+
+      self.instruments[ticker].loc[instrument.index, 'side'] = instrument.side
+      self.instruments[ticker].loc[instrument.index, 'target'] = instrument.target
+      self.instruments[ticker].fillna(0, inplace=True)
 
       df = pd.concat(
         [
@@ -175,10 +188,12 @@ class Botardo():
     if drop_nulls:
       df = df.dropna()
 
+    df = df.reset_index()
     df['Date'] = pd.to_datetime(df['Date'], format=self.date_format)
     df = df.sort_values(by='Date')
 
-    print(f'df value_counts {df["target"].value_counts()}')
+    print(f'df target value_counts {df["target"].value_counts()}')
+    print(f'df side value_counts {df["side"].value_counts()}')
 
     path = os.path.join(symbols_path, 'dataset.csv')
 
@@ -194,7 +209,8 @@ class Botardo():
       df:pd.DataFrame, 
       train_period:int, 
       train_window:int, 
-      period_forward_target:int
+      period_forward_target:int,
+      undersampling:bool
     ) -> None:
     """Flujo de trabajo del bot de trading y aprendizaje automático.
 
@@ -218,16 +234,24 @@ class Botardo():
     print('Datos para la fecha actual', today_market_data[['Date', 'ticker', 'target']])
 
     # Si no tiene datos para entrenar en esa ventana que pase al siguiente periodo
-    market_data_window = df[(df.Date >= date_from) & (df.Date < date_to)].dropna()
+    market_data_window = df[
+      (df.Date >= date_from) 
+      & (df.Date < date_to) 
+      & (df.side != 0)
+    ].dropna()
     
-    if market_data_window.shape[0] < 70:
-      print(f'No existen datos para el intervalo {date_from}-{actual_date}, se procedera con el siguiente')
-      return
-    
-    if self.ml_agent is not None:
+    side = (today_market_data.side != 0).any()
+   
+    # if self.ml_agent is not None and side != 0:
+    if side and self.ml_agent is not None:
       
+      hours_from_train = None
+      if self.ml_agent.last_date_train is not None:
+        time_difference  = actual_date - self.ml_agent.last_date_train
+        hours_from_train = time_difference.total_seconds() / 3600
+
       # si nunca entreno o si ya pasaron los dias
-      if (self.ml_agent.days_from_train is None or self.ml_agent.days_from_train >= train_period):
+      if (self.ml_agent.last_date_train is None or hours_from_train >= train_period):
 
         print(f'Se entrenaran con {market_data_window.shape[0]} registros')
         print(f'Value counts de ticker: {market_data_window.ticker.value_counts()}')
@@ -239,39 +263,40 @@ class Botardo():
             y_test = today_market_data.target,
             date_train=actual_date,
             verbose=True,
+            undersampling=undersampling
         )
 
-        self.ml_agent.days_from_train = 1
+        self.ml_agent.last_date_train = actual_date
         print('Entrenamiento terminado! :)')
-      else:
-        self.ml_agent.days_from_train += 1
-
-      pred = self.ml_agent.predict_proba(today_market_data.drop(columns=['target', 'Date', 'ticker']))
-      
-      pred_per_ticker = pd.DataFrame({'ticker':today_market_data.ticker, 'pred':pred})
-      print(f'Prediccion: {pred_per_ticker}')
-
-      today_market_data.loc[:, 'pred'] = pred
     
-    for _, stock in today_market_data.iterrows():
-      if self.ml_agent is not None:
-        self.ml_agent.save_predictions(
-          stock.Date,
-          stock.ticker, 
-          stock.target, 
-          stock.pred
-        )
+    today_market_data['pred_label'] = np.nan
+    today_market_data['proba'] = np.nan
+
+    for index, stock in today_market_data.iterrows():
+      
+      if side and self.ml_agent is not None:
+          # Drop the specified columns before prediction
+          stock_features = stock.drop(labels=['target', 'Date', 'ticker', 'pred_label', 'proba'])
+          
+          stock_features_df = pd.DataFrame([stock_features])
+
+          # Predict the class and probability
+          _class, proba = self.ml_agent.predict_proba(stock_features_df)
+          
+          # Assign the predicted class and probability to the DataFrame
+          today_market_data.at[index, 'pred_label'] = _class
+          today_market_data.at[index, 'proba'] = proba
+
+          self.ml_agent.save_predictions(
+            today_market_data.loc[index].Date,
+            today_market_data.loc[index].ticker, 
+            today_market_data.loc[index].target, 
+            today_market_data.loc[index].pred_label,
+            today_market_data.loc[index].proba
+          )
 
       result = self.trader.take_operation_decision(
-        actual_market_data=stock.drop(columns=['target']),
+        actual_market_data=today_market_data.loc[index].drop(labels=['target']),
         actual_date=actual_date
       )
 
-      # write_in_logs(
-      #     path=os.path.join(self.save_orders_path, 'orders.txt'), 
-      #     time=actual_date, 
-      #     comment="Close position", 
-      #     content=str(result._asdict())
-      # )
-
-      

@@ -37,36 +37,42 @@ if __name__ == '__main__':
     mode = config['mode']
     user = config['user']
     pw = config['password']
-    threshold_up = config['threshold_up']
-    threshold_down = config['threshold_down']
+    threshold = config['threshold']
     risk_percentage = config['risk_percentage']
     train_window = config['train_window']
     train_period = config['train_period']
     stop_loss_in_pips = config['stop_loss_in_pips']
-    take_profit_in_pips = config['take_profits_in_pips']
     periods_forward_target = config['periods_forward_target']
     use_days_in_position = config['use_days_in_position']
     trading_strategy = config['trading_strategy']
     telegram_bot_token = config['telegram_bot_token']
     telegram_chat_id = config['telegram_chat_id']
-
+    allowed_sessions = config['allowed_sessions']
+    pips_per_value = config['pips_per_value']
+    trade_with = config['trade_with']
+    use_trailing_stop = config['use_trailing_stop']
     tickers = config["tickers"] 
+    risk_reward_ratio = config['risk_reward_ratio']
+    undersampling = config["undersampling"] 
 
-    risk_percentage = config["risk_percentage"] 
+    take_profit_in_pips = stop_loss_in_pips * risk_reward_ratio
 
     telegram_bot = TelegramBot(bot_token=telegram_bot_token, chat_id=telegram_chat_id)
 
     strategy = load_function(trading_strategy)
     trader = RealtimeTrader(
         trading_strategy=strategy,
-        threshold_up=threshold_up,
-        threshold_down=threshold_down,
+        threshold=threshold,
         allowed_days_in_position=periods_forward_target if use_days_in_position else None,
         stop_loss_in_pips=stop_loss_in_pips,
         take_profit_in_pips=take_profit_in_pips,
         risk_percentage=risk_percentage,
         save_orders_path=logs_path,
-        telegram_bot=telegram_bot
+        telegram_bot=telegram_bot,
+        allowed_sessions=allowed_sessions,
+        use_trailing_stop=use_trailing_stop,
+        pips_per_value=pips_per_value,
+        trade_with=trade_with
     )
 
     # Cargar el pipeline desde el archivo .pkl
@@ -117,9 +123,16 @@ if __name__ == '__main__':
 
     print('='*16, 'Iniciando backtesting', '='*16)
 
-    botardo.trading_bot_workflow(actual_date, df, train_period, train_window, periods_forward_target)
+    botardo.trading_bot_workflow(
+        actual_date, 
+        df, 
+        train_period, 
+        train_window, 
+        periods_forward_target, 
+        undersampling=undersampling
+    )
     
     # sobreescribo el pipeline recien entrenado
-    with open(pipeline_path, 'wb') as file:
-        joblib.dump(botardo.ml_agent.pipeline, file)
+    # with open(pipeline_path, 'wb') as file:
+    #     joblib.dump(botardo.ml_agent.pipeline, file)
     

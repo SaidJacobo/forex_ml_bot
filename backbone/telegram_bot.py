@@ -8,6 +8,6 @@ class TelegramBot():
         self.chat_id = chat_id
 
     def send_order_by_telegram(self, order):
-        order = order._asdict()
+        order = order
         message = map_order_to_str(order)
         self.bot.send_message(chat_id=self.chat_id, text=message)

@@ -10,25 +10,33 @@ logistic_regression:
 random_forest:
   model: 'sklearn.ensemble.RandomForestClassifier'
   param_grid:
-    'prob_transf__model__n_estimators': [50, 60, 70, 80, 90, 100, 110, 120]         # Número de árboles en el bosque
-    'prob_transf__model__max_depth': [20, 25, 30, 35, 40]         # Profundidad máxima de los árboles
-    'prob_transf__model__min_samples_split': [2]         # Número mínimo de muestras requeridas para dividir un nodo
-    'prob_transf__model__min_samples_leaf': [1]            # Número mínimo de muestras requeridas en cada hoja
-    'prob_transf__model__random_state': [42]
+    'stacking__prob_transf__model__n_estimators': [100, 200] # Número de árboles en el bosque
+    'stacking__prob_transf__model__max_depth': [2, 3, 5]         # Profundidad máxima de los árboles
+    'stacking__prob_transf__model__min_samples_split': [2]         # Número mínimo de muestras requeridas para dividir un nodo
+    'stacking__prob_transf__model__min_samples_leaf': [1]            # Número mínimo de muestras requeridas en cada hoja
+    'stacking__prob_transf__model__random_state': [42]
+    'stacking__prob_transf__model__class_weight': ['balanced_subsample']
+
 
 gradient_boosting:
   model: 'xgboost.XGBClassifier'
   param_grid:
-      "prob_transf__model__objective": ['binary:logistic']
-      "prob_transf__model__max_depth": [2, 5, 10]
-      "prob_transf__model__n_estimators": [5, 10, 20, 30, 40, 50, 70, 100]
-      "prob_transf__model__learning_rate": [0.05, 0.01, 0.1]
-      'prob_transf__model__random_state': [42]
+      "stacking__prob_transf__model__objective": ['binary:logistic']
+      "stacking__prob_transf__model__max_depth": [2, 3, 4, 5]
+      "stacking__prob_transf__model__n_estimators": [5, 10, 15, 50]
+      "stacking__prob_transf__model__learning_rate": [0.05, 0.01, 0.1]
+      'stacking__prob_transf__model__random_state': [42]
+      # 'prob_transf__model__lambda': [1.0]
+      # 'prob_transf__model__alpha': [0.0]
+      # 'prob_transf__model__gamma': [0.1]
+      # 'prob_transf__model__colsample_bytree': [0.8]
+      # 'prob_transf__model__subsample': [0.8]
+      # 'prob_transf__model__scale_pos_weight': [1, 2, 5, 10]
 
 neural_network:
   model: 'sklearn.neural_network.MLPClassifier'
   param_grid:
-    "model__hidden_layer_sizes": 
+    "prob_transf__model__hidden_layer_sizes": 
       - [3,]
       - [5,]
       - [10,]
