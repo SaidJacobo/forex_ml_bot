@@ -234,16 +234,27 @@ class Botardo():
     print('Datos para la fecha actual', today_market_data[['Date', 'ticker', 'target']])
 
     # Si no tiene datos para entrenar en esa ventana que pase al siguiente periodo
-    market_data_window = df[
-      (df.Date >= date_from) 
-      & (df.Date < date_to) 
-      & (df.side != 0)
-    ].dropna()
     
     side = (today_market_data.side != 0).any()
    
+    cols_to_drop = [
+      'Open',
+      'High',
+      'Low',
+      'Close',
+      'target', 
+      'Date', 
+      'ticker'
+    ]
+    
     # if self.ml_agent is not None and side != 0:
     if side and self.ml_agent is not None:
+
+      market_data_window = df[
+        (df.Date >= date_from) 
+        & (df.Date < date_to) 
+        & (df.side != 0)
+      ].dropna()
       
       hours_from_train = None
       if self.ml_agent.last_date_train is not None:
@@ -257,8 +268,8 @@ class Botardo():
         print(f'Value counts de ticker: {market_data_window.ticker.value_counts()}')
 
         self.ml_agent.train(
-            x_train = market_data_window.drop(columns=['target', 'Date', 'ticker']),
-            x_test = today_market_data.drop(columns=['target', 'Date', 'ticker']),
+            x_train = market_data_window.drop(columns=cols_to_drop),
+            x_test = today_market_data.drop(columns=cols_to_drop),
             y_train = market_data_window.target,
             y_test = today_market_data.target,
             date_train=actual_date,
@@ -272,11 +283,13 @@ class Botardo():
     today_market_data['pred_label'] = np.nan
     today_market_data['proba'] = np.nan
 
+    cols_to_drop += ['pred_label', 'proba']
+
     for index, stock in today_market_data.iterrows():
       
-      if side and self.ml_agent is not None:
+      if today_market_data.loc[index].side != 0 and self.ml_agent is not None:
           # Drop the specified columns before prediction
-          stock_features = stock.drop(labels=['target', 'Date', 'ticker', 'pred_label', 'proba'])
+          stock_features = stock.drop(labels=cols_to_drop)
           
           stock_features_df = pd.DataFrame([stock_features])
 

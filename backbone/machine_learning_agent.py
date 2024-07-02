@@ -57,7 +57,6 @@ class MachineLearningAgent():
     self.best_params = {}
 
   def _create_pipeline(self):
-    scaler = StandardScaler()
 
     log_reg = LogisticRegression(
       multi_class='auto', 
@@ -207,8 +206,24 @@ class MachineLearningAgent():
         DataFrame: Predicciones del modelo.
         DataFrame: Valores verdaderos.
     """
-    test_results_df = pd.concat({k: pd.DataFrame(v).T for k, v in self.test_results.items()}, axis=0)
-
     train_results_df = pd.DataFrame(self.train_results)
+    test_results_df = pd.DataFrame()
+
+    for ticker, values in self.test_results.items():
+      for date, values2 in values.items():
+        single_line_df = pd.DataFrame(
+            {
+                'ticker':[ticker], 
+                'date':[date], 
+                'y_true':values2['y_true'], 
+                'y_pred':values2['y_pred'], 
+                'proba':values2['proba'],
+            }
+        )
+
+        test_results_df = pd.concat([test_results_df, single_line_df])
+
 
     return train_results_df, test_results_df
+  
+

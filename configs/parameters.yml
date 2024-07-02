@@ -1,6 +1,6 @@
 models: [
   'random_forest', 
-  # 'gradient_boosting',
+  'gradient_boosting',
   # 'neural_network'
 ]
 

@@ -59,12 +59,37 @@ class ABCTrader(ABC):
     df['ema_26'] = talib.EMA(df['Close'], timeperiod=26)
     df['ema_50'] = talib.EMA(df['Close'], timeperiod=50)
     df['ema_200'] = talib.EMA(df['Close'], timeperiod=200)
+
+    # Cruce positivo
+    df['ema_flag'] = 0
+    df['ema_flag'] = np.where(
+      (df['ema_12'] > df['ema_200']) 
+      & (df['ema_12'].shift(1) <= df['ema_200'].shift(1)), 
+      1, 
+      df['ema_flag']
+    )
+
+    # Cruce negativo
+    df['ema_flag'] = np.where(
+      (df['ema_12'] < df['ema_200']) 
+      & (df['ema_12'].shift(1) >= df['ema_200'].shift(1)), 
+      -1, 
+      df['ema_flag']
+    )
+
     df['rsi'] = talib.RSI(df['Close'])
+    df['rsi_flag'] = 0
+    df['rsi_flag'] = np.where((df['rsi'] > 70), -1, df['rsi_flag'])
+    df['rsi_flag'] = np.where((df['rsi'] < 30), 1, df['rsi_flag'])
 
     upper_band, middle_band, lower_band = talib.BBANDS(df['Close'], timeperiod=50)
     df['upper_bband'] = upper_band
     df['middle_bband'] = middle_band
     df['lower_bband'] = lower_band
+
+    df['bband_flag'] = 0
+    df['bband_flag'] = np.where((df['Close'] > df['upper_bband']), 1, df['bband_flag']) 
+    df['bband_flag'] = np.where((df['Close'] < df['lower_bband']), -1, df['bband_flag']) 
 
     df['atr'] = talib.ATR(df['High'], df['Low'], df['Close'], timeperiod=14)
 
@@ -103,17 +128,12 @@ class ABCTrader(ABC):
 
     df['day'] = df.Date.dt.day 
 
-    df['three_stars'] = talib.CDL3STARSINSOUTH(df.Open, df.High, df.Low, df.Close)
     df['closing_marubozu'] = talib.CDLCLOSINGMARUBOZU(df.Open, df.High, df.Low, df.Close)
     df['doji'] = talib.CDLDOJI(df.Open, df.High, df.Low, df.Close)
-    df['doji_star'] = talib.CDLDOJISTAR(df.Open, df.High, df.Low, df.Close)
-    df['dragon_fly'] = talib.CDLDRAGONFLYDOJI(df.Open, df.High, df.Low, df.Close)
     df['engulfing'] = talib.CDLENGULFING(df.Open, df.High, df.Low, df.Close)
-    df['evening_doji_star'] = talib.CDLEVENINGDOJISTAR(df.Open, df.High, df.Low, df.Close)
     df['hammer'] = talib.CDLHAMMER(df.Open, df.High, df.Low, df.Close)
     df['hanging_man'] = talib.CDLHANGINGMAN(df.Open, df.High, df.Low, df.Close)
     df['marubozu'] = talib.CDLMARUBOZU(df.Open, df.High, df.Low, df.Close)
-    df['morning_star'] = talib.CDLMORNINGSTAR(df.Open, df.High, df.Low, df.Close)
     df['shooting_star'] = talib.CDLSHOOTINGSTAR(df.Open, df.High, df.Low, df.Close)
 
     _, trend = hpfilter(df['Close'], lamb=1000)

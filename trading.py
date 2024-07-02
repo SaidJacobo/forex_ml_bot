@@ -116,7 +116,8 @@ if __name__ == '__main__':
         # Corre con los simbolos que ya tiene en memoria
         load_symbols_from_disk=False,
         # Necesito que conserve el target del dia de hoy que es null
-        drop_nulls=False
+        drop_nulls=False,
+        save=True
     )
     
     train_window = timedelta(hours=train_window)
