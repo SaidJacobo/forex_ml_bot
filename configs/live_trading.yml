@@ -21,7 +21,7 @@ risk_percentage: 1
 use_days_in_position: True
 undersampling: False
 
-pipeline_path: 'C:/Users/SaidJ/OneDrive/Documentos/projects/forex_ml_bot/forex_ml_bot/backbone/data/backtest/experiments/Mode_train-Model_random_forest-TrainWw_11520-TrainPd_24-TradStgy_ml_strategy-PerFwTg_8-SL_15-RR_2-CloseByTimeTrue-TS_False/pipe.pkl'
+pipeline_path: 'C:/Users/SaidJ/OneDrive/Documentos/projects/forex_ml_bot/forex_ml_bot/backbone/data/backtest/experiments/0/Mode_train-Model_random_forest-TrainWw_1440-TrainPd_24-TradStgy_ml_strategy-PerFwTg_4-SL_20-RR_7-CloseTime_True-TS_False_opt/pipe.pkl'
 threshold: 0.5
 
 pips_per_value:

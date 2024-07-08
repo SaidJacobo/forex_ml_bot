@@ -48,9 +48,10 @@ class BackTester():
       train_period:int, 
       mode:str, 
       limit_date_train:str, 
-      results_path:str, 
       period_forward_target:int,
-      undersampling:bool
+      undersampling:bool,
+      results_path:str=None, 
+      save:bool=True
   ) -> None:
     """Inicia el proceso de backtesting.
 
@@ -90,4 +91,5 @@ class BackTester():
         undersampling=undersampling
       )
 
-    self.save_results(results_path)
+    if save:
+      self.save_results(results_path)

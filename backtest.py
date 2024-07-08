@@ -107,7 +107,7 @@ def initialize_backtesting():
             -PerFwTg_{period_forward_target}
             -SL_{stop_loss_in_pips}
             -RR_{risk_reward_ratio}
-            -CloseByTime{cancel_position_in_shift_days}
+            -CloseTime_{cancel_position_in_shift_days}
             -TS_{use_trailing_stop}
         '''.replace("\n", "").strip().replace(" ", "")
         

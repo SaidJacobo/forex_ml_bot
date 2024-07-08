@@ -156,7 +156,7 @@ class ABCTrader(ABC):
       print(instrument.side.value_counts())
 
       # Remove Look ahead biase by lagging the signal
-      instrument['side'] = instrument['side'].shift(1)
+      # instrument['side'] = instrument['side'].shift(1)
       
       # Drop the NaN values from our data set
       instrument.dropna(inplace=True)

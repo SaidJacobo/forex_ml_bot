@@ -1,8 +1,8 @@
 mode: train
 paralelize: False
-date_from: '2024-01-01 00:00:00'
-date_to: '2024-06-30 00:00:00'
-limit_date_train: '2024-05-01 00:00:00'
+date_from: '2023-01-01 00:00:00'
+date_to: '2024-01-01 00:00:00'
+limit_date_train: '2025-01-01 00:00:00'
 tickers: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
 trade_with: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
 allowed_sessions: [NY, London, 'Sidney', 'Tokio']
