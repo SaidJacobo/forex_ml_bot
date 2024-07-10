@@ -67,10 +67,13 @@ def do_simulation(config_to_test, first_time):
         pips_per_value=pips_per_value, 
         trade_with=trade_with
     )
-
-    param_grid = model_configs[model_name]['param_grid']
-    model = model_configs[model_name]['model']
-    mla = MachineLearningAgent(tickers=tickers, model=model, param_grid=param_grid)
+    param_grid = None
+    model = None
+    mla = None
+    if model_name:
+        param_grid = model_configs[model_name]['param_grid']
+        model = model_configs[model_name]['model']
+        mla = MachineLearningAgent(tickers=tickers, model=model, param_grid=param_grid)
 
     # Inicio del backtesting
     botardo = Botardo(
@@ -162,7 +165,7 @@ if __name__ == '__main__':
 
     # empieza el merequetengue
 
-    for iteration in range(3, 6):
+    for iteration in range(0, 3):
         iteration_path = os.path.join(experiments_path, str(iteration))
         if not os.path.exists(iteration_path):
             os.mkdir(iteration_path)

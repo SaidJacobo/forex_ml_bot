@@ -44,7 +44,7 @@ class ABCTrader(ABC):
     self.use_trailing_stop = use_trailing_stop
     self.trade_with = trade_with
   
-  def calculate_indicators(self, df:DataFrame):
+  def calculate_indicators(self, df:DataFrame, ticker, pips_per_value):
     """Calcula indicadores técnicos para el DataFrame dado.
 
     Args:
@@ -60,36 +60,19 @@ class ABCTrader(ABC):
     df['ema_50'] = talib.EMA(df['Close'], timeperiod=50)
     df['ema_200'] = talib.EMA(df['Close'], timeperiod=200)
 
-    # Cruce positivo
-    df['ema_flag'] = 0
-    df['ema_flag'] = np.where(
-      (df['ema_12'] > df['ema_200']) 
-      & (df['ema_12'].shift(1) <= df['ema_200'].shift(1)), 
-      1, 
-      df['ema_flag']
-    )
-
-    # Cruce negativo
-    df['ema_flag'] = np.where(
-      (df['ema_12'] < df['ema_200']) 
-      & (df['ema_12'].shift(1) >= df['ema_200'].shift(1)), 
-      -1, 
-      df['ema_flag']
-    )
-
     df['rsi'] = talib.RSI(df['Close'])
-    df['rsi_flag'] = 0
-    df['rsi_flag'] = np.where((df['rsi'] > 70), -1, df['rsi_flag'])
-    df['rsi_flag'] = np.where((df['rsi'] < 30), 1, df['rsi_flag'])
 
     upper_band, middle_band, lower_band = talib.BBANDS(df['Close'], timeperiod=50)
     df['upper_bband'] = upper_band
     df['middle_bband'] = middle_band
     df['lower_bband'] = lower_band
 
-    df['bband_flag'] = 0
-    df['bband_flag'] = np.where((df['Close'] > df['upper_bband']), 1, df['bband_flag']) 
-    df['bband_flag'] = np.where((df['Close'] < df['lower_bband']), -1, df['bband_flag']) 
+    df['distance_between_bbands'] = (df['upper_bband'] - df['lower_bband']) / pips_per_value[ticker]
+    df['distance_between_bbands_shift_1'] = df['distance_between_bbands'].shift(1)
+    df['distance_between_bbands_shift_2'] = df['distance_between_bbands'].shift(2)
+    df['distance_between_bbands_shift_3'] = df['distance_between_bbands'].shift(3)
+    df['distance_between_bbands_shift_4'] = df['distance_between_bbands'].shift(4)
+    df['distance_between_bbands_shift_5'] = df['distance_between_bbands'].shift(5)
 
     df['atr'] = talib.ATR(df['High'], df['Low'], df['Close'], timeperiod=14)
 
@@ -101,11 +84,6 @@ class ABCTrader(ABC):
     df['macd'] = macd
     df['macdsignal'] = macdsignal
     df['macdhist'] = macdhist
-    df['macdhist_yesterday'] = df['macdhist'].shift(1)
-
-    df['macd_flag'] = 0
-    df['macd_flag'] = np.where((df['macdhist_yesterday'] < 0) & (df['macdhist'] > 0), 1, df['macd_flag'])
-    df['macd_flag'] = np.where((df['macdhist_yesterday'] > 0) & (df['macdhist'] < 0), -1, df['macd_flag'])
 
     df['change_percent_ch'] = (((df['Close'] - df['High']) / df['Close']) * 100).round(2)
     df['change_percent_co'] = (((df['Close'] - df['Open']) / df['Close']) * 100).round(2)
@@ -126,8 +104,6 @@ class ABCTrader(ABC):
     df['hour'] = df.Date.dt.hour 
     df['day'] = df.Date.dt.day 
 
-    df['day'] = df.Date.dt.day 
-
     df['closing_marubozu'] = talib.CDLCLOSINGMARUBOZU(df.Open, df.High, df.Low, df.Close)
     df['doji'] = talib.CDLDOJI(df.Open, df.High, df.Low, df.Close)
     df['engulfing'] = talib.CDLENGULFING(df.Open, df.High, df.Low, df.Close)
@@ -136,20 +112,102 @@ class ABCTrader(ABC):
     df['marubozu'] = talib.CDLMARUBOZU(df.Open, df.High, df.Low, df.Close)
     df['shooting_star'] = talib.CDLSHOOTINGSTAR(df.Open, df.High, df.Low, df.Close)
 
-    _, trend = hpfilter(df['Close'], lamb=1000)
-    df['trend'] = trend
-    df['SMA20'] = df['trend'].rolling(window=20).mean()
+    lamb = 10000
+    window_size = 48
+    apply_hpfilter_with_params = lambda window: self.__apply_hpfilter(window, window_size, lamb)
+    df['trend'] = df['Close'].rolling(window=window_size).apply(apply_hpfilter_with_params, raw=True)
 
-    df = df.drop(columns=['spread', 'real_volume'])
+    df['SMA20'] = df['Close'].rolling(window=20).mean()
 
+    df['hp_flag'] = 0
+    df['hp_flag'] = np.where((df['trend'] > df['SMA20']) & (df['trend'].shift(1) <= df['SMA20'].shift(1)), 1, df['hp_flag'])
+    df['hp_flag'] = np.where((df['trend'] < df['SMA20']) & (df['trend'].shift(1) >= df['SMA20'].shift(1)), -1, df['hp_flag'])
+
+    df['macd_flag'] = 0
+    df['macd_flag'] = np.where((df['macdhist'].shift(1) < 0) & (df['macdhist'] > 0), 1, df['macd_flag'])
+    df['macd_flag'] = np.where((df['macdhist'].shift(1) > 0) & (df['macdhist'] < 0), -1, df['macd_flag'])
+
+    df['bband_flag'] = 0
+    df['bband_flag'] = np.where((df['Close'] > df['upper_bband']), 1, df['bband_flag']) 
+    df['bband_flag'] = np.where((df['Close'] < df['lower_bband']), -1, df['bband_flag']) 
+
+    df['rsi_flag'] = 0
+    df['rsi_flag'] = np.where((df['rsi'] > 70), -1, df['rsi_flag'])
+    df['rsi_flag'] = np.where((df['rsi'] < 30), 1, df['rsi_flag'])
+
+    df['adx_flag'] = 0
+    df['adx_flag'] = np.where((df['adx'] > 25), 1, df['adx_flag'])
+
+    df['mfi_flag'] = 0
+    df['mfi_flag'] = np.where((df['mfi'] > 80), -1, df['mfi_flag'])
+    df['mfi_flag'] = np.where((df['mfi'] < 20), 1, df['mfi_flag'])
+
+    # Cruce positivo
+    df['ema_flag'] = 0
+    df['ema_flag'] = np.where((df['ema_12'] > df['ema_200']) & (df['ema_12'].shift(1) <= df['ema_200'].shift(1)), 
+      1, 
+      df['ema_flag']
+    )
+
+    # Cruce negativo
+    df['ema_flag'] = np.where((df['ema_12'] < df['ema_200']) & (df['ema_12'].shift(1) >= df['ema_200'].shift(1)), 
+      -1, 
+      df['ema_flag']
+    )
+
+    window = 5
+    df['macd_flag_positive_window'] = df['macd_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True)
+    df['bband_flag_positive_window'] = df['bband_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True)
+    df['rsi_flag_positive_window'] = df['rsi_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+    df['hp_flag_positive_window'] = df['hp_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+    df['ema_flag_positive_window'] = df['ema_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+    df['mfi_flag_positive_window'] = df['mfi_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+
+    df['macd_flag_negative_window'] = df['macd_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+    df['bband_flag_negative_window'] = df['bband_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+    df['rsi_flag_negative_window'] = df['rsi_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+    df['hp_flag_negative_window'] = df['hp_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+    df['ema_flag_negative_window'] = df['ema_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+    df['mfi_flag_negative_window'] = df['mfi_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+    
+    df['adx_flag_window'] = df['adx_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+    
     df = df.dropna()
 
     return df
   
+  # Definir una función que aplica el filtro HP a una ventana y devuelve la tendencia del último valor
+  def __apply_hpfilter(self, window, window_size, lamb):
+      if len(window) < window_size:
+          return np.nan  # Devuelve NaN si la ventana no está completa
+
+      _, trend = hpfilter(window, lamb=lamb)
+      return trend[-1]
+
   def calculate_operation_sides(self, instrument):
       # Esto deberia estar parametrizado
-      long_signals = (instrument['trend'] > instrument['SMA20']) & (instrument['trend'].shift(1) <= instrument['SMA20'].shift(1))
-      short_signals = (instrument['trend'] < instrument['SMA20']) & (instrument['trend'].shift(1) >= instrument['SMA20'].shift(1))
+      amount_conditions = 2
+
+      long_signals = (
+          # (instrument['macd_flag_positive_window'] == 1).astype(int) +
+          # (instrument['bband_flag_positive_window'] == 1).astype(int) +
+          # (instrument['rsi_flag_positive_window'] == 1).astype(int) +
+          (instrument['hp_flag_positive_window'] == 1).astype(int) +
+          # (instrument['ema_flag_positive_window'] == 1).astype(int) +
+          # (instrument['mfi_flag_positive_window'] == 1).astype(int) +
+          (instrument['adx_flag_window'] == 1).astype(int)
+      ) >= amount_conditions
+
+      short_signals = (
+          # (instrument['macd_flag_negative_window'] == 1).astype(int) +
+          # (instrument['bband_flag_negative_window'] == 1).astype(int) +
+          # (instrument['rsi_flag_negative_window'] == 1).astype(int) +
+          (instrument['hp_flag_negative_window'] == 1).astype(int) +
+          # (instrument['ema_flag_negative_window'] == 1).astype(int) +
+          # (instrument['mfi_flag_negative_window'] == 1).astype(int) +
+          (instrument['adx_flag_window'] == 1).astype(int)
+      ) >= amount_conditions
+
       instrument.loc[long_signals, 'side'] = 1
       instrument.loc[short_signals, 'side'] = -1
 

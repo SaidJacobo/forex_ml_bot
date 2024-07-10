@@ -91,11 +91,19 @@ if __name__ == '__main__':
     timezone = pytz.timezone("Etc/UTC")
 
     now = datetime.now(timezone) - timedelta(hours=1)
+    # actual_date = datetime(
+    #     now.year,
+    #     now.month,
+    #     now.day,
+    #     now.hour,
+    #     0,
+    #     0
+    # )
     actual_date = datetime(
         now.year,
         now.month,
         now.day,
-        now.hour,
+        12,
         0,
         0
     )

@@ -119,7 +119,7 @@ class Botardo():
       print(self.instruments[ticker].tail(5))
 
       print('='*16, f'calculando indicadores para el simbolo {ticker}', '='*16)
-      self.instruments[ticker] = self.trader.calculate_indicators(self.instruments[ticker])
+      self.instruments[ticker] = self.trader.calculate_indicators(self.instruments[ticker], ticker, self.trader.pips_per_value)
       
       if save:
         self.instruments[ticker].to_csv(
