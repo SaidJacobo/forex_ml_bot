@@ -163,9 +163,12 @@ if __name__ == '__main__':
     max_window = max(train_windows)
     first_time = True
 
+    simulation_days = pd.bdate_range(start=date_from, end=date_to).size
+
+
     # empieza el merequetengue
 
-    for iteration in range(0, 3):
+    for iteration in range(0, 7):
         iteration_path = os.path.join(experiments_path, str(iteration))
         if not os.path.exists(iteration_path):
             os.mkdir(iteration_path)
@@ -208,14 +211,13 @@ if __name__ == '__main__':
                 
                 first_time = False
 
-                # Con los resultados se calcula el sharpe ratio
-                annual_risk_free_rate = 0.02
-                hours_per_year = 252 * 24
-                hourly_risk_free_rate = (1 + annual_risk_free_rate) ** (1/hours_per_year) - 1
-                mean_hourly_return = orders['profit'].mean()
-                std_hourly_return = orders['profit'].std()
-                sharpe_ratio_hourly = (mean_hourly_return - hourly_risk_free_rate) / std_hourly_return
-                sharpe_ratio_annualized = sharpe_ratio_hourly * np.sqrt(hours_per_year)
+                orders['date_rounded'] = pd.to_datetime(orders['close_time']).dt.floor('D')
+                daily_profits = orders.groupby('date_rounded')['profit'].sum()
+                daily_returns = daily_profits.pct_change()
+                tasa_libre_riesgo_anual = 0.02
+                tasa_libre_riesgo_diaria = (1 + tasa_libre_riesgo_anual) ** (1/simulation_days) - 1
+                exceso_retorno = daily_returns - tasa_libre_riesgo_diaria
+                sharpe_ratio_annualized = (exceso_retorno.mean() / exceso_retorno.std()) * np.sqrt(252)
 
                 exp_paths.append(experiment_path)
                 sharpe_ratios.append(sharpe_ratio_annualized)

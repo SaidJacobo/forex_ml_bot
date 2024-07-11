@@ -79,7 +79,7 @@ def apply_triple_barrier(
             if side[index] == 1:
 
                 # Señal de compra: tomar ganancias si se alcanza la barrera superior
-                if (future_max_price >= upper_barrier_level) and (future_min_price <= lower_barrier_level):
+                if (future_close_price < upper_barrier_level) and (future_close_price > lower_barrier_level) and (future_max_price >= upper_barrier_level) and (future_min_price <= lower_barrier_level):
                     result = random.choice([(index, 0), (index,1)])
                     barriers.append(result)
                     break
@@ -94,7 +94,7 @@ def apply_triple_barrier(
 
             elif side[index] == -1:
 
-                if (future_min_price <= lower_barrier_level) and (future_max_price >= upper_barrier_level):
+                if (future_close_price < upper_barrier_level) and (future_close_price > lower_barrier_level) and (future_min_price <= lower_barrier_level) and (future_max_price >= upper_barrier_level):
                     result = random.choice([(index, 0), (index,1)])
                     barriers.append(result)
                     break

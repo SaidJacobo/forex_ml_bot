@@ -34,19 +34,19 @@ def operation_management_logic(
         
         if open_order.operation_type == OperationType.BUY:
 
-            if (low_price <= open_order.stop_loss) and (high_price >= open_order.take_profit):
+            if (close_price > open_order.stop_loss) and (close_price < open_order.take_profit) and (low_price <= open_order.stop_loss) and (high_price >= open_order.take_profit):
                 return random.choice([
                     Result(
                         ActionType.CLOSE, 
                         OperationType.SELL, 
                         open_order.id, 
-                        ClosePositionType.STOP_LOSS,
+                        ClosePositionType.STOP_LOSS_RANDOM,
                     ), 
                     Result(
                         ActionType.CLOSE, 
                         OperationType.SELL, 
                         open_order.id, 
-                        ClosePositionType.TAKE_PROFIT
+                        ClosePositionType.TAKE_PROFIT_RANDOM
                     )
                 ])
 
@@ -77,19 +77,19 @@ def operation_management_logic(
             # Si estás en posición pero no han pasado los días permitidos, espera
         elif open_order.operation_type == OperationType.SELL: 
             
-            if (high_price >= open_order.stop_loss) and (low_price <= open_order.take_profit):
+            if (close_price < open_order.stop_loss) and (close_price > open_order.take_profit) and (high_price >= open_order.stop_loss) and (low_price <= open_order.take_profit):
                 return random.choice([
                     Result(
                         ActionType.CLOSE, 
                         OperationType.SELL, 
                         open_order.id, 
-                        ClosePositionType.STOP_LOSS
+                        ClosePositionType.STOP_LOSS_RANDOM
                     ),
                     Result(
                         ActionType.CLOSE, 
                         OperationType.SELL, 
                         open_order.id, 
-                        ClosePositionType.TAKE_PROFIT
+                        ClosePositionType.TAKE_PROFIT_RANDOM
                     )                              
                 ])
 
