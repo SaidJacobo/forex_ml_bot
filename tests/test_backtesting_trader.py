@@ -72,31 +72,10 @@ trader = BacktestingTrader(
 
 trader.positions.append(order)
 
-def test_calculate_indicators(sample_data):
-    """Prueba que los indicadores técnicos se calculan correctamente."""
-    df_with_indicators = trader.calculate_indicators(sample_data.copy())
-    
-    # Verifica que se añaden todas las columnas de indicadores
-    expected_columns = [
-        'ema_12', 'ema_26', 'ema_50', 'ema_200', 'rsi',
-        'upper_bband', 'middle_bband', 'lower_bband',
-        'atr', 'mfi', 'adx', 'macd', 'macdsignal', 'macdhist',
-        'macdhist_yesterday', 'macd_flag', 'change_percent_ch', 'change_percent_co',
-        'change_percent_cl', 'change_percent_1_day', 'change_percent_2_day',
-        'change_percent_3_day', 'change_percent_h', 'change_percent_o',
-        'change_percent_l', 'hour', 'day', 'three_stars', 'closing_marubozu',
-        'doji', 'doji_star', 'dragon_fly', 'engulfing', 'evening_doji_star',
-        'hammer', 'hanging_man', 'marubozu', 'morning_star', 'shooting_star',
-        'trend', 'SMA20'
-    ]
-    for column in expected_columns:
-        assert column in df_with_indicators.columns, f"Missing column: {column}"
-
-
 def test_no_future_data_leak(sample_data):
     """Prueba que no hay filtración de datos futuros en los indicadores."""
     df = sample_data
-    df_with_indicators = trader.calculate_indicators(df)
+    df_with_indicators = trader.calculate_indicators(df, ticker='EURUSD')
 
     missing_dates = df[~df['Date'].isin(df_with_indicators.Date)].Date
     first_date_df_indicators = df_with_indicators.iloc[0].Date

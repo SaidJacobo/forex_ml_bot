@@ -45,8 +45,6 @@ def get_daily_volatility(close_prices, span=100):
 
 def apply_triple_barrier(
     close_prices, 
-    max_prices, 
-    min_prices, 
     take_profit_in_pips, 
     stop_loss_in_pips, 
     side,
@@ -73,38 +71,24 @@ def apply_triple_barrier(
         # Evaluar los precios futuros dentro del período máximo de mantenimiento
         for j in range(index + 1, min(index + max_holding_period, len(close_prices))):
             future_close_price = close_prices[j]
-            future_max_price = max_prices[j]
-            future_min_price = min_prices[j]
             
             if side[index] == 1:
 
-                # Señal de compra: tomar ganancias si se alcanza la barrera superior
-                if (future_close_price < upper_barrier_level) and (future_close_price > lower_barrier_level) and (future_max_price >= upper_barrier_level) and (future_min_price <= lower_barrier_level):
-                    result = random.choice([(index, 0), (index,1)])
-                    barriers.append(result)
-                    break
-
-                if future_close_price >= upper_barrier_level or future_max_price >= upper_barrier_level:
+                if future_close_price >= upper_barrier_level:
                     barriers.append((index, 1))  # Etiqueta 1 para toma de ganancias
                     break
 
-                elif future_close_price <= lower_barrier_level or future_min_price <= lower_barrier_level:
+                elif future_close_price <= lower_barrier_level:
                     barriers.append((index, 0))  # Etiqueta 0 para stop-loss
                     break
 
             elif side[index] == -1:
-
-                if (future_close_price < upper_barrier_level) and (future_close_price > lower_barrier_level) and (future_min_price <= lower_barrier_level) and (future_max_price >= upper_barrier_level):
-                    result = random.choice([(index, 0), (index,1)])
-                    barriers.append(result)
-                    break
-
                 # Señal de venta: tomar ganancias si se alcanza la barrera inferior
-                if future_close_price <= lower_barrier_level or future_min_price <= lower_barrier_level:
+                if future_close_price <= lower_barrier_level:
                     barriers.append((index, 1))  # Etiqueta 1 para toma de ganancias
                     break
 
-                elif future_close_price >= upper_barrier_level or future_max_price >= upper_barrier_level:
+                elif future_close_price >= upper_barrier_level:
                     barriers.append((index, 0))  # Etiqueta 0 para stop-loss
                     break
         else:
@@ -136,8 +120,6 @@ def apply_triple_barrier(
 
 def triple_barrier_labeling(
         close_prices, 
-        max_prices, 
-        min_prices,  
         take_profit_in_pips, 
         stop_loss_in_pips, 
         side,
@@ -147,8 +129,6 @@ def triple_barrier_labeling(
 
     labels = apply_triple_barrier(
         close_prices,
-        max_prices,
-        min_prices,
         take_profit_in_pips, 
         stop_loss_in_pips, 
         side,

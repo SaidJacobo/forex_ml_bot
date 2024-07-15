@@ -5,7 +5,7 @@ from backbone.order import Order
 from pandas import DataFrame
 from abc import ABC, abstractmethod
 from backbone.enums import ActionType, OperationType
-from backbone.utils import get_session
+from backbone.utils import get_session, diff_pips
 from statsmodels.tsa.filters.hp_filter import hpfilter
 
 
@@ -44,7 +44,7 @@ class ABCTrader(ABC):
     self.use_trailing_stop = use_trailing_stop
     self.trade_with = trade_with
   
-  def calculate_indicators(self, df:DataFrame, ticker, pips_per_value):
+  def calculate_indicators(self, df:DataFrame, ticker):
     """Calcula indicadores técnicos para el DataFrame dado.
 
     Args:
@@ -67,7 +67,7 @@ class ABCTrader(ABC):
     df['middle_bband'] = middle_band
     df['lower_bband'] = lower_band
 
-    df['distance_between_bbands'] = (df['upper_bband'] - df['lower_bband']) / pips_per_value[ticker]
+    df['distance_between_bbands'] = (df['upper_bband'] - df['lower_bband']) / self.pips_per_value[ticker]
     df['distance_between_bbands_shift_1'] = df['distance_between_bbands'].shift(1)
     df['distance_between_bbands_shift_2'] = df['distance_between_bbands'].shift(2)
     df['distance_between_bbands_shift_3'] = df['distance_between_bbands'].shift(3)
@@ -186,11 +186,11 @@ class ABCTrader(ABC):
 
   def calculate_operation_sides(self, instrument):
       # Esto deberia estar parametrizado
-      amount_conditions = 2
+      amount_conditions = 3
 
       long_signals = (
           # (instrument['macd_flag_positive_window'] == 1).astype(int) +
-          # (instrument['bband_flag_positive_window'] == 1).astype(int) +
+          (instrument['bband_flag_positive_window'] == 1).astype(int) +
           # (instrument['rsi_flag_positive_window'] == 1).astype(int) +
           (instrument['hp_flag_positive_window'] == 1).astype(int) +
           # (instrument['ema_flag_positive_window'] == 1).astype(int) +
@@ -200,7 +200,7 @@ class ABCTrader(ABC):
 
       short_signals = (
           # (instrument['macd_flag_negative_window'] == 1).astype(int) +
-          # (instrument['bband_flag_negative_window'] == 1).astype(int) +
+          (instrument['bband_flag_negative_window'] == 1).astype(int) +
           # (instrument['rsi_flag_negative_window'] == 1).astype(int) +
           (instrument['hp_flag_negative_window'] == 1).astype(int) +
           # (instrument['ema_flag_negative_window'] == 1).astype(int) +
@@ -301,6 +301,40 @@ class ABCTrader(ABC):
   @abstractmethod
   def update_position(self, order_id, actual_price, comment):
     pass
+  
+
+  def _update_stop_loss(self, order_id, actual_price, comment):
+    if self.use_trailing_stop:
+        open_orders = self.get_open_orders(ticket=order_id) # ADVERTENCIA aca le llegaria la orden, no el id para buscarlo
+        
+        if not open_orders:
+            raise ValueError(f"No open orders found for ticket {order_id}")
+        
+        order = open_orders.pop()
+
+        new_sl = None
+
+        actual_stop_loss_price = order.stop_loss
+        pip_value = self.pips_per_value[order.ticker]
+        diff = diff_pips(actual_price, actual_stop_loss_price, pip_value)
+        
+        # menor nunca va a ser pq sino hubiera cerrado la op
+        if diff > self.stop_loss_in_pips:
+            new_sl = self._calculate_stop_loss(
+                operation_type=order.operation_type, 
+                price=actual_price, 
+                ticker=order.ticker
+            )
+
+        if new_sl is not None:
+            order.update(sl=new_sl)
+            print(f"Updated order {order_id}: new SL = {new_sl}, last price = {actual_price}")
+            
+            return order
+        else:
+            print(f"No update needed for order {order_id}: actual price = {actual_price}, last price = {order.last_price}")
+        
+        return None
 
   
   def take_operation_decision(self, actual_market_data, actual_date):
@@ -314,7 +348,7 @@ class ABCTrader(ABC):
     ticker = actual_market_data['ticker']
     
     if ticker in self.trade_with:
-      open_positions = self.get_open_orders(symbol=ticker)
+      open_positions = self.get_open_orders(symbol=ticker) # ADVERTENCIA aca se obtienen las ordenes
 
       result = self.trading_strategy(
         actual_date,
@@ -340,7 +374,7 @@ class ABCTrader(ABC):
           
         elif result.action == ActionType.CLOSE:
           self.close_position(
-            order_id=result.order_id, 
+            order_id=result.order_id, # pero aca se manda el id, y del otro lado se la vuelve a buscar
             date=actual_date, 
             price=price, 
             comment=result.comment
@@ -348,11 +382,12 @@ class ABCTrader(ABC):
 
         elif result.action == ActionType.UPDATE:
           self.update_position(
-            order_id=result.order_id, 
+            order_id=result.order_id, # pero aca se manda el id, y del otro lado se la vuelve a buscar
             actual_price=price, 
             comment=result.comment
           ) 
-      
+
+          # Quiza se puede mandar directamente la orden y listo
     return result
   
   @abstractmethod

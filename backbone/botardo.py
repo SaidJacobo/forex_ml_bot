@@ -48,7 +48,6 @@ class Botardo():
     utc_from = datetime.strptime(date_from, self.date_format).replace(tzinfo=timezone)
     utc_to = datetime.strptime(date_to, self.date_format).replace(tzinfo=timezone)
 
-    # get bars from USDJPY M5 within the interval of 2020.01.10 00:00 - 2020.01.11 13:00 in UTC time zone
     rates = mt5.copy_rates_range(ticker, mt5.TIMEFRAME_H1, utc_from, utc_to)
 
     # shut down connection to the MetaTrader 5 terminal
@@ -119,7 +118,7 @@ class Botardo():
       print(self.instruments[ticker].tail(5))
 
       print('='*16, f'calculando indicadores para el simbolo {ticker}', '='*16)
-      self.instruments[ticker] = self.trader.calculate_indicators(self.instruments[ticker], ticker, self.trader.pips_per_value)
+      self.instruments[ticker] = self.trader.calculate_indicators(self.instruments[ticker], ticker)
       
       if save:
         self.instruments[ticker].to_csv(
@@ -165,8 +164,6 @@ class Botardo():
 
       instrument['target'] = triple_barrier_labeling(
         close_prices=instrument['Close'], 
-        min_prices=instrument['Low'], 
-        max_prices=instrument['High'], 
         take_profit_in_pips=self.trader.take_profit_in_pips, 
         stop_loss_in_pips=self.trader.stop_loss_in_pips, 
         max_holding_period=self.trader.allowed_days_in_position, 

@@ -28,17 +28,13 @@ class Order():
         self.profit_in_pips = None
         self.comment=None
 
-    def update(self, sl=None, tp=None, last_price=None):
+    def update(self, sl=None, tp=None):
         if sl:
             self.stop_loss=sl
         
         if tp:
             self.take_profit=tp
             
-        if last_price:
-            self.last_price=last_price
-
-
     def close(self, close_price:float, close_time:str, comment:str) -> None:
         
         if comment == ClosePositionType.STOP_LOSS or comment == ClosePositionType.STOP_LOSS_RANDOM:

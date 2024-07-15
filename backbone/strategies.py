@@ -17,9 +17,6 @@ def operation_management_logic(
         allowed_days_in_position:int,
         use_trailing_stop:bool,
         only_indicator_close_buy_condition:bool,
-        open_price:float,
-        high_price:float,
-        low_price:float,
         close_price:float,
         only_indicator_close_sell_condition:bool,
         model_with_indicator_open_buy_condition:bool,
@@ -30,27 +27,11 @@ def operation_management_logic(
     
     if open_order:
 
-        days_in_position = (today - open_order.open_time).seconds // 3600
+        days_in_position = (today - open_order.open_time).total_seconds() // 3600
         
         if open_order.operation_type == OperationType.BUY:
 
-            if (close_price > open_order.stop_loss) and (close_price < open_order.take_profit) and (low_price <= open_order.stop_loss) and (high_price >= open_order.take_profit):
-                return random.choice([
-                    Result(
-                        ActionType.CLOSE, 
-                        OperationType.SELL, 
-                        open_order.id, 
-                        ClosePositionType.STOP_LOSS_RANDOM,
-                    ), 
-                    Result(
-                        ActionType.CLOSE, 
-                        OperationType.SELL, 
-                        open_order.id, 
-                        ClosePositionType.TAKE_PROFIT_RANDOM
-                    )
-                ])
-
-            if close_price <= open_order.stop_loss or low_price <= open_order.stop_loss:
+            if close_price <= open_order.stop_loss:
                 return Result(
                     ActionType.CLOSE, 
                     OperationType.SELL, 
@@ -58,7 +39,7 @@ def operation_management_logic(
                     ClosePositionType.STOP_LOSS
                 )
             
-            if close_price >= open_order.take_profit or high_price >= open_order.take_profit:
+            if close_price >= open_order.take_profit:
                 return Result(
                     ActionType.CLOSE, 
                     OperationType.SELL, 
@@ -76,24 +57,8 @@ def operation_management_logic(
 
             # Si estás en posición pero no han pasado los días permitidos, espera
         elif open_order.operation_type == OperationType.SELL: 
-            
-            if (close_price < open_order.stop_loss) and (close_price > open_order.take_profit) and (high_price >= open_order.stop_loss) and (low_price <= open_order.take_profit):
-                return random.choice([
-                    Result(
-                        ActionType.CLOSE, 
-                        OperationType.SELL, 
-                        open_order.id, 
-                        ClosePositionType.STOP_LOSS_RANDOM
-                    ),
-                    Result(
-                        ActionType.CLOSE, 
-                        OperationType.SELL, 
-                        open_order.id, 
-                        ClosePositionType.TAKE_PROFIT_RANDOM
-                    )                              
-                ])
 
-            if close_price >= open_order.stop_loss or high_price >= open_order.stop_loss:
+            if close_price >= open_order.stop_loss:
                 return Result(
                     ActionType.CLOSE, 
                     OperationType.SELL, 
@@ -101,7 +66,7 @@ def operation_management_logic(
                     ClosePositionType.STOP_LOSS
                 )
             
-            if close_price <= open_order.take_profit or low_price <= open_order.take_profit:
+            if close_price <= open_order.take_profit:
                 return Result(
                     ActionType.CLOSE, 
                     OperationType.SELL, 
@@ -193,9 +158,6 @@ def ml_strategy(
         allowed_days_in_position=allowed_days_in_position,
         use_trailing_stop=use_trailing_stop,
         only_indicator_close_buy_condition=only_indicator_close_buy_condition,
-        open_price=open_price,
-        high_price=high_price,
-        low_price=low_price,
         close_price=close_price,
         only_indicator_close_sell_condition=only_indicator_close_sell_condition,
         model_with_indicator_open_buy_condition=model_with_indicator_open_buy_condition,
@@ -217,10 +179,6 @@ def only_strategy(
 ):
     
     side = actual_market_data["side"]
-
-    open_price = actual_market_data["Open"]
-    high_price = actual_market_data["High"]
-    low_price = actual_market_data["Low"]
     close_price = actual_market_data["Close"]
     
     model_with_indicator_open_buy_condition = None
@@ -240,9 +198,6 @@ def only_strategy(
         allowed_days_in_position=allowed_days_in_position,
         use_trailing_stop=use_trailing_stop,
         only_indicator_close_buy_condition=only_indicator_close_buy_condition,
-        open_price=open_price,
-        high_price=high_price,
-        low_price=low_price,
         close_price=close_price,
         only_indicator_close_sell_condition=only_indicator_close_sell_condition,
         model_with_indicator_open_buy_condition=model_with_indicator_open_buy_condition,

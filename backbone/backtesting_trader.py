@@ -1,4 +1,4 @@
-from backbone.enums import OperationType
+from backbone.enums import ClosePositionType, OperationType
 from backbone.trader import ABCTrader
 import pandas as pd
 from backbone.order import Order
@@ -88,7 +88,7 @@ class BacktestingTrader(ABCTrader):
 
     def close_position(self, order_id:int, date:str, price:float, comment:str) -> None:
  
-        order = self.get_open_orders(ticket=order_id).pop()
+        order = self.get_open_orders(ticket=order_id).pop() # ADVERTENCIA deberia llegar la orden, no el id
 
         order.close(close_price=price, close_time=date, comment=comment)
 
@@ -96,34 +96,14 @@ class BacktestingTrader(ABCTrader):
 
         print('='*16, f'se cerro una posicion el {date}', '='*16)
 
+
     def update_position(self, order_id, actual_price, comment):
-        if self.use_trailing_stop:
-            open_orders = self.get_open_orders(ticket=order_id)
-            
-            if not open_orders:
-                raise ValueError(f"No open orders found for ticket {order_id}")
-            
-            order = open_orders.pop()
+        if comment == ClosePositionType.STOP_LOSS:
+            self._update_stop_loss(order_id, actual_price, comment)
+        
+        if comment == ClosePositionType.TAKE_PROFIT:
+            pass
 
-            new_sl = None
-            if order.operation_type == OperationType.BUY and actual_price > order.last_price:
-                new_sl = self._calculate_stop_loss(
-                    operation_type=order.operation_type, 
-                    price=actual_price, 
-                    ticker=order.ticker
-                )
-            elif order.operation_type == OperationType.SELL and actual_price < order.last_price:
-                new_sl = self._calculate_stop_loss(
-                    operation_type=order.operation_type, 
-                    price=actual_price, 
-                    ticker=order.ticker
-                )
-
-            if new_sl is not None:
-                order.update(sl=new_sl, last_price=actual_price)
-                print(f"Updated order {order_id}: new SL = {new_sl}, last price = {actual_price}")
-            else:
-                print(f"No update needed for order {order_id}: actual price = {actual_price}, last price = {order.last_price}")
 
 
     def get_open_orders(self, ticket:int=None, symbol:str=None) -> List[Order]:

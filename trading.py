@@ -90,23 +90,17 @@ if __name__ == '__main__':
     # set time zone to UTC
     timezone = pytz.timezone("Etc/UTC")
 
-    now = datetime.now(timezone) - timedelta(hours=1)
-    # actual_date = datetime(
-    #     now.year,
-    #     now.month,
-    #     now.day,
-    #     now.hour,
-    #     0,
-    #     0
-    # )
+    # Dependiendo del server de metatrader, la fecha esta en utc pero la data en utc +3
+    now = datetime.now(timezone) + timedelta(hours=2)
     actual_date = datetime(
         now.year,
         now.month,
         now.day,
-        12,
+        now.hour,
         0,
         0
     )
+ 
 
     date_from = actual_date - timedelta(hours=train_window + 300)
 
