@@ -11,17 +11,17 @@ allowed_sessions: [NY, London, 'Sidney', 'Tokio']
 models: 'random_forest'
 train_window: 11520
 train_period: 1 # frecuencia con la que se entrena
-stop_loss_in_pips: 15
-risk_reward_ratio: 2
+stop_loss_in_pips: 10
+risk_reward_ratio: 4
 periods_forward_target: 8
-use_trailing_stop: False
+use_trailing_stop: True
 trading_strategy: backbone.strategies.ml_strategy
 risk_percentage: 1
 
 use_days_in_position: True
 undersampling: False
 
-pipeline_path: 'C:/Users/SaidJ/OneDrive/Documentos/projects/forex_ml_bot/forex_ml_bot/backbone/data/backtest/experiments/0/Mode_train-Model_random_forest-TrainWw_1440-TrainPd_24-TradStgy_ml_strategy-PerFwTg_4-SL_20-RR_7-CloseTime_True-TS_False_opt/pipe.pkl'
+pipeline_path: 'C:/Users/SaidJ/OneDrive/Documentos/projects/forex_ml_bot/forex_ml_bot/backbone/data/backtest/experiments/3/Mode_train-Model_gradient_boosting-TrainWw_5760-TrainPd_24-TradStgy_ml_strategy-PerFwTg_4-SL_25-RR_2-CloseTime_True-TS_True_opt/pipe.pkl'
 threshold: 0.5
 
 pips_per_value:

@@ -7,8 +7,8 @@ models: [
 
 train_window: [
   11520, # dos anios
-  5760, # un anio
-  1920, # cuatro meses
+  # 5760, # un anio
+  # 1920, # cuatro meses
   # 1440, # tres meses
   # # 1200, # dos meses y medio
   # 960, # dos meses
@@ -28,14 +28,14 @@ train_period: [
 stop_loss_in_pips: [
   # 5,
   10,
-  15,
-  20,
-  25
+  # 15,
+  # 20,
+  # 25
 ]
 
 risk_reward_ratio: [
-  2,
-  3,
+  # 2,
+  # 3,
   4,
   # 5,
   # 6, 
@@ -45,9 +45,9 @@ risk_reward_ratio: [
 ]
 
 periods_forward_target: [
-  4,
+  # 4,
   8,
-  12,
+  # 12,
   # 24,
   # 48,
   # 10,
@@ -59,7 +59,7 @@ use_days_in_position: [
 
 use_trailing_stop: [
   True,
-  False
+  # False
 ]
 
 trading_strategy: [
