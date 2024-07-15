@@ -1,10 +1,10 @@
 import pandas as pd
-from backbone.enums import OperationType
+from backbone.enums import ClosePositionType, OperationType
 from backbone.order import Order
 from backbone.trader import ABCTrader
 import MetaTrader5 as mt5
-from backbone.utils import from_mt_order_to_order, from_order_to_mt_order
-from typing import List, Tuple
+from backbone.utils import from_mt_order_to_order, from_order_to_mt_order, diff_pips
+from typing import List
 import os
 from backbone.utils import write_in_logs
 from backbone.telegram_bot import TelegramBot
@@ -135,6 +135,10 @@ class RealtimeTrader(ABCTrader):
             "type_filling": mt5.ORDER_FILLING_IOC,
         }
         
+        # perform the check and display the result 'as is'
+        check_result = mt5.order_check(request)
+        print(check_result._asdict())
+
         # send a trading request
         result = mt5.order_send(request)
         print(result)
@@ -153,7 +157,7 @@ class RealtimeTrader(ABCTrader):
         self.telegram_bot.send_order_by_telegram(result_dict)
 
 
-    def close_position(self, order_id:int, date:str, price:float, comment:str) -> None:
+    def close_position(self, order_id:int, date:str, price:float, comment:str) -> None: # ADVERTENCIA deberia llegar la orden, no el id
         """Cierra una posición de trading.
 
         Args:
@@ -190,6 +194,10 @@ class RealtimeTrader(ABCTrader):
             "type_filling": mt5.ORDER_FILLING_IOC,
         }
         
+        # perform the check and display the result 'as is'
+        check_result = mt5.order_check(request)
+        print(check_result._asdict())
+
         result = mt5.order_send(request)
         print(result)
         mt5.shutdown()
@@ -204,8 +212,40 @@ class RealtimeTrader(ABCTrader):
 
         self.telegram_bot.send_order_by_telegram(result_dict)
 
-    def update_position(self, order_id, actual_price, comment):
-        pass
+    def update_position(self, order_id, actual_price, comment): # ADVERTENCIA deberia llegar la orden, no el id
+        
+        if comment == ClosePositionType.STOP_LOSS: # ADVERTENCIA No esta bien que sea ClosePositionType
+            
+            order = self._update_stop_loss(order_id, actual_price, comment)
 
+            if not mt5.initialize():
+                raise Exception('No se pudo inicializar mt5')
+
+            mt5_order = from_order_to_mt_order(order)
+
+            request = {
+                'action': mt5.TRADE_ACTION_SLTP,
+                'position': order_id ,
+                'type': mt5_order.type,
+                'sl': mt5_order.sl,
+                'type_time': mt5.ORDER_TIME_GTC,
+                'type_filling': mt5.ORDER_FILLING_FOK
+            }
+            
+            # perform the check and display the result 'as is'
+            check_result = mt5.order_check(request)
+            print(check_result)
+
+            # avisar por telegram
+            # logearlo
+
+            result = mt5.order_send(request)
+            print(result)
+            mt5.shutdown()
+
+        if comment == ClosePositionType.TAKE_PROFIT:
+            pass
+
+            
 
             

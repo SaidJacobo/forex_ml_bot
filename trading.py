@@ -90,7 +90,8 @@ if __name__ == '__main__':
     # set time zone to UTC
     timezone = pytz.timezone("Etc/UTC")
 
-    now = datetime.now(timezone) - timedelta(hours=1)
+    # Dependiendo del server de metatrader, la fecha esta en utc pero la data en utc +3
+    now = datetime.now(timezone) + timedelta(hours=2)
     actual_date = datetime(
         now.year,
         now.month,
@@ -99,6 +100,7 @@ if __name__ == '__main__':
         0,
         0
     )
+ 
 
     date_from = actual_date - timedelta(hours=train_window + 300)
 
@@ -116,7 +118,8 @@ if __name__ == '__main__':
         # Corre con los simbolos que ya tiene en memoria
         load_symbols_from_disk=False,
         # Necesito que conserve el target del dia de hoy que es null
-        drop_nulls=False
+        drop_nulls=False,
+        save=True
     )
     
     train_window = timedelta(hours=train_window)

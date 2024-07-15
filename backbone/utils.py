@@ -5,6 +5,8 @@ from backbone.order import Order
 from datetime import datetime
 from collections import namedtuple
 import os
+import MetaTrader5 as mt5
+
 
 def get_session(date: datetime):
     hour = date.hour
@@ -112,3 +114,16 @@ def map_order_to_str(order:dict):
         message += f'{key}: {value} \n'
     
     return message
+
+def diff_pips(price1, price2, pip_value):
+    """
+    Calcula la diferencia en pips entre dos precios dados el valor de un pip.
+
+    :param price1: Primer precio.
+    :param price2: Segundo precio.
+    :param pip_value: Valor de un pip para el par de divisas.
+    :return: Diferencia en pips entre los dos precios.
+    """
+    difference = abs(price1 - price2)
+    pips = difference / pip_value
+    return pips
