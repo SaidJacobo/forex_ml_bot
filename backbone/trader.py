@@ -55,10 +55,10 @@ class ABCTrader(ABC):
     """
     df.sort_values(by='Date', ascending=True, inplace=True)
 
-    df['ema_12'] = talib.EMA(df['Close'], timeperiod=12)
-    df['ema_26'] = talib.EMA(df['Close'], timeperiod=26)
-    df['ema_50'] = talib.EMA(df['Close'], timeperiod=50)
-    df['ema_200'] = talib.EMA(df['Close'], timeperiod=200)
+    df['sma_12'] = talib.SMA(df['Close'], timeperiod=12)
+    df['sma_26'] = talib.SMA(df['Close'], timeperiod=26)
+    df['sma_50'] = talib.SMA(df['Close'], timeperiod=50)
+    df['sma_200'] = talib.SMA(df['Close'], timeperiod=200)
 
     df['rsi'] = talib.RSI(df['Close'])
 
@@ -85,21 +85,26 @@ class ABCTrader(ABC):
     df['macdsignal'] = macdsignal
     df['macdhist'] = macdhist
 
-    df['change_percent_ch'] = (((df['Close'] - df['High']) / df['Close']) * 100).round(2)
-    df['change_percent_co'] = (((df['Close'] - df['Open']) / df['Close']) * 100).round(2)
-    df['change_percent_cl'] = (((df['Close'] - df['Low']) / df['Close']) * 100).round(2)
-    df['change_percent_1_day'] = (((df['Close'] - df['Close'].shift(1)) / df['Close']) * 100).round(2)
-    df['change_percent_2_day'] = (((df['Close'] - df['Close'].shift(2)) / df['Close']) * 100).round(2)
-    df['change_percent_3_day'] = (((df['Close'] - df['Close'].shift(3)) / df['Close']) * 100).round(2)
-    df['change_percent_h'] = (((df['High'] - df['High'].shift(1)) / df['High']) * 100).round(2)
-    df['change_percent_h'] = (((df['High'] - df['High'].shift(2)) / df['High']) * 100).round(2)
-    df['change_percent_h'] = (((df['High'] - df['High'].shift(3)) / df['High']) * 100).round(2)
-    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(1)) / df['Open']) * 100).round(2)
-    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(2)) / df['Open']) * 100).round(2)
-    df['change_percent_o'] = (((df['Open'] - df['Open'].shift(3)) / df['Open']) * 100).round(2)
-    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(1)) / df['Low']) * 100).round(2)
-    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(2)) / df['Low']) * 100).round(2)
-    df['change_percent_l'] = (((df['Low'] - df['Low'].shift(3)) / df['Low']) * 100).round(2)
+    df['diff_pips_ch'] = (df['Close'] - df['High']) / self.pips_per_value[ticker]
+    df['diff_pips_co'] = (df['Close'] - df['Open']) / self.pips_per_value[ticker]
+    df['diff_pips_cl'] = (df['Close'] - df['Low']) / self.pips_per_value[ticker]
+    df['diff_pips_hl'] = (df['High'] - df['Low']) / self.pips_per_value[ticker]
+
+    df['diff_pips_1_day'] = (df['Close'] - df['Close'].shift(1)) / self.pips_per_value[ticker]
+    df['diff_pips_2_day'] = (df['Close'].shift(1) - df['Close'].shift(2)) / self.pips_per_value[ticker]
+    df['diff_pips_3_day'] = (df['Close'].shift(2) - df['Close'].shift(3)) / self.pips_per_value[ticker]
+    
+    df['diff_pips_h'] = (df['High'] - df['High'].shift(1)) / self.pips_per_value[ticker]
+    df['diff_pips_h'] = (df['High'].shift(1) - df['High'].shift(2)) / self.pips_per_value[ticker]
+    df['diff_pips_h'] = (df['High'].shift(2) - df['High'].shift(3)) / self.pips_per_value[ticker]
+    
+    df['diff_pips_o'] = (df['Open'] - df['Open'].shift(1)) / self.pips_per_value[ticker]
+    df['diff_pips_o'] = (df['Open'].shift(1) - df['Open'].shift(2)) / self.pips_per_value[ticker]
+    df['diff_pips_o'] = (df['Open'].shift(2) - df['Open'].shift(3)) / self.pips_per_value[ticker]
+    
+    df['diff_pips_l'] = (df['Low'] - df['Low'].shift(1)) / self.pips_per_value[ticker]
+    df['diff_pips_l'] = (df['Low'].shift(1) - df['Low'].shift(2)) / self.pips_per_value[ticker]
+    df['diff_pips_l'] = (df['Low'].shift(2) - df['Low'].shift(3)) / self.pips_per_value[ticker]
 
     df['hour'] = df.Date.dt.hour 
     df['day'] = df.Date.dt.day 
@@ -112,16 +117,6 @@ class ABCTrader(ABC):
     df['marubozu'] = talib.CDLMARUBOZU(df.Open, df.High, df.Low, df.Close)
     df['shooting_star'] = talib.CDLSHOOTINGSTAR(df.Open, df.High, df.Low, df.Close)
 
-    lamb = 10000
-    window_size = 48
-    apply_hpfilter_with_params = lambda window: self.__apply_hpfilter(window, window_size, lamb)
-    df['trend'] = df['Close'].rolling(window=window_size).apply(apply_hpfilter_with_params, raw=True)
-
-    df['SMA20'] = df['Close'].rolling(window=20).mean()
-
-    df['hp_flag'] = 0
-    df['hp_flag'] = np.where((df['trend'] > df['SMA20']) & (df['trend'].shift(1) <= df['SMA20'].shift(1)), 1, df['hp_flag'])
-    df['hp_flag'] = np.where((df['trend'] < df['SMA20']) & (df['trend'].shift(1) >= df['SMA20'].shift(1)), -1, df['hp_flag'])
 
     df['macd_flag'] = 0
     df['macd_flag'] = np.where((df['macdhist'].shift(1) < 0) & (df['macdhist'] > 0), 1, df['macd_flag'])
@@ -143,31 +138,29 @@ class ABCTrader(ABC):
     df['mfi_flag'] = np.where((df['mfi'] < 20), 1, df['mfi_flag'])
 
     # Cruce positivo
-    df['ema_flag'] = 0
-    df['ema_flag'] = np.where((df['ema_12'] > df['ema_200']) & (df['ema_12'].shift(1) <= df['ema_200'].shift(1)), 
+    df['sma_flag'] = 0
+    df['sma_flag'] = np.where((df['sma_12'] > df['sma_26']) & (df['sma_12'].shift(1) <= df['sma_26'].shift(1)), 
       1, 
-      df['ema_flag']
+      df['sma_flag']
     )
 
     # Cruce negativo
-    df['ema_flag'] = np.where((df['ema_12'] < df['ema_200']) & (df['ema_12'].shift(1) >= df['ema_200'].shift(1)), 
+    df['sma_flag'] = np.where((df['sma_12'] < df['sma_26']) & (df['sma_12'].shift(1) >= df['sma_26'].shift(1)), 
       -1, 
-      df['ema_flag']
+      df['sma_flag']
     )
 
     window = 5
     df['macd_flag_positive_window'] = df['macd_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True)
     df['bband_flag_positive_window'] = df['bband_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True)
     df['rsi_flag_positive_window'] = df['rsi_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
-    df['hp_flag_positive_window'] = df['hp_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
-    df['ema_flag_positive_window'] = df['ema_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+    df['sma_flag_positive_window'] = df['sma_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
     df['mfi_flag_positive_window'] = df['mfi_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
 
     df['macd_flag_negative_window'] = df['macd_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
     df['bband_flag_negative_window'] = df['bband_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
     df['rsi_flag_negative_window'] = df['rsi_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
-    df['hp_flag_negative_window'] = df['hp_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
-    df['ema_flag_negative_window'] = df['ema_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+    df['sma_flag_negative_window'] = df['sma_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
     df['mfi_flag_negative_window'] = df['mfi_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
     
     df['adx_flag_window'] = df['adx_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
@@ -176,14 +169,6 @@ class ABCTrader(ABC):
 
     return df
   
-  # Definir una función que aplica el filtro HP a una ventana y devuelve la tendencia del último valor
-  def __apply_hpfilter(self, window, window_size, lamb):
-      if len(window) < window_size:
-          return np.nan  # Devuelve NaN si la ventana no está completa
-
-      _, trend = hpfilter(window, lamb=lamb)
-      return trend[-1]
-
   def calculate_operation_sides(self, instrument):
       # Esto deberia estar parametrizado
       amount_conditions = 3
@@ -192,8 +177,7 @@ class ABCTrader(ABC):
           # (instrument['macd_flag_positive_window'] == 1).astype(int) +
           (instrument['bband_flag_positive_window'] == 1).astype(int) +
           # (instrument['rsi_flag_positive_window'] == 1).astype(int) +
-          (instrument['hp_flag_positive_window'] == 1).astype(int) +
-          # (instrument['ema_flag_positive_window'] == 1).astype(int) +
+          (instrument['sma_flag_positive_window'] == 1).astype(int) +
           # (instrument['mfi_flag_positive_window'] == 1).astype(int) +
           (instrument['adx_flag_window'] == 1).astype(int)
       ) >= amount_conditions
@@ -202,8 +186,7 @@ class ABCTrader(ABC):
           # (instrument['macd_flag_negative_window'] == 1).astype(int) +
           (instrument['bband_flag_negative_window'] == 1).astype(int) +
           # (instrument['rsi_flag_negative_window'] == 1).astype(int) +
-          (instrument['hp_flag_negative_window'] == 1).astype(int) +
-          # (instrument['ema_flag_negative_window'] == 1).astype(int) +
+          (instrument['sma_flag_negative_window'] == 1).astype(int) +
           # (instrument['mfi_flag_negative_window'] == 1).astype(int) +
           (instrument['adx_flag_window'] == 1).astype(int)
       ) >= amount_conditions
@@ -213,9 +196,6 @@ class ABCTrader(ABC):
 
       print(instrument.side.value_counts())
 
-      # Remove Look ahead biase by lagging the signal
-      # instrument['side'] = instrument['side'].shift(1)
-      
       # Drop the NaN values from our data set
       instrument.dropna(inplace=True)
 
