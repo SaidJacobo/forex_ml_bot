@@ -8,7 +8,7 @@ import pytz
 from datetime import datetime
 from datetime import timedelta
 import pandas as pd
-from backbone.triple_barrier_utils import triple_barrier_labeling
+from backbone.utils.triple_barrier import triple_barrier_labeling
 
 class Botardo():
   """Clase base de bot de trading y aprendizaje automático.
@@ -164,6 +164,8 @@ class Botardo():
 
       instrument['target'] = triple_barrier_labeling(
         close_prices=instrument['Close'], 
+        high_prices=instrument['High'], 
+        low_prices=instrument['Low'], 
         take_profit_in_pips=self.trader.take_profit_in_pips, 
         stop_loss_in_pips=self.trader.stop_loss_in_pips, 
         max_holding_period=self.trader.allowed_days_in_position, 
@@ -174,6 +176,17 @@ class Botardo():
       self.instruments[ticker].loc[instrument.index, 'side'] = instrument.side
       self.instruments[ticker].loc[instrument.index, 'target'] = instrument.target
       self.instruments[ticker].fillna(0, inplace=True)
+
+      # Aplicar la lógica para mantener solo un 1 o -1 por cada secuencia de 1s o -1s consecutivos
+      self.instruments[ticker]['side'] = self.instruments[ticker]['side'].where(
+          (self.instruments[ticker]['side'] == 0) 
+          | (self.instruments[ticker]['side'] != self.instruments[ticker]['side'].shift(1)),
+          0
+      )
+      self.instruments[ticker]['target'] = np.where(
+        self.instruments[ticker]['side'] != 0, 
+        self.instruments[ticker]['target'], 0
+      )
 
       df = pd.concat(
         [

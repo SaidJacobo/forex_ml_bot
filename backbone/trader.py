@@ -5,15 +5,14 @@ from backbone.order import Order
 from pandas import DataFrame
 from abc import ABC, abstractmethod
 from backbone.enums import ActionType, OperationType
-from backbone.utils import get_session, diff_pips
-from statsmodels.tsa.filters.hp_filter import hpfilter
-
+from backbone.utils.general_purpose import get_session, diff_pips
 
 class ABCTrader(ABC):
   """Agente de Trading para tomar decisiones de compra y venta."""
 
   def __init__(self, 
                trading_strategy, 
+               trading_logic, 
                threshold:float, 
                allowed_days_in_position:int,
                stop_loss_in_pips:int,
@@ -35,6 +34,7 @@ class ABCTrader(ABC):
     self.allowed_sessions = allowed_sessions
     self.allowed_days_in_position = allowed_days_in_position
     self.trading_strategy = trading_strategy
+    self.trading_logic = trading_logic
     self.threshold = threshold
     self.stop_loss_in_pips = stop_loss_in_pips
     self.take_profit_in_pips = take_profit_in_pips
@@ -95,16 +95,16 @@ class ABCTrader(ABC):
     df['diff_pips_3_day'] = (df['Close'].shift(2) - df['Close'].shift(3)) / self.pips_per_value[ticker]
     
     df['diff_pips_h'] = (df['High'] - df['High'].shift(1)) / self.pips_per_value[ticker]
-    df['diff_pips_h'] = (df['High'].shift(1) - df['High'].shift(2)) / self.pips_per_value[ticker]
-    df['diff_pips_h'] = (df['High'].shift(2) - df['High'].shift(3)) / self.pips_per_value[ticker]
+    df['diff_pips_h_shift_1'] = (df['High'].shift(1) - df['High'].shift(2)) / self.pips_per_value[ticker]
+    df['diff_pips_h_shift_2'] = (df['High'].shift(2) - df['High'].shift(3)) / self.pips_per_value[ticker]
     
     df['diff_pips_o'] = (df['Open'] - df['Open'].shift(1)) / self.pips_per_value[ticker]
-    df['diff_pips_o'] = (df['Open'].shift(1) - df['Open'].shift(2)) / self.pips_per_value[ticker]
-    df['diff_pips_o'] = (df['Open'].shift(2) - df['Open'].shift(3)) / self.pips_per_value[ticker]
+    df['diff_pips_o_shift_1'] = (df['Open'].shift(1) - df['Open'].shift(2)) / self.pips_per_value[ticker]
+    df['diff_pips_o_shift_2'] = (df['Open'].shift(2) - df['Open'].shift(3)) / self.pips_per_value[ticker]
     
     df['diff_pips_l'] = (df['Low'] - df['Low'].shift(1)) / self.pips_per_value[ticker]
-    df['diff_pips_l'] = (df['Low'].shift(1) - df['Low'].shift(2)) / self.pips_per_value[ticker]
-    df['diff_pips_l'] = (df['Low'].shift(2) - df['Low'].shift(3)) / self.pips_per_value[ticker]
+    df['diff_pips_l_shift_1'] = (df['Low'].shift(1) - df['Low'].shift(2)) / self.pips_per_value[ticker]
+    df['diff_pips_l_shift_2'] = (df['Low'].shift(2) - df['Low'].shift(3)) / self.pips_per_value[ticker]
 
     df['hour'] = df.Date.dt.hour 
     df['day'] = df.Date.dt.day 
@@ -116,90 +116,16 @@ class ABCTrader(ABC):
     df['hanging_man'] = talib.CDLHANGINGMAN(df.Open, df.High, df.Low, df.Close)
     df['marubozu'] = talib.CDLMARUBOZU(df.Open, df.High, df.Low, df.Close)
     df['shooting_star'] = talib.CDLSHOOTINGSTAR(df.Open, df.High, df.Low, df.Close)
-
-
-    df['macd_flag'] = 0
-    df['macd_flag'] = np.where((df['macdhist'].shift(1) < 0) & (df['macdhist'] > 0), 1, df['macd_flag'])
-    df['macd_flag'] = np.where((df['macdhist'].shift(1) > 0) & (df['macdhist'] < 0), -1, df['macd_flag'])
-
-    df['bband_flag'] = 0
-    df['bband_flag'] = np.where((df['Close'] > df['upper_bband']), 1, df['bband_flag']) 
-    df['bband_flag'] = np.where((df['Close'] < df['lower_bband']), -1, df['bband_flag']) 
-
-    df['rsi_flag'] = 0
-    df['rsi_flag'] = np.where((df['rsi'] > 70), -1, df['rsi_flag'])
-    df['rsi_flag'] = np.where((df['rsi'] < 30), 1, df['rsi_flag'])
-
-    df['adx_flag'] = 0
-    df['adx_flag'] = np.where((df['adx'] > 25), 1, df['adx_flag'])
-
-    df['mfi_flag'] = 0
-    df['mfi_flag'] = np.where((df['mfi'] > 80), -1, df['mfi_flag'])
-    df['mfi_flag'] = np.where((df['mfi'] < 20), 1, df['mfi_flag'])
-
-    # Cruce positivo
-    df['sma_flag'] = 0
-    df['sma_flag'] = np.where((df['sma_12'] > df['sma_26']) & (df['sma_12'].shift(1) <= df['sma_26'].shift(1)), 
-      1, 
-      df['sma_flag']
-    )
-
-    # Cruce negativo
-    df['sma_flag'] = np.where((df['sma_12'] < df['sma_26']) & (df['sma_12'].shift(1) >= df['sma_26'].shift(1)), 
-      -1, 
-      df['sma_flag']
-    )
-
-    window = 5
-    df['macd_flag_positive_window'] = df['macd_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True)
-    df['bband_flag_positive_window'] = df['bband_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True)
-    df['rsi_flag_positive_window'] = df['rsi_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
-    df['sma_flag_positive_window'] = df['sma_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
-    df['mfi_flag_positive_window'] = df['mfi_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
-
-    df['macd_flag_negative_window'] = df['macd_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
-    df['bband_flag_negative_window'] = df['bband_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
-    df['rsi_flag_negative_window'] = df['rsi_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
-    df['sma_flag_negative_window'] = df['sma_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
-    df['mfi_flag_negative_window'] = df['mfi_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
-    
-    df['adx_flag_window'] = df['adx_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
-    
+     
     df = df.dropna()
 
     return df
   
   def calculate_operation_sides(self, instrument):
-      # Esto deberia estar parametrizado
-      amount_conditions = 3
+      window = 3 # las condiciones se deben cumplir en un intervalo de tres horas
+      instrument_with_sides = self.trading_strategy(instrument, window=window) 
 
-      long_signals = (
-          # (instrument['macd_flag_positive_window'] == 1).astype(int) +
-          (instrument['bband_flag_positive_window'] == 1).astype(int) +
-          # (instrument['rsi_flag_positive_window'] == 1).astype(int) +
-          (instrument['sma_flag_positive_window'] == 1).astype(int) +
-          # (instrument['mfi_flag_positive_window'] == 1).astype(int) +
-          (instrument['adx_flag_window'] == 1).astype(int)
-      ) >= amount_conditions
-
-      short_signals = (
-          # (instrument['macd_flag_negative_window'] == 1).astype(int) +
-          (instrument['bband_flag_negative_window'] == 1).astype(int) +
-          # (instrument['rsi_flag_negative_window'] == 1).astype(int) +
-          (instrument['sma_flag_negative_window'] == 1).astype(int) +
-          # (instrument['mfi_flag_negative_window'] == 1).astype(int) +
-          (instrument['adx_flag_window'] == 1).astype(int)
-      ) >= amount_conditions
-
-      instrument.loc[long_signals, 'side'] = 1
-      instrument.loc[short_signals, 'side'] = -1
-
-      print(instrument.side.value_counts())
-
-      # Drop the NaN values from our data set
-      instrument.dropna(inplace=True)
-
-      return instrument
+      return instrument_with_sides
 
   def _calculate_units_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair):
       # Get the pip value for the given currency pair
@@ -330,7 +256,7 @@ class ABCTrader(ABC):
     if ticker in self.trade_with:
       open_positions = self.get_open_orders(symbol=ticker) # ADVERTENCIA aca se obtienen las ordenes
 
-      result = self.trading_strategy(
+      result = self.trading_logic(
         actual_date,
         actual_market_data, 
         open_positions,

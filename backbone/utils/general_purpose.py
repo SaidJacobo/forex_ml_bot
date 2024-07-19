@@ -42,9 +42,16 @@ def get_parameter_combinations(
     ):
     parameter_combinations = []
     if None in models:
-        strategies = [x for x in trading_strategies if x != 'strategies.ml_strategy']
         parameter_combinations += list(itertools.product(
-            [None], [0], [0], strategies
+            [None], 
+            [0], 
+            [0], 
+            trading_strategies, 
+            periods_forward_target, 
+            stop_loses_in_pips, 
+            take_profits_in_pips,
+            use_days_in_position,
+            use_trailing_stop_option
         ))
 
         models.remove(None)

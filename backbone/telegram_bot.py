@@ -1,5 +1,5 @@
 import telebot
-from backbone.utils import map_order_to_str
+from backbone.utils.general_purpose import map_order_to_str
 
 
 class TelegramBot():
