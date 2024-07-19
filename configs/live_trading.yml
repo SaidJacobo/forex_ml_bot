@@ -8,14 +8,15 @@ tickers: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
 trade_with: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
 allowed_sessions: [NY, London, 'Sidney', 'Tokio']
 
-models: 'random_forest'
+
+models: 'gradient_boosting'
 train_window: 11520
 train_period: 1 # frecuencia con la que se entrena
-stop_loss_in_pips: 10
-risk_reward_ratio: 4
-periods_forward_target: 8
-use_trailing_stop: True
-trading_strategy: backbone.strategies.ml_strategy
+stop_loss_in_pips: 15
+risk_reward_ratio: 3
+periods_forward_target: 12
+use_trailing_stop: False
+trading_strategy: backbone.strategies.bband_sell_stgy
 risk_percentage: 1
 
 use_days_in_position: True
