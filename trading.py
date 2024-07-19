@@ -59,9 +59,14 @@ if __name__ == '__main__':
 
     telegram_bot = TelegramBot(bot_token=telegram_bot_token, chat_id=telegram_chat_id)
 
+    ml_strategy = 'backbone.utils.trading_logic.ml_strategy'
+    
+    logic = load_function(ml_strategy)
     strategy = load_function(trading_strategy)
+    
     trader = RealtimeTrader(
         trading_strategy=strategy,
+        trading_logic=logic,
         threshold=threshold,
         allowed_days_in_position=periods_forward_target if use_days_in_position else None,
         stop_loss_in_pips=stop_loss_in_pips,
