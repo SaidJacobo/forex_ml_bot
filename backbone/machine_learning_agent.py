@@ -7,7 +7,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.metrics import f1_score, fbeta_score, make_scorer, precision_score, recall_score
 from sklearn.preprocessing import StandardScaler
-from backbone.utils import load_function
+from backbone.utils.general_purpose import load_function
 from typing import Tuple
 from imblearn.under_sampling import RandomUnderSampler
 

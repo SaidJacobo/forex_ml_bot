@@ -9,7 +9,7 @@ from backbone.back_tester import BackTester
 from backbone.backtesting_trader import BacktestingTrader
 from backbone.botardo import Botardo
 from backbone.machine_learning_agent import MachineLearningAgent
-from backbone.utils import load_function
+from backbone.utils.general_purpose import load_function
 
 
 def do_simulation(config_to_test, first_time):
@@ -168,7 +168,7 @@ if __name__ == '__main__':
 
     # empieza el merequetengue
 
-    for iteration in range(0, 7):
+    for iteration in range(4, 5):
         iteration_path = os.path.join(experiments_path, str(iteration))
         if not os.path.exists(iteration_path):
             os.mkdir(iteration_path)

@@ -1,209 +1,172 @@
-from collections import namedtuple
-import random
 import numpy as np
-import pandas as pd
-from backbone.order import Order
-from backbone.enums import ClosePositionType, OperationType, ActionType
 
-Result = namedtuple('Result', ['action','operation_type','order_id','comment'])
-
-def find_open_order(open_orders):
-    """Encuentra la orden abierta más reciente."""
-    return open_orders.pop() if open_orders else None
-
-def operation_management_logic(
-        open_order:Order, 
-        today:str, 
-        allowed_days_in_position:int,
-        use_trailing_stop:bool,
-        only_indicator_close_buy_condition:bool,
-        close_price:float,
-        only_indicator_close_sell_condition:bool,
-        model_with_indicator_open_buy_condition:bool,
-        only_indicator_open_buy_condition:bool,
-        model_with_indicator_open_sell_condition:bool,
-        only_indicator_open_sell_condition:bool
-    ) -> Result:
+def sma_bband_adx_stgy(prices_with_indicators, window):
+    df = prices_with_indicators.copy()
     
-    if open_order:
+    # SMA flag
+    df['sma_flag'] = 0
 
-        days_in_position = (today - open_order.open_time).total_seconds() // 3600
-        
-        if open_order.operation_type == OperationType.BUY:
-
-            if close_price <= open_order.stop_loss:
-                return Result(
-                    ActionType.CLOSE, 
-                    OperationType.SELL, 
-                    open_order.id, 
-                    ClosePositionType.STOP_LOSS
-                )
-            
-            if close_price >= open_order.take_profit:
-                return Result(
-                    ActionType.CLOSE, 
-                    OperationType.SELL, 
-                    open_order.id, 
-                    ClosePositionType.TAKE_PROFIT
-                )
-
-            if allowed_days_in_position and days_in_position >= allowed_days_in_position:
-                return Result(
-                    ActionType.CLOSE, 
-                    OperationType.SELL, 
-                    open_order.id, 
-                    ClosePositionType.DAYS
-                )
-
-            # Si estás en posición pero no han pasado los días permitidos, espera
-        elif open_order.operation_type == OperationType.SELL: 
-
-            if close_price >= open_order.stop_loss:
-                return Result(
-                    ActionType.CLOSE, 
-                    OperationType.SELL, 
-                    open_order.id, 
-                    ClosePositionType.STOP_LOSS
-                )
-            
-            if close_price <= open_order.take_profit:
-                return Result(
-                    ActionType.CLOSE, 
-                    OperationType.SELL, 
-                    open_order.id, 
-                    ClosePositionType.TAKE_PROFIT
-                )
-
-            if allowed_days_in_position and days_in_position >= allowed_days_in_position:
-                return Result(
-                    ActionType.CLOSE, 
-                    OperationType.BUY, 
-                    open_order.id, 
-                    ClosePositionType.DAYS
-                )
-
-
-        if allowed_days_in_position and days_in_position < allowed_days_in_position:
-            if use_trailing_stop:
-                return Result(
-                    ActionType.UPDATE, 
-                    None, 
-                    open_order.id, 
-                    ClosePositionType.STOP_LOSS
-                )
-            else:
-                return Result(
-                    ActionType.WAIT, 
-                    None, 
-                    None, 
-                    None
-                )
-
-    # Si la predicción del mercado supera el umbral superior, compra
-    elif model_with_indicator_open_buy_condition or only_indicator_open_buy_condition:
-        return Result(
-            ActionType.OPEN, 
-            OperationType.BUY,
-             None, 
-             ''
-        )
-    
-    elif model_with_indicator_open_sell_condition or only_indicator_open_sell_condition:
-        return Result(
-            ActionType.OPEN, 
-            OperationType.SELL,
-             None, 
-             ''
-        )
-    
-    return Result(
-        ActionType.WAIT, 
-        None, 
-        None, 
-        ''
+    df['sma_flag'] = np.where((df['sma_12'] > df['sma_26']) & (df['sma_12'].shift(1) <= df['sma_26'].shift(1)), 
+      1, 
+      df['sma_flag']
     )
 
-def ml_strategy(
-    today,
-    actual_market_data: pd.DataFrame,
-    orders: list,
-    allowed_days_in_position: int,
-    use_trailing_stop: bool,
-    threshold: float,
-):
-    
-    class_ = actual_market_data["pred_label"]
-    proba = actual_market_data["proba"]
-    side = actual_market_data["side"]
-
-    open_price = actual_market_data["Open"]
-    high_price = actual_market_data["High"]
-    low_price = actual_market_data["Low"]
-    close_price = actual_market_data["Close"]
-    
-    model_with_indicator_open_buy_condition = side == 1 and class_ == 1 and proba >= threshold
-    model_with_indicator_open_sell_condition = side == -1 and class_ == 1 and proba >= threshold
-
-    only_indicator_open_buy_condition = None
-    only_indicator_close_buy_condition = None
-    
-    only_indicator_open_sell_condition = None
-    only_indicator_close_sell_condition = None
-
-    open_order = find_open_order(orders)
-
-    result = operation_management_logic(
-        open_order=open_order,
-        today=today,
-        allowed_days_in_position=allowed_days_in_position,
-        use_trailing_stop=use_trailing_stop,
-        only_indicator_close_buy_condition=only_indicator_close_buy_condition,
-        close_price=close_price,
-        only_indicator_close_sell_condition=only_indicator_close_sell_condition,
-        model_with_indicator_open_buy_condition=model_with_indicator_open_buy_condition,
-        only_indicator_open_buy_condition=only_indicator_open_buy_condition,
-        model_with_indicator_open_sell_condition=model_with_indicator_open_sell_condition,
-        only_indicator_open_sell_condition=only_indicator_open_sell_condition
+    df['sma_flag'] = np.where((df['sma_12'] < df['sma_26']) & (df['sma_12'].shift(1) >= df['sma_26'].shift(1)), 
+      -1, 
+      df['sma_flag']
     )
 
-    return result
+    # bband flag
+    df['bband_flag'] = 0
+    df['bband_flag'] = np.where((df['Close'] > df['upper_bband']), 1, df['bband_flag']) 
+    df['bband_flag'] = np.where((df['Close'] < df['lower_bband']), -1, df['bband_flag']) 
+
+    # adx flag
+    df['adx_flag'] = 0
+    df['adx_flag'] = np.where((df['adx'] > 25), 1, df['adx_flag'])
+
+    df['bband_flag_positive_window'] = df['bband_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True)
+    df['bband_flag_negative_window'] = df['bband_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+
+    df['sma_flag_positive_window'] = df['sma_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+    df['sma_flag_negative_window'] = df['sma_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+    df['adx_flag_window'] = df['adx_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+
+    amount_conditions = 3
+
+    long_signals = (
+        (df['bband_flag_positive_window'] == 1).astype(int) +
+        (df['sma_flag_positive_window'] == 1).astype(int) +
+        (df['adx_flag_window'] == 1).astype(int)
+    ) >= amount_conditions
+
+    short_signals = (
+        (df['bband_flag_negative_window'] == 1).astype(int) +
+        (df['sma_flag_negative_window'] == 1).astype(int) +
+        (df['adx_flag_window'] == 1).astype(int)
+    ) >= amount_conditions
+
+    df.loc[long_signals, 'side'] = 1
+    df.loc[short_signals, 'side'] = -1
+
+    df.dropna(inplace=True)
+    return df
 
 
-def only_strategy(
-    today,
-    actual_market_data: pd.DataFrame,
-    orders: list,
-    allowed_days_in_position: int,
-    use_trailing_stop: bool,
-    threshold: float,
-):
+def sma_bband_adx_sell_stgy(prices_with_indicators, window):
+    df = prices_with_indicators.copy()
     
-    side = actual_market_data["side"]
-    close_price = actual_market_data["Close"]
-    
-    model_with_indicator_open_buy_condition = None
-    model_with_indicator_open_sell_condition = None
+    # SMA flag
+    df['sma_flag'] = 0
 
-    only_indicator_open_buy_condition = side == 1
-    only_indicator_close_buy_condition = None
-    
-    only_indicator_open_sell_condition = side == -1
-    only_indicator_close_sell_condition = None
-
-    open_order = find_open_order(orders)
-
-    result = operation_management_logic(
-        open_order=open_order,
-        today=today,
-        allowed_days_in_position=allowed_days_in_position,
-        use_trailing_stop=use_trailing_stop,
-        only_indicator_close_buy_condition=only_indicator_close_buy_condition,
-        close_price=close_price,
-        only_indicator_close_sell_condition=only_indicator_close_sell_condition,
-        model_with_indicator_open_buy_condition=model_with_indicator_open_buy_condition,
-        only_indicator_open_buy_condition=only_indicator_open_buy_condition,
-        model_with_indicator_open_sell_condition=model_with_indicator_open_sell_condition,
-        only_indicator_open_sell_condition=only_indicator_open_sell_condition
+    df['sma_flag'] = np.where((df['sma_12'] < df['sma_26']) & (df['sma_12'].shift(1) >= df['sma_26'].shift(1)), 
+      -1, 
+      df['sma_flag']
     )
 
-    return result
+    df['bband_flag'] = 0
+    df['bband_flag'] = np.where((df['Close'] > df['upper_bband']), 1, df['bband_flag']) 
+    df['bband_flag'] = np.where((df['Close'] < df['lower_bband']), -1, df['bband_flag']) 
+    
+    # adx flag
+    df['adx_flag'] = 0
+    df['adx_flag'] = np.where((df['adx'] > 25), 1, df['adx_flag'])
+    
+    # Bband Flag
+    df['bband_flag_negative_window'] = df['bband_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+    df['sma_flag_negative_window'] = df['sma_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+    df['adx_flag_window'] = df['adx_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+
+    amount_conditions = 3
+
+    short_signals = (
+        (df['bband_flag_negative_window'] == 1).astype(int) +
+        (df['sma_flag_negative_window'] == 1).astype(int) +
+        (df['adx_flag_window'] == 1).astype(int)
+    ) >= amount_conditions
+
+    df.loc[short_signals, 'side'] = -1
+
+    df.dropna(inplace=True)
+    return df
+
+
+def bband_rsi_sell_stgy(prices_with_indicators, window):
+    df = prices_with_indicators.copy()
+    
+    df['bband_flag'] = 0
+    df['bband_flag'] = np.where((df['Close'] > df['upper_bband']), 1, df['bband_flag']) 
+    df['bband_flag'] = np.where((df['Close'] < df['lower_bband']), -1, df['bband_flag']) 
+    
+    df['rsi_flag'] = 0
+    df['rsi_flag'] = np.where((df['rsi'] > 70), -1, df['rsi_flag'])
+    df['rsi_flag'] = np.where((df['rsi'] < 30), 1, df['rsi_flag'])
+
+    df['bband_flag_negative_window'] = df['bband_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+    
+    df['rsi_flag_positive_window'] = df['rsi_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+    df['rsi_flag_negative_window'] = df['rsi_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+
+    amount_conditions = 2
+
+    short_signals = (
+        (df['bband_flag_negative_window'] == 1).astype(int) +
+        (df['rsi_flag_negative_window'] == 1).astype(int)
+    ) >= amount_conditions
+
+    df.loc[short_signals, 'side'] = -1
+
+    df.dropna(inplace=True)
+    return df
+
+
+def bband_sell_stgy(prices_with_indicators, window):
+    df = prices_with_indicators.copy()
+    
+    df['bband_flag'] = 0
+    df['bband_flag'] = np.where((df['Close'] > df['upper_bband']), -1, df['bband_flag']) 
+    df['bband_flag'] = np.where((df['Close'] < df['lower_bband']), 1, df['bband_flag']) 
+
+    df['bband_distance_flag'] = 0
+    df['bband_distance_flag'] = np.where((df['distance_between_bbands'] > 80), 1, df['bband_distance_flag']) 
+
+    # Bband Flag
+    df['bband_flag_negative_window'] = df['bband_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).all() else 0, raw=True)
+    df['bband_distance_flag_window'] = df['bband_distance_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).all() else 0, raw=True)
+
+    amount_conditions = 4
+
+    short_signals = (
+        (df['bband_flag_negative_window'].shift(2) == 1).astype(int) +
+        (df['Close'] < df['upper_bband']).astype(int) +
+        (df['Close'].shift(1) < df['upper_bband'].shift(1)).astype(int) +
+        (df['bband_distance_flag_window'] == 1).astype(int)
+    ) >= amount_conditions
+
+    df.loc[short_signals, 'side'] = -1
+
+    df.dropna(inplace=True)
+    return df
+
+
+# df['macd_flag'] = 0
+# df['macd_flag'] = np.where((df['macdhist'].shift(1) < 0) & (df['macdhist'] > 0), 1, df['macd_flag'])
+# df['macd_flag'] = np.where((df['macdhist'].shift(1) > 0) & (df['macdhist'] < 0), -1, df['macd_flag'])
+
+# df['rsi_flag'] = 0
+# df['rsi_flag'] = np.where((df['rsi'] > 70), -1, df['rsi_flag'])
+# df['rsi_flag'] = np.where((df['rsi'] < 30), 1, df['rsi_flag'])
+
+# df['mfi_flag'] = 0
+# df['mfi_flag'] = np.where((df['mfi'] > 80), -1, df['mfi_flag'])
+# df['mfi_flag'] = np.where((df['mfi'] < 20), 1, df['mfi_flag'])
+
+# window = 5
+# df['macd_flag_positive_window'] = df['macd_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True)
+# df['macd_flag_negative_window'] = df['macd_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+
+# df['rsi_flag_positive_window'] = df['rsi_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+# df['rsi_flag_negative_window'] = df['rsi_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)
+
+# df['mfi_flag_positive_window'] = df['mfi_flag'].rolling(window=window).apply(lambda x: 1 if (x == 1).any() else 0, raw=True) 
+# df['mfi_flag_negative_window'] = df['mfi_flag'].rolling(window=window).apply(lambda x: 1 if (x == -1).any() else 0, raw=True)

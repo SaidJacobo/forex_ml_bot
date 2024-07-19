@@ -4,7 +4,7 @@ import os
 import sys
 import pytest
 
-from backbone.triple_barrier_utils import apply_triple_barrier
+from backbone.utils.triple_barrier import apply_triple_barrier
 
 # Cambia el directorio de trabajo al directorio raíz del proyecto
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))

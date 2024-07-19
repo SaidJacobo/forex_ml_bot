@@ -6,7 +6,7 @@ from backbone.backtesting_trader import BacktestingTrader
 from backbone.back_tester import BackTester
 from backbone.botardo import Botardo
 import multiprocessing
-from backbone.utils import load_function, get_parameter_combinations
+from backbone.utils.general_purpose import load_function, get_parameter_combinations
 import random
 
 
@@ -120,10 +120,18 @@ def initialize_backtesting():
         print(f'Se ejecutara la configuracion {results_path}')
         
         # Carga del agente de estrategia de trading
+        ml_strategy = 'backbone.utils.trading_logic.ml_strategy'
+        only_strategy = 'backbone.utils.trading_logic.only_strategy'
+        trading_logic = ml_strategy if model_name else only_strategy
+        
         strategy = load_function(trading_strategy)
+        logic = load_function(trading_logic)
+
+
         trader = BacktestingTrader(
             money=config['start_money'], 
             trading_strategy=strategy,
+            trading_logic=logic,
             threshold=config['threshold'],
             allowed_days_in_position=period_forward_target if cancel_position_in_shift_days else None,
             stop_loss_in_pips=stop_loss_in_pips,

@@ -3,10 +3,9 @@ from backbone.enums import ClosePositionType, OperationType
 from backbone.order import Order
 from backbone.trader import ABCTrader
 import MetaTrader5 as mt5
-from backbone.utils import from_mt_order_to_order, from_order_to_mt_order, diff_pips
+from backbone.utils.general_purpose import from_mt_order_to_order, from_order_to_mt_order, write_in_logs
 from typing import List
 import os
-from backbone.utils import write_in_logs
 from backbone.telegram_bot import TelegramBot
 
 

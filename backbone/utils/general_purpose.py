@@ -42,9 +42,16 @@ def get_parameter_combinations(
     ):
     parameter_combinations = []
     if None in models:
-        strategies = [x for x in trading_strategies if x != 'strategies.ml_strategy']
         parameter_combinations += list(itertools.product(
-            [None], [0], [0], strategies
+            [None], 
+            [0], 
+            [0], 
+            trading_strategies, 
+            periods_forward_target, 
+            stop_loses_in_pips, 
+            take_profits_in_pips,
+            use_days_in_position,
+            use_trailing_stop_option
         ))
 
         models.remove(None)
@@ -115,15 +122,10 @@ def map_order_to_str(order:dict):
     
     return message
 
-def diff_pips(price1, price2, pip_value):
-    """
-    Calcula la diferencia en pips entre dos precios dados el valor de un pip.
-
-    :param price1: Primer precio.
-    :param price2: Segundo precio.
-    :param pip_value: Valor de un pip para el par de divisas.
-    :return: Diferencia en pips entre los dos precios.
-    """
-    difference = abs(price1 - price2)
+def diff_pips(price1, price2, pip_value, absolute=True):
+    if absolute:
+        difference = abs(price1 - price2)
+    else:
+        difference = price1 - price2
     pips = difference / pip_value
     return pips
