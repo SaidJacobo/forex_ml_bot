@@ -14,6 +14,7 @@ class RealtimeTrader(ABCTrader):
     def __init__(
             self, 
             trading_strategy, 
+            trading_logic, 
             threshold: int, 
             allowed_days_in_position: int, 
             stop_loss_in_pips: int, 
@@ -30,6 +31,7 @@ class RealtimeTrader(ABCTrader):
 
         super().__init__(
             trading_strategy, 
+            trading_logic, 
             threshold, 
             allowed_days_in_position, 
             stop_loss_in_pips, 
