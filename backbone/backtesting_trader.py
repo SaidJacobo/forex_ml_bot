@@ -4,6 +4,8 @@ import pandas as pd
 from backbone.order import Order
 from typing import List, Tuple
 
+from backbone.utils.general_purpose import diff_pips
+
 
 class BacktestingTrader(ABCTrader):
     
@@ -11,11 +13,13 @@ class BacktestingTrader(ABCTrader):
             self, 
             money: float, 
             trading_strategy, 
+            stop_loss_strategy, 
+            take_profit_strategy, 
             trading_logic, 
             threshold: float, 
             allowed_days_in_position: int, 
             stop_loss_in_pips: int, 
-            take_profit_in_pips: int, 
+            risk_reward: int, 
             risk_percentage: int,
             allowed_sessions:List[str],
             pips_per_value:dict,
@@ -27,10 +31,12 @@ class BacktestingTrader(ABCTrader):
         super().__init__(
             trading_strategy, 
             trading_logic, 
+            stop_loss_strategy, 
+            take_profit_strategy, 
             threshold, 
             allowed_days_in_position, 
             stop_loss_in_pips, 
-            take_profit_in_pips, 
+            risk_reward, 
             risk_percentage,
             allowed_sessions,
             pips_per_value,
@@ -62,17 +68,18 @@ class BacktestingTrader(ABCTrader):
 
         return df_orders, df_wallet
     
-    def open_position(self, operation_type:OperationType, ticker:str, date:str, price:float) -> None:
+    def open_position(self, operation_type:OperationType, ticker:str, date:str, price:float, market_data) -> None:
+        
+        price_sl, sl_in_pips = self._calculate_stop_loss(operation_type, market_data, price, ticker)
+        
+        price_tp = self._calculate_take_profit(operation_type, price, sl_in_pips, ticker)
 
         units = self._calculate_units_size(
             self.actual_money, 
             self.risk_percentage,
-            self.stop_loss_in_pips,
+            sl_in_pips,
             currency_pair=ticker,
         )
-
-        price_sl = self._calculate_stop_loss(operation_type, price, ticker)
-        price_tp = self._calculate_take_profit(operation_type, price, ticker)
 
         order = Order(
             order_type=operation_type, 

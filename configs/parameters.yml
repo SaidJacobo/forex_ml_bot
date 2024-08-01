@@ -1,13 +1,13 @@
 models: [
   null, 
   # 'random_forest', 
-  'gradient_boosting',
+  # 'gradient_boosting',
   # 'neural_network'
 ]
 
 train_window: [
-  11520, # dos anios
-  # 5760, # un anio
+  # 11520, # dos anios
+  5760, # un anio
   # 1920, # cuatro meses
   # 1440, # tres meses
   # 1200, # dos meses y medio
@@ -26,16 +26,18 @@ train_period: [
 ] # frecuencia con la que se entrena
 
 stop_loss_in_pips: [
+  # 3,
   # 5,
+  # 8,
   10,
   15,
-  # 20,
-  # 25
+  20,
+  # 25,
 ]
 
 risk_reward_ratio: [
   2,
-  3,
+  # 3,
   # 4,
   # 5,
   # 6, 
@@ -46,26 +48,28 @@ risk_reward_ratio: [
 
 periods_forward_target: [
   # 4,
-  8,
-  12,
-  # 24,
+  # 8,
+  # 12,
+  # 16,
+  24,
   # 48,
   # 10,
 ]
 
-use_days_in_position: [
-  True,
-]
-
 use_trailing_stop: [
-  True,
+  # True,
   False
 ]
 
 trading_strategy: [
-  # 'backbone.strategies.sma_bband_adx_stgy', 
-  # 'backbone.strategies.sma_bband_adx_sell_stgy',
-  'backbone.strategies.bband_sell_stgy',
-  # 'backbone.strategies.rsi_sma_stgy', 
-  # 'backbone.strategies.sma_bband_adx_buy_stgy', 
+  'backbone.strategies.smi_adx',
+]
+
+stop_loss_strategies: [
+  # 'backbone.stop_loss_strategies.pivot_point',
+  'backbone.stop_loss_strategies.n_pips',
+]
+
+take_profit_strategies: [
+  'backbone.take_profit_strategies.risk_reward',
 ]

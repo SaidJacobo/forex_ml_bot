@@ -8,7 +8,8 @@ import pytz
 from datetime import datetime
 from datetime import timedelta
 import pandas as pd
-from backbone.utils.triple_barrier import triple_barrier_labeling
+from backbone.utils.general_purpose import get_session
+from backbone.utils.triple_barrier import apply_triple_barrier
 
 class Botardo():
   """Clase base de bot de trading y aprendizaje automático.
@@ -69,7 +70,7 @@ class Botardo():
     })
 
     self.instruments[ticker] = df
-    self.instruments[ticker]['Date'] = self.instruments[ticker]['Date']   # ??? 
+    self.instruments[ticker]['Date'] = self.instruments[ticker]['Date']   # ADVERTENICA no se que funciuon cumple esto 
 
   def get_symbols_and_generate_indicators(
       self, 
@@ -162,15 +163,15 @@ class Botardo():
       instrument = self.instruments[ticker].copy()
       instrument = self.trader.calculate_operation_sides(instrument=instrument)
 
-      instrument['target'] = triple_barrier_labeling(
-        close_prices=instrument['Close'], 
-        high_prices=instrument['High'], 
-        low_prices=instrument['Low'], 
-        take_profit_in_pips=self.trader.take_profit_in_pips, 
-        stop_loss_in_pips=self.trader.stop_loss_in_pips, 
+      instrument['target'] = apply_triple_barrier(
+        market_data=instrument,
+        stop_loss_strategy=self.trader.stop_loss_strategy,
+        stop_loss_in_pips=self.trader.stop_loss_in_pips,
+        risk_reward=self.trader.risk_reward,
+        take_profit_strategy=self.trader.take_profit_strategy,
+        side=instrument.side,
         max_holding_period=self.trader.allowed_days_in_position, 
-        pip_size=self.trader.pips_per_value[ticker],
-        side=instrument['side']
+        pip_size=self.trader.pips_per_value[ticker]
       )
 
       self.instruments[ticker].loc[instrument.index, 'side'] = instrument.side
@@ -244,6 +245,7 @@ class Botardo():
     print('Datos para la fecha actual', today_market_data[['Date', 'ticker', 'target']])
 
     # Si no tiene datos para entrenar en esa ventana que pase al siguiente periodo
+    allowed_time_to_trade = get_session(actual_date)
     
     side = (today_market_data.side != 0).any()
    
@@ -257,8 +259,7 @@ class Botardo():
       'ticker'
     ]
     
-    # if self.ml_agent is not None and side != 0:
-    if side and self.ml_agent is not None:
+    if side and self.ml_agent is not None and allowed_time_to_trade:
 
       market_data_window = df[
         (df.Date >= date_from) 
@@ -320,6 +321,7 @@ class Botardo():
 
       result = self.trader.take_operation_decision(
         actual_market_data=today_market_data.loc[index].drop(labels=['target']),
-        actual_date=actual_date
+        actual_date=actual_date, 
+        allowed_time_to_trade=allowed_time_to_trade
       )
 

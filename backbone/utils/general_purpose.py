@@ -9,18 +9,13 @@ import MetaTrader5 as mt5
 
 
 def get_session(date: datetime):
-    hour = date.hour
+    return True
+    # hour = date.hour
 
-    if 8 <= hour < 16:
-        return 'London'
-    elif 16 <= hour < 22:
-        return 'NY'
-    elif 22 <= hour or hour < 7:
-        return 'Sidney'
-    elif 7 <= hour < 8:
-        return 'Sidney'  # Confirmamos que 7-8 también es Sídney para cubrir todo el periodo
-    else:  # Esto incluye 0 <= hour < 8 y 22 <= hour < 24
-        return 'Tokio'
+    # if 7 <= hour <= 19:
+    #     return True
+    
+    # return False
 
 
 def load_function(dotpath: str):
@@ -34,10 +29,11 @@ def get_parameter_combinations(
         train_window, 
         train_period, 
         trading_strategies, 
+        stop_loss_strategies, 
+        take_profit_strategies, 
         periods_forward_target, 
         stop_loses_in_pips, 
         take_profits_in_pips,
-        use_days_in_position,
         use_trailing_stop_option
     ):
     parameter_combinations = []
@@ -47,10 +43,11 @@ def get_parameter_combinations(
             [0], 
             [0], 
             trading_strategies, 
+            stop_loss_strategies, 
+            take_profit_strategies, 
             periods_forward_target, 
             stop_loses_in_pips, 
             take_profits_in_pips,
-            use_days_in_position,
             use_trailing_stop_option
         ))
 
@@ -61,10 +58,11 @@ def get_parameter_combinations(
         train_window, 
         train_period, 
         trading_strategies, 
+        stop_loss_strategies, 
+        take_profit_strategies, 
         periods_forward_target, 
         stop_loses_in_pips, 
         take_profits_in_pips,
-        use_days_in_position,
         use_trailing_stop_option
     ))
 

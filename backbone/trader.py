@@ -4,8 +4,10 @@ import numpy as np
 from backbone.order import Order
 from pandas import DataFrame
 from abc import ABC, abstractmethod
-from backbone.enums import ActionType, OperationType
+from backbone.enums import ActionType
 from backbone.utils.general_purpose import get_session, diff_pips
+import pandas_ta as ta
+import pandas as pd
 
 class ABCTrader(ABC):
   """Agente de Trading para tomar decisiones de compra y venta."""
@@ -13,10 +15,12 @@ class ABCTrader(ABC):
   def __init__(self, 
                trading_strategy, 
                trading_logic, 
+               stop_loss_strategy, 
+               take_profit_strategy, 
                threshold:float, 
                allowed_days_in_position:int,
                stop_loss_in_pips:int,
-               take_profit_in_pips:int,
+               risk_reward:int,
                risk_percentage:int,
                allowed_sessions:List[str],
                pips_per_value:dict,
@@ -35,15 +39,18 @@ class ABCTrader(ABC):
     self.allowed_days_in_position = allowed_days_in_position
     self.trading_strategy = trading_strategy
     self.trading_logic = trading_logic
+    self.stop_loss_strategy = stop_loss_strategy
+    self.take_profit_strategy = take_profit_strategy
     self.threshold = threshold
     self.stop_loss_in_pips = stop_loss_in_pips
-    self.take_profit_in_pips = take_profit_in_pips
+    self.risk_reward = risk_reward
     self.risk_percentage = risk_percentage
 
     self.pips_per_value = pips_per_value
     self.use_trailing_stop = use_trailing_stop
     self.trade_with = trade_with
-  
+    self.max_sl_in_pips = 25 / (self.risk_reward - 1) # ADVERTENCIA parametrizar el 25 ademas esta medio dudoso
+
   def calculate_indicators(self, df:DataFrame, ticker):
     """Calcula indicadores técnicos para el DataFrame dado.
 
@@ -78,7 +85,6 @@ class ABCTrader(ABC):
 
     df['mfi'] = talib.MFI(df['High'], df['Low'], df['Close'], df['Volume'], timeperiod=14)
 
-    df['adx'] = talib.ADX(df['High'], df['Low'], df['Close'], timeperiod=14)
 
     macd, macdsignal, macdhist = talib.MACD(df['Close'], fastperiod=12, slowperiod=26, signalperiod=9)
     df['macd'] = macd
@@ -109,14 +115,86 @@ class ABCTrader(ABC):
     df['hour'] = df.Date.dt.hour 
     df['day'] = df.Date.dt.day 
 
+    sti = ta.supertrend(df['High'], df['Low'], df['Close'], length=10, multiplier=6)
+    # df['adx'] = talib.ADX(df['High'], df['Low'], df['Close'], timeperiod=14)
+
+    df['supertrend'] = sti['SUPERTd_10_6.0']
+    df['SUPERT_10_6.0'] = sti['SUPERT_10_6.0']
+    df['aroon'] = talib.AROONOSC(df['High'], df['High'], timeperiod=10)
+
+    df['three_stars'] = talib.CDL3STARSINSOUTH(df.Open, df.High, df.Low, df.Close)
     df['closing_marubozu'] = talib.CDLCLOSINGMARUBOZU(df.Open, df.High, df.Low, df.Close)
     df['doji'] = talib.CDLDOJI(df.Open, df.High, df.Low, df.Close)
+    df['doji_star'] = talib.CDLDOJISTAR(df.Open, df.High, df.Low, df.Close)
+    df['dragon_fly'] = talib.CDLDRAGONFLYDOJI(df.Open, df.High, df.Low, df.Close)
     df['engulfing'] = talib.CDLENGULFING(df.Open, df.High, df.Low, df.Close)
+    df['evening_doji_star'] = talib.CDLEVENINGDOJISTAR(df.Open, df.High, df.Low, df.Close)
     df['hammer'] = talib.CDLHAMMER(df.Open, df.High, df.Low, df.Close)
     df['hanging_man'] = talib.CDLHANGINGMAN(df.Open, df.High, df.Low, df.Close)
     df['marubozu'] = talib.CDLMARUBOZU(df.Open, df.High, df.Low, df.Close)
+    df['morning_star'] = talib.CDLMORNINGSTAR(df.Open, df.High, df.Low, df.Close)
     df['shooting_star'] = talib.CDLSHOOTINGSTAR(df.Open, df.High, df.Low, df.Close)
+    df['inverted_hammer'] = talib.CDLINVERTEDHAMMER(df.Open, df.High, df.Low, df.Close)
+
+    df['morning_star'] = talib.CDLMORNINGSTAR(df.Open, df.High, df.Low, df.Close)
+    df['evening_star'] = talib.CDLEVENINGSTAR(df.Open, df.High, df.Low, df.Close)
+
+    df['three_black_crows'] = talib.CDL3BLACKCROWS(df.Open, df.High, df.Low, df.Close)
+    df['three_white_soldiers'] = talib.CDL3WHITESOLDIERS(df.Open, df.High, df.Low, df.Close)
      
+
+    window = 24
+    rolling_high = df['High'].rolling(window=window).max()
+    rolling_low = df['Low'].rolling(window=window).min()
+    rolling_close = df['Close'].rolling(window=window).mean()
+
+    # Calcular el punto pivote principal (PP)
+    pivot = (rolling_high + rolling_low + rolling_close) / 3
+
+    # Calcular niveles de resistencia y soporte
+    df['r1'] = ((2 * pivot) - rolling_low).round(5)
+    df['s1'] = ((2 * pivot) - rolling_high).round(5)
+    df['r2'] = (pivot + (rolling_high - rolling_low)).round(5)
+    df['s2'] = (pivot - (rolling_high - rolling_low)).round(5)
+    df['r3'] = (rolling_high + 2 * (pivot - rolling_low)).round(5)
+    df['s3'] = (rolling_low - 2 * (rolling_high - pivot)).round(5)
+
+    df['adx'] = talib.ADX(df['High'], df['Low'], df['Close'], timeperiod=14)
+
+    # Daily ADX
+    df['daily_date'] = df['Date'].dt.floor('D')
+    data_daily = df[['Date','Open','High','Low','Close']].copy()
+    data_daily['daily_date'] = data_daily['Date'].dt.floor('D')
+
+    # Agrupar los datos por día y calcular los valores OHLC diarios
+    data_daily = data_daily.groupby('daily_date').agg({
+        'Open': 'first',
+        'High': 'max',
+        'Low': 'min',
+        'Close': 'last'
+    }).reset_index()
+
+    # Calcular el ADX en la temporalidad diaria
+    data_daily['daily_adx'] = talib.ADX(data_daily['High'], data_daily['Low'], data_daily['Close'], timeperiod=14)
+
+    # Merge los valores del ADX diario con el DataFrame horario
+    df = pd.merge_asof(
+        df, 
+        data_daily[['daily_date', 'daily_adx']].sort_values('daily_date'), 
+        on='daily_date', 
+    )
+
+    del data_daily
+
+    df['daily_adx'] = df['daily_adx'].shift(24)
+
+    smi = ta.squeeze(df['High'], df['Low'], df['Close'], LazyBear=True)
+    df['SQZ'] = smi['SQZ_20_2.0_20_1.5']
+    df['SQZ_ON'] = smi['SQZ_ON']
+    df['SQZ_OFF'] = smi['SQZ_OFF']
+    df['SQZ_NO'] = smi['SQZ_NO']
+
+
     df = df.dropna()
 
     return df
@@ -154,34 +232,60 @@ class ABCTrader(ABC):
     
     return number_of_lots
 
-  def _calculate_stop_loss(self, operation_type, price, ticker):
-      pips = self.pips_per_value[ticker]
 
-      price_sl = None
-      if operation_type == OperationType.BUY:
-        price_sl = price - (self.stop_loss_in_pips * pips)
+  # ADVERTENCIA esto se podria parametrizar en una funcion aparte para probar distintos
+  # Metodos de SL
+  def _calculate_stop_loss(self, operation_type, market_data, price, ticker):
+
+        price_sl, sl_in_pips = self.stop_loss_strategy(
+           operation_type=operation_type, 
+           market_data=market_data,
+           price=price,
+           pip_value=self.pips_per_value[ticker],
+           stop_loss_in_pips=self.stop_loss_in_pips
+        )
+
+        return price_sl, sl_in_pips
+      # pips = self.pips_per_value[ticker]
+
+      # price_sl = None
+      # if operation_type == OperationType.BUY:
+      #   price_sl = round(market_data.s1 - (self.stop_loss_in_pips * pips), 5)
+
+      #   sl_in_pips = diff_pips(price, price_sl, self.pips_per_value[ticker])
       
-      elif operation_type == OperationType.SELL:
-        price_sl = price + (self.stop_loss_in_pips * pips)
+      # elif operation_type == OperationType.SELL:
+      #   price_sl = round(market_data.r1 + (self.stop_loss_in_pips * pips), 5)
+
+      #   sl_in_pips = diff_pips(price, price_sl, self.pips_per_value[ticker])
         
-      return round(price_sl, 4)
+      # return round(price_sl, 5), sl_in_pips
   
 
-  def _calculate_take_profit(self, operation_type, price, ticker):
+  def _calculate_take_profit(self, operation_type, price, sl_in_pips, ticker):
       
-      pips = self.pips_per_value[ticker]
+      price_tp = self.take_profit_strategy(
+         operation_type=operation_type, 
+         price=price,
+         risk_reward=self.risk_reward, 
+         sl_in_pips=sl_in_pips, 
+         pip_value=self.pips_per_value[ticker]
+      )
 
-      price_tp = None
-      if operation_type == OperationType.BUY:
-        price_tp = price + (self.take_profit_in_pips * pips)
+      return price_tp
+      # pips = self.pips_per_value[ticker]
+
+      # price_tp = None
+      # if operation_type == OperationType.BUY:
+      #   price_tp = price + (self.risk_reward * sl_in_pips * pips)
       
-      elif operation_type == OperationType.SELL:
-        price_tp = price - (self.take_profit_in_pips * pips)
+      # elif operation_type == OperationType.SELL:
+      #   price_tp = price - (self.risk_reward * sl_in_pips * pips)
         
-      return round(price_tp, 4)
+      # return round(price_tp, 5)
 
   @abstractmethod
-  def open_position(self, operation_type:str, ticker:str, date:str, price:float) -> None:
+  def open_position(self, operation_type:str, ticker:str, date:str, price:float, market_data) -> None:
     """Abre una nueva posición de trading.
 
     Args:
@@ -243,7 +347,7 @@ class ABCTrader(ABC):
         return None
 
   
-  def take_operation_decision(self, actual_market_data, actual_date):
+  def take_operation_decision(self, actual_market_data, actual_date, allowed_time_to_trade):
     """Toma la decisión de operación basada en la estrategia de trading.
 
     Args:
@@ -265,17 +369,17 @@ class ABCTrader(ABC):
         self.threshold,
       )
       print(ticker,  result)
-      actual_session = get_session(actual_date)
       
       if result.action != ActionType.WAIT:
         price = actual_market_data['Close']
     
-        if result.action == ActionType.OPEN and actual_session in self.allowed_sessions:
+        if result.action == ActionType.OPEN and allowed_time_to_trade:
           self.open_position(
             operation_type=result.operation_type, 
             ticker=ticker, 
             date=actual_date, 
-            price=price
+            price=price,
+            market_data=actual_market_data,
           )
           
         elif result.action == ActionType.CLOSE:

@@ -59,10 +59,11 @@ def initialize_backtesting():
     train_window = parameters['train_window']
     train_period = parameters['train_period']
     trading_strategies = parameters['trading_strategy']
+    stop_loss_strategies = parameters['stop_loss_strategies']
+    take_profit_strategies = parameters['take_profit_strategies']
     periods_forward_target = parameters['periods_forward_target']
     stop_loses_in_pips = parameters['stop_loss_in_pips']
     risk_reward_ratios = parameters['risk_reward_ratio']
-    use_days_in_position = parameters['use_days_in_position']
     use_trailing_stop_option = parameters['use_trailing_stop']
 
     max_window = max(train_window)
@@ -73,10 +74,11 @@ def initialize_backtesting():
         train_window, 
         train_period, 
         trading_strategies, 
+        stop_loss_strategies, 
+        take_profit_strategies, 
         periods_forward_target, 
         stop_loses_in_pips, 
         risk_reward_ratios,
-        use_days_in_position,
         use_trailing_stop_option
     )
     random.shuffle(parameter_combinations)
@@ -88,26 +90,25 @@ def initialize_backtesting():
             train_window, 
             train_period, 
             trading_strategy, 
+            stop_loss_strategy, 
+            take_profit_strategy, 
             period_forward_target, 
             stop_loss_in_pips, 
             risk_reward_ratio, 
-            cancel_position_in_shift_days,
             use_trailing_stop
         ) = combination
 
         # Definición de la ruta de resultados
-        take_profit_in_pips = risk_reward_ratio * stop_loss_in_pips
-
         results_path = f'''
-            Mode_{mode}
-            -Model_{model_name}
+            Model_{model_name}
             -TrainWw_{train_window}
             -TrainPd_{train_period}
             -TradStgy_{trading_strategy.split('.')[-1]}
+            -SLStgy_{stop_loss_strategy.split('.')[-1]}
+            -TPStgy_{take_profit_strategy.split('.')[-1]}
             -PerFwTg_{period_forward_target}
             -SL_{stop_loss_in_pips}
             -RR_{risk_reward_ratio}
-            -CloseTime_{cancel_position_in_shift_days}
             -TS_{use_trailing_stop}
         '''.replace("\n", "").strip().replace(" ", "")
         
@@ -126,16 +127,20 @@ def initialize_backtesting():
         
         strategy = load_function(trading_strategy)
         logic = load_function(trading_logic)
+        sl_strategy = load_function(stop_loss_strategy)
+        tp_strategy = load_function(take_profit_strategy)
 
 
         trader = BacktestingTrader(
             money=config['start_money'], 
             trading_strategy=strategy,
+            stop_loss_strategy=sl_strategy,
+            take_profit_strategy=tp_strategy,
             trading_logic=logic,
             threshold=config['threshold'],
-            allowed_days_in_position=period_forward_target if cancel_position_in_shift_days else None,
+            allowed_days_in_position=period_forward_target,
             stop_loss_in_pips=stop_loss_in_pips,
-            take_profit_in_pips=take_profit_in_pips,
+            risk_reward=risk_reward_ratio,
             risk_percentage=risk_percentage,
             allowed_sessions=allowed_sessions, 
             use_trailing_stop=use_trailing_stop, 
