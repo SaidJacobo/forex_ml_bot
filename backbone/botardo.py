@@ -319,9 +319,13 @@ class Botardo():
             today_market_data.loc[index].proba
           )
 
+      actual_equity = self.trader.update_equity(actual_date, today_market_data.loc[index].Close)
+      margin = self.trader.margin
+
       result = self.trader.take_operation_decision(
         actual_market_data=today_market_data.loc[index].drop(labels=['target']),
         actual_date=actual_date, 
         allowed_time_to_trade=allowed_time_to_trade
       )
 
+    return actual_equity > margin

@@ -12,20 +12,24 @@ import pandas as pd
 class ABCTrader(ABC):
   """Agente de Trading para tomar decisiones de compra y venta."""
 
-  def __init__(self, 
-               trading_strategy, 
-               trading_logic, 
-               stop_loss_strategy, 
-               take_profit_strategy, 
-               threshold:float, 
-               allowed_days_in_position:int,
-               stop_loss_in_pips:int,
-               risk_reward:int,
-               risk_percentage:int,
-               allowed_sessions:List[str],
-               pips_per_value:dict,
-               use_trailing_stop:bool,
-               trade_with:List[str]
+  def __init__(
+        self, 
+        trading_strategy, 
+        trading_logic, 
+        stop_loss_strategy, 
+        take_profit_strategy, 
+        threshold:float, 
+        allowed_days_in_position:int,
+        stop_loss_in_pips:int,
+        risk_reward:int,
+        risk_percentage:int,
+        allowed_sessions:List[str],
+        pips_per_value:dict,
+        trade_with:List[str],
+        money:float,
+        interval:int,
+        leverage:int,
+        trades_to_increment_risk:int
     ):
     """
     Inicializa el Agente de Trading.
@@ -47,9 +51,22 @@ class ABCTrader(ABC):
     self.risk_percentage = risk_percentage
 
     self.pips_per_value = pips_per_value
-    self.use_trailing_stop = use_trailing_stop
     self.trade_with = trade_with
-    self.max_sl_in_pips = 25 / (self.risk_reward - 1) # ADVERTENCIA parametrizar el 25 ademas esta medio dudoso
+
+    self.balance = money
+    self.equity = self.balance
+    self.margin = 0
+    self.free_margin = self.balance
+    self.leverage = leverage
+    
+    self.equity_history = {}
+    self.interval = interval
+    
+    self.trades_to_increment_risk = trades_to_increment_risk
+    self.stop_loss = self._calculate_stop_loss()
+    self.take_profit = self._calculate_take_profit()
+
+
 
   def calculate_indicators(self, df:DataFrame, ticker):
     """Calcula indicadores técnicos para el DataFrame dado.
@@ -62,10 +79,38 @@ class ABCTrader(ABC):
     """
     df.sort_values(by='Date', ascending=True, inplace=True)
 
+    df['sma_9'] = talib.SMA(df['Close'], timeperiod=9)
     df['sma_12'] = talib.SMA(df['Close'], timeperiod=12)
     df['sma_26'] = talib.SMA(df['Close'], timeperiod=26)
     df['sma_50'] = talib.SMA(df['Close'], timeperiod=50)
     df['sma_200'] = talib.SMA(df['Close'], timeperiod=200)
+
+
+    # Definir el tamaño de la ventana
+    window = 3
+
+    # Detectar máximos y mínimos locales
+    df['max'] = df['Close'].rolling(window=window, center=True).apply(lambda x: x.argmax() == (window // 2), raw=True)
+    df['min'] = df['Close'].rolling(window=window, center=True).apply(lambda x: x.argmin() == (window // 2), raw=True)
+
+    # Marcar los máximos y mínimos
+    df['max'] = df['max'].astype(bool) * df['Close']
+    df['min'] = df['min'].astype(bool) * df['Close']
+
+    # Eliminar ceros para mejor visualización
+    df['max'].replace(0, np.nan, inplace=True)
+    df['min'].replace(0, np.nan, inplace=True)
+
+    # Crear la columna 'max_min'
+    df['max_min'] = 0
+    df.loc[df['max'].notna(), 'max_min'] = 1
+    df.loc[df['min'].notna(), 'max_min'] = -1
+
+    df['max_min'] = df['max_min'].shift(1)
+
+
+    del df['max']
+    del df['min']
 
     df['rsi'] = talib.RSI(df['Close'])
 
@@ -176,17 +221,20 @@ class ABCTrader(ABC):
 
     # Calcular el ADX en la temporalidad diaria
     data_daily['daily_adx'] = talib.ADX(data_daily['High'], data_daily['Low'], data_daily['Close'], timeperiod=14)
+    
+    data_daily['daily_sma_26'] = talib.SMA(data_daily['Close'], timeperiod=26)
 
     # Merge los valores del ADX diario con el DataFrame horario
     df = pd.merge_asof(
         df, 
-        data_daily[['daily_date', 'daily_adx']].sort_values('daily_date'), 
+        data_daily[['daily_date', 'daily_adx', 'daily_sma_26']].sort_values('daily_date'), 
         on='daily_date', 
     )
 
     del data_daily
 
     df['daily_adx'] = df['daily_adx'].shift(24)
+    df['daily_sma_26'] = df['daily_sma_26'].shift(24)
 
     smi = ta.squeeze(df['High'], df['Low'], df['Close'], LazyBear=True)
     df['SQZ'] = smi['SQZ_20_2.0_20_1.5']
@@ -205,84 +253,50 @@ class ABCTrader(ABC):
 
       return instrument_with_sides
 
-  def _calculate_units_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair):
-      # Get the pip value for the given currency pair
-      pip_value = self.pips_per_value.get(currency_pair, None)
-      if pip_value is None:
-          raise Exception(f'No existe valor de pip para el par {currency_pair}')
-      
-      # Calculate risk in account currency
-      account_currency_risk = account_size * (risk_percentage / 100)
-      
-      # Calculate lot size in units
-      units = round(account_currency_risk / (pip_value * stop_loss_pips))
-      
-      return units
+  def _calculate_units_size(self, price, ticker, get_result_in_lots=False):
+        open_positions = self.get_open_orders(symbol=ticker)
 
-  def _calculate_lot_size(self, account_size, risk_percentage, stop_loss_pips, currency_pair, lot_size_standard):
-    units = self._calculate_units_size(
-      account_size, 
-      risk_percentage, 
-      stop_loss_pips, 
-      currency_pair, 
-    )
-    
-    decimals = 2
-    number_of_lots = round(units / lot_size_standard, decimals)
-    
-    return number_of_lots
+        # Ajustar el porcentaje de riesgo basado en las posiciones abiertas
+        risk_percentage = (len(open_positions) - self.trades_to_increment_risk) * 1.5
+
+        risk_percentage = 1 if risk_percentage <= 0 else risk_percentage
+
+        # Calcular unidades y valor total de la posición
+        units = (self.balance * (risk_percentage / 100)) * self.leverage / price
+        total_value = price * units
+
+        # Calcular el margen requerido
+        margin_required = total_value / self.leverage
+
+        if get_result_in_lots:
+          lot_size = 100000
+          number_of_lots = round(units / lot_size, 2)
+          
+          return number_of_lots, margin_required
+
+        return units, margin_required
 
 
-  # ADVERTENCIA esto se podria parametrizar en una funcion aparte para probar distintos
-  # Metodos de SL
-  def _calculate_stop_loss(self, operation_type, market_data, price, ticker):
-
-        price_sl, sl_in_pips = self.stop_loss_strategy(
-           operation_type=operation_type, 
-           market_data=market_data,
-           price=price,
-           pip_value=self.pips_per_value[ticker],
-           stop_loss_in_pips=self.stop_loss_in_pips
+  def _calculate_stop_loss(self):
+        money_stop_loss = self.stop_loss_strategy(
+           balance=self.balance,
+           risk_percentage=self.risk_percentage
         )
 
-        return price_sl, sl_in_pips
-      # pips = self.pips_per_value[ticker]
+        return money_stop_loss
+ 
 
-      # price_sl = None
-      # if operation_type == OperationType.BUY:
-      #   price_sl = round(market_data.s1 - (self.stop_loss_in_pips * pips), 5)
-
-      #   sl_in_pips = diff_pips(price, price_sl, self.pips_per_value[ticker])
+  def _calculate_take_profit(self):
       
-      # elif operation_type == OperationType.SELL:
-      #   price_sl = round(market_data.r1 + (self.stop_loss_in_pips * pips), 5)
-
-      #   sl_in_pips = diff_pips(price, price_sl, self.pips_per_value[ticker])
-        
-      # return round(price_sl, 5), sl_in_pips
-  
-
-  def _calculate_take_profit(self, operation_type, price, sl_in_pips, ticker):
-      
-      price_tp = self.take_profit_strategy(
-         operation_type=operation_type, 
-         price=price,
-         risk_reward=self.risk_reward, 
-         sl_in_pips=sl_in_pips, 
-         pip_value=self.pips_per_value[ticker]
+      money_take_profit = self.take_profit_strategy(
+         balance=self.balance,
+        #  risk_percentage=self.risk_percentage,
+         risk_percentage=1,
+         risk_reward=self.risk_reward
       )
 
-      return price_tp
-      # pips = self.pips_per_value[ticker]
+      return money_take_profit
 
-      # price_tp = None
-      # if operation_type == OperationType.BUY:
-      #   price_tp = price + (self.risk_reward * sl_in_pips * pips)
-      
-      # elif operation_type == OperationType.SELL:
-      #   price_tp = price - (self.risk_reward * sl_in_pips * pips)
-        
-      # return round(price_tp, 5)
 
   @abstractmethod
   def open_position(self, operation_type:str, ticker:str, date:str, price:float, market_data) -> None:
@@ -307,44 +321,15 @@ class ABCTrader(ABC):
     """
     pass
 
-  
-  @abstractmethod
-  def update_position(self, order_id, actual_price, comment):
+  def close_all_positions(self, positions, date:str, price:float, comment:str) -> None:
+    """Cierra una posición de trading.
+
+    Args:
+        order (Order): Orden de trading.
+        date (datetime): Fecha de cierre de la operación.
+        price (float): Precio de cierre de la operación.
+    """
     pass
-  
-
-  def _update_stop_loss(self, order_id, actual_price, comment):
-    if self.use_trailing_stop:
-        open_orders = self.get_open_orders(ticket=order_id) # ADVERTENCIA aca le llegaria la orden, no el id para buscarlo
-        
-        if not open_orders:
-            raise ValueError(f"No open orders found for ticket {order_id}")
-        
-        order = open_orders.pop()
-
-        new_sl = None
-
-        actual_stop_loss_price = order.stop_loss
-        pip_value = self.pips_per_value[order.ticker]
-        diff = diff_pips(actual_price, actual_stop_loss_price, pip_value)
-        
-        # menor nunca va a ser pq sino hubiera cerrado la op
-        if diff > self.stop_loss_in_pips:
-            new_sl = self._calculate_stop_loss(
-                operation_type=order.operation_type, 
-                price=actual_price, 
-                ticker=order.ticker
-            )
-
-        if new_sl is not None:
-            order.update(sl=new_sl)
-            print(f"Updated order {order_id}: new SL = {new_sl}, last price = {actual_price}")
-            
-            return order
-        else:
-            print(f"No update needed for order {order_id}: actual price = {actual_price}, last price = {order.last_price}")
-        
-        return None
 
   
   def take_operation_decision(self, actual_market_data, actual_date, allowed_time_to_trade):
@@ -359,14 +344,15 @@ class ABCTrader(ABC):
     
     if ticker in self.trade_with:
       open_positions = self.get_open_orders(symbol=ticker) # ADVERTENCIA aca se obtienen las ordenes
-
+      
       result = self.trading_logic(
         actual_date,
         actual_market_data, 
         open_positions,
-        self.allowed_days_in_position,
-        self.use_trailing_stop,
         self.threshold,
+        self.take_profit,
+        self.stop_loss,
+        self.interval
       )
       print(ticker,  result)
       
@@ -385,6 +371,15 @@ class ABCTrader(ABC):
         elif result.action == ActionType.CLOSE:
           self.close_position(
             order_id=result.order_id, # pero aca se manda el id, y del otro lado se la vuelve a buscar
+            date=actual_date, 
+            price=price, 
+            comment=result.comment
+          )
+
+        elif result.action == ActionType.CLOSE_ALL:
+
+          self.close_all_positions(
+            positions=open_positions,
             date=actual_date, 
             price=price, 
             comment=result.comment
@@ -410,3 +405,17 @@ class ABCTrader(ABC):
         DataFrame: Estado de la cartera.
     """
     pass
+
+  def update_equity(self, date, actual_price):
+    total_profit = 0
+    for order in self.get_open_orders():
+      money, _ = order.get_profit(actual_price)
+      total_profit += money
+    
+    self.equity = self.balance + total_profit
+
+    self.equity_history[date] = self.equity
+
+    return self.equity
+       
+        

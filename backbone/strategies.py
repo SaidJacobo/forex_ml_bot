@@ -248,7 +248,6 @@ def aroon(prices_with_indicators, window):
             | (df['evening_star'] == -100)
             | (df['three_black_crows'] == -100)
         )
-        
     )
 
     long_signals = (
@@ -280,18 +279,28 @@ def smi_adx(prices_with_indicators, window):
     
     long_signals = (
         (df['SQZ_OFF'] == 1) 
-        & (df['SQZ_OFF'].shift(1) == 0)  
+        & (df['SQZ_OFF'].shift(1) == 1)  
+        & (df['SQZ_OFF'].shift(2) == 0)  
         & (df['SQZ'] > 0)  
-        & (df['adx'] > 20) 
+        & (df['SQZ'] > df['SQZ'].shift(1))  
+        & (df['SQZ'].shift(1) > df['SQZ'].shift(2))  
+        & (df['SQZ'].shift(2) > df['SQZ'].shift(3))  
+        & (df['adx'] > 25) 
         & (df['supertrend'] == 1) 
+        & (df['Close'] > df['daily_sma_26']) 
     )
 
     short_signals = (
         (df['SQZ_OFF'] == 1) 
-        & (df['SQZ_OFF'].shift(1) == 0) 
+        & (df['SQZ_OFF'].shift(1) == 1) 
+        & (df['SQZ_OFF'].shift(2) == 0) 
         & (df['SQZ'] < 0) 
-        & (df['adx'] > 20)
+        & (df['SQZ'] < df['SQZ'].shift(1)) 
+        & (df['SQZ'].shift(1) < df['SQZ'].shift(2)) 
+        & (df['SQZ'].shift(2) < df['SQZ'].shift(3)) 
+        & (df['adx'] > 25)
         & (df['supertrend'] == -1) 
+        & (df['Close'] < df['daily_sma_26']) 
 
     )
     

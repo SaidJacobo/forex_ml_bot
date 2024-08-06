@@ -20,6 +20,7 @@ def apply_triple_barrier(
     close_prices = market_data.Close
     high_prices = market_data.High
     low_prices = market_data.Low
+    take_profit_in_pips = stop_loss_in_pips * risk_reward
 
     barriers = []
     for index in range(len(close_prices)):
@@ -27,39 +28,12 @@ def apply_triple_barrier(
         
         if side[index] == 1:
             # Para una señal de compra
-            lower_barrier_level, pips_to_sl = stop_loss_strategy(
-                operation_type=OperationType.BUY, 
-                market_data=market_data.iloc[index], 
-                price=actual_close_price, 
-                pip_value=pip_size,
-                stop_loss_in_pips=stop_loss_in_pips, 
-            )
-
-            upper_barrier_level = take_profit_strategy(
-                OperationType.BUY, 
-                price=actual_close_price, 
-                risk_reward=risk_reward, 
-                sl_in_pips=pips_to_sl, 
-                pip_value=pip_size
-            )
-            
+            upper_barrier_level = round(actual_close_price + (take_profit_in_pips * pip_size), 4)
+            lower_barrier_level = round(actual_close_price - (stop_loss_in_pips * pip_size), 4)
         elif side[index] == -1:
-            # Para una señal de compra
-            upper_barrier_level, pips_to_sl = stop_loss_strategy(
-                operation_type=OperationType.SELL, 
-                market_data=market_data.iloc[index], 
-                price=actual_close_price, 
-                pip_value=pip_size,
-                stop_loss_in_pips=stop_loss_in_pips, 
-            )
-
-            lower_barrier_level = take_profit_strategy(
-                OperationType.SELL, 
-                price=actual_close_price, 
-                risk_reward=risk_reward, 
-                sl_in_pips=pips_to_sl, 
-                pip_value=pip_size
-            )
+            # Para una señal de venta
+            upper_barrier_level = round(actual_close_price + (stop_loss_in_pips * pip_size), 4)
+            lower_barrier_level = round(actual_close_price - (take_profit_in_pips * pip_size), 4)
 
         else:
             # Si no hay señal, saltar al siguiente índice

@@ -23,8 +23,10 @@ class BacktestingTrader(ABCTrader):
             risk_percentage: int,
             allowed_sessions:List[str],
             pips_per_value:dict,
-            use_trailing_stop:bool,
-            trade_with:List[str]
+            trade_with:List[str],
+            interval:int,
+            leverage:int,
+            trades_to_increment_risk:int
 
         ):
         
@@ -40,20 +42,29 @@ class BacktestingTrader(ABCTrader):
             risk_percentage,
             allowed_sessions,
             pips_per_value,
-            use_trailing_stop,
-            trade_with
+            trade_with,
+            money,
+            interval,
+            leverage,
+            trades_to_increment_risk
         )
 
-        self.actual_money = money
         self.positions : List[Order] = []
         self.wallet_evolution = {}
     
-    def __update_wallet(self, order:Order) -> None:
+    def __update_account(self, order:Order) -> None:
+        # Calcular el valor total de la posición y el margen requerido
+        total_value = order.open_price * order.units
+        margin_required = total_value / self.leverage
 
-      self.actual_money += order.profit
-      self.wallet_evolution[order.close_time] = self.actual_money
+        # Actualizar el balance y el equity
+        self.balance += order.profit
+        self.margin -= margin_required  # Devolver el margen al balance
+        
+        self.free_margin = self.equity - self.margin  # Devolver el margen al balance
 
-      print(f'money: {self.actual_money}')
+        self.wallet_evolution[order.close_time] = self.balance
+        print(f'money: {self.balance}')
 
     def get_orders(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
@@ -66,52 +77,73 @@ class BacktestingTrader(ABCTrader):
             'wallet': self.wallet_evolution.values()
         })
 
-        return df_orders, df_wallet
+        df_equity = pd.DataFrame({      
+            'date': self.equity_history.keys(), 
+            'equity': self.equity_history.values()
+        }) 
+
+        return df_orders, df_wallet, df_equity
     
-    def open_position(self, operation_type:OperationType, ticker:str, date:str, price:float, market_data) -> None:
+    
+    def open_position(
+            self, 
+            operation_type: OperationType, 
+            ticker: str, 
+            date: str, 
+            price: float, 
+            market_data, 
+        ) -> None:
         
-        price_sl, sl_in_pips = self._calculate_stop_loss(operation_type, market_data, price, ticker)
-        
-        price_tp = self._calculate_take_profit(operation_type, price, sl_in_pips, ticker)
+        units, margin_required = self._calculate_units_size(price=price, ticker=ticker)
 
-        units = self._calculate_units_size(
-            self.actual_money, 
-            self.risk_percentage,
-            sl_in_pips,
-            currency_pair=ticker,
-        )
+        if self.balance < margin_required:
+            print("No hay suficiente balance para abrir la posición.")
+        else:
+            # Restar el margen requerido del balance
+            self.margin += margin_required
+            self.free_margin = self.equity - self.margin
 
-        order = Order(
-            order_type=operation_type, 
-            ticker=ticker, 
-            open_time=date, 
-            open_price=price,
-            units=units,
-            stop_loss=price_sl, 
-            take_profit=price_tp
-        )
+            # Crear la orden y agregarla a las posiciones abiertas
+            order = Order(
+                order_type=operation_type,
+                ticker=ticker,
+                open_time=date,
+                open_price=price,
+                units=units,
+                stop_loss=None,  # Por ahora queda así
+                take_profit=None,  # Por ahora queda así
+                pip_value=self.pips_per_value[ticker]
+            )
+            self.positions.append(order)
 
-        self.positions.append(order)
+            print('=' * 16, f'Se abrió una nueva posición el {date}', '=' * 16)
+            print(f'Units: {units}, Margin Required: {margin_required}')
+            print(f'New Balance: {self.balance}')
 
-        print('='*16, f'se abrio una nueva posicion el {date}', '='*16)
 
-    def close_position(self, order_id:int, date:str, price:float, comment:str) -> None:
- 
-        order = self.get_open_orders(ticket=order_id).pop() # ADVERTENCIA deberia llegar la orden, no el id
+    def close_all_positions(
+            self, 
+            positions, 
+            date:str, 
+            price:float, 
+            comment:str, 
+        ) -> None:
 
-        order.close(close_price=price, close_time=date, comment=comment)
+        for position in positions:
+            position.close(close_price=price, close_time=date, comment=comment)
+           
+            self.__update_account(position)
 
-        self.__update_wallet(order)
+        self.equity = self.balance  # En un sistema más complejo, equity podría calcularse de otra manera
 
         print('='*16, f'se cerro una posicion el {date}', '='*16)
+        self.take_profit = self._calculate_take_profit() 
+        self.stop_loss = self._calculate_stop_loss()
 
 
-    def update_position(self, order_id, actual_price, comment):
-        if comment == ClosePositionType.STOP_LOSS:
-            self._update_stop_loss(order_id, actual_price, comment)
-        
-        if comment == ClosePositionType.TAKE_PROFIT:
-            pass
+
+    def close_position(self, order_id:int, date:str, price:float, comment:str) -> None:
+        pass
 
 
 

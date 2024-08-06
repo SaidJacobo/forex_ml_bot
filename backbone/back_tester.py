@@ -36,9 +36,10 @@ class BackTester():
         for key, value in best_params.items():
             file.write(f'{key}: {value}\n')
 
-    orders, wallet = self.botardo.trader.get_orders()
+    orders, wallet, equity = self.botardo.trader.get_orders()
     orders.to_csv(os.path.join(results_path, 'orders.csv'), index=False)
     wallet.to_csv(os.path.join(results_path, 'wallet.csv'), index=False)
+    equity.to_csv(os.path.join(results_path, 'equity.csv'), index=False)
 
   def start(
       self,
@@ -82,7 +83,7 @@ class BackTester():
 
     for actual_date in dates:
 
-      self.botardo.trading_bot_workflow(
+      continue_simulation = self.botardo.trading_bot_workflow(
         actual_date, 
         df, 
         train_period, 
@@ -90,6 +91,9 @@ class BackTester():
         period_forward_target,
         undersampling=undersampling
       )
+
+      if not continue_simulation:
+        break
 
     if save:
       self.save_results(results_path)

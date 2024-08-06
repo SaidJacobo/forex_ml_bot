@@ -1,5 +1,6 @@
 import uuid
 from backbone.enums import ClosePositionType, OperationType, ActionType
+from backbone.utils.general_purpose import diff_pips
 
 class Order():
     def __init__(
@@ -9,9 +10,10 @@ class Order():
             open_time:str, 
             open_price:str, 
             units:int,
+            pip_value:float,
             id:str=None, 
             stop_loss:float=None, 
-            take_profit:float=None
+            take_profit:float=None,
         ):
         self.id = uuid.uuid1() if not id else id
         self.ticker = ticker
@@ -26,7 +28,9 @@ class Order():
         self.take_profit = take_profit
         self.units = units
         self.profit_in_pips = None
+        self.position_value = round(self.open_price * self.units, 5)
         self.comment=None
+        self.pip_value = pip_value
 
     def update(self, sl=None, tp=None):
         if sl:
@@ -37,18 +41,20 @@ class Order():
             
     def close(self, close_price:float, close_time:str, comment:str) -> None:
         
-        if comment == ClosePositionType.STOP_LOSS or comment == ClosePositionType.STOP_LOSS_RANDOM:
-            close_price = self.stop_loss
-        elif comment == ClosePositionType.TAKE_PROFIT or comment == ClosePositionType.TAKE_PROFIT_RANDOM:
-            close_price = self.take_profit
-        elif comment == ClosePositionType.DAYS:
-            pass
-
         self.close_price = close_price
         self.close_time = close_time
-        self.profit_in_pips = self.get_profit()
-        self.profit =  round(self.profit_in_pips * self.units, 4)
+        self.profit, self.profit_in_pips = self.get_profit(self.close_price)
+        self.position_value = self.get_position_value(close_price)
         self.comment=comment
         
-    def get_profit(self) -> float:
-        return self.open_price - self.close_price if self.operation_type == OperationType.SELL else self.close_price - self.open_price
+    def get_profit_in_pips(self, price) -> float:
+        return diff_pips(self.open_price, price, pip_value=self.pip_value, absolute=False) if self.operation_type == OperationType.SELL else diff_pips(price, self.open_price, pip_value=self.pip_value, absolute=False)
+    
+    def get_profit(self, price) -> float:
+        pips = self.get_profit_in_pips(price)
+        money = round(pips * self.units * self.pip_value, 5)
+        return money, pips
+    
+    def get_position_value(self, price) -> float:
+        value = round(price * self.units, 5)
+        return value

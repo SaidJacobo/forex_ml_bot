@@ -5,8 +5,6 @@ class ClosePositionType(Enum):
     TAKE_PROFIT = 0
     STOP_LOSS = 1
     DAYS = 2
-    TAKE_PROFIT_RANDOM = 3
-    STOP_LOSS_RANDOM = 4
 
 class OperationType(Enum):
     BUY = 0
@@ -17,3 +15,4 @@ class ActionType(Enum):
     CLOSE = 1
     WAIT = 2
     UPDATE = 3
+    CLOSE_ALL = 4

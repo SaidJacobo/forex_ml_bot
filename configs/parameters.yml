@@ -7,7 +7,7 @@ models: [
 
 train_window: [
   # 11520, # dos anios
-  5760, # un anio
+  # 5760, # un anio
   # 1920, # cuatro meses
   # 1440, # tres meses
   # 1200, # dos meses y medio
@@ -16,7 +16,7 @@ train_window: [
   # 480, # un mes
   # 360, # tres semanas 
   # 240, # dos semanas
-  # 120, # una semana
+  120, # una semana
 ] # tamanio de la ventana de entrenamiento
 
 train_period: [
@@ -29,14 +29,16 @@ stop_loss_in_pips: [
   # 3,
   # 5,
   # 8,
-  10,
-  15,
+  # 10,
+  # 15,
   20,
   # 25,
 ]
 
 risk_reward_ratio: [
-  2,
+  # 0.5,
+  1,
+  # 2,
   # 3,
   # 4,
   # 5,
@@ -56,20 +58,47 @@ periods_forward_target: [
   # 10,
 ]
 
-use_trailing_stop: [
-  # True,
-  False
-]
-
 trading_strategy: [
   'backbone.strategies.smi_adx',
 ]
 
 stop_loss_strategies: [
   # 'backbone.stop_loss_strategies.pivot_point',
-  'backbone.stop_loss_strategies.n_pips',
+  'backbone.stop_loss_strategies.account_percentage',
 ]
 
 take_profit_strategies: [
   'backbone.take_profit_strategies.risk_reward',
+]
+
+intervals: [
+  4,
+  # 2,
+  # 6,
+  # 8
+]
+
+trades_to_increment_risks: [
+  # 1,
+  3,
+  # 2,
+  # 4
+]
+
+
+leverages: [
+  # 100,
+  # 200,
+  500,
+]
+
+risk_percentages: [
+  # 5, 
+  # 10, 
+  15, 
+  # 20, 
+  # 30, 
+  # 40, 
+  # 50, 
+  # 60
 ]

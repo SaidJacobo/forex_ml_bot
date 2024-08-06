@@ -42,12 +42,10 @@ def initialize_backtesting():
 
     # Obtención de parámetros del proyecto
     mode = config['mode']
-    paralelize = config['paralelize']
     limit_date_train = config['limit_date_train']
     date_from = datetime.strptime(config['date_from'], date_format)
     date_to = datetime.strptime(config['date_to'], date_format)
     tickers = config["tickers"] 
-    risk_percentage = config["risk_percentage"] 
     undersampling = config['undersampling']
     allowed_sessions = config['allowed_sessions']
 
@@ -64,7 +62,11 @@ def initialize_backtesting():
     periods_forward_target = parameters['periods_forward_target']
     stop_loses_in_pips = parameters['stop_loss_in_pips']
     risk_reward_ratios = parameters['risk_reward_ratio']
-    use_trailing_stop_option = parameters['use_trailing_stop']
+    intervals = parameters['intervals']
+    trades_to_increment_risks = parameters['trades_to_increment_risks']
+    leverages = parameters['leverages']
+    risk_percentages = parameters["risk_percentages"] 
+
 
     max_window = max(train_window)
 
@@ -79,11 +81,16 @@ def initialize_backtesting():
         periods_forward_target, 
         stop_loses_in_pips, 
         risk_reward_ratios,
-        use_trailing_stop_option
+        intervals,
+        trades_to_increment_risks,
+        leverages,
+        risk_percentages
     )
+
     random.shuffle(parameter_combinations)
-    processes = []
+
     first_time = True
+
     for combination in parameter_combinations:
         (
             model_name, 
@@ -95,23 +102,43 @@ def initialize_backtesting():
             period_forward_target, 
             stop_loss_in_pips, 
             risk_reward_ratio, 
-            use_trailing_stop
+            interval,
+            trades_to_increment_risk,
+            leverage,
+            risk_percentage
         ) = combination
 
         # Definición de la ruta de resultados
-        results_path = f'''
-            Model_{model_name}
-            -TrainWw_{train_window}
-            -TrainPd_{train_period}
-            -TradStgy_{trading_strategy.split('.')[-1]}
-            -SLStgy_{stop_loss_strategy.split('.')[-1]}
-            -TPStgy_{take_profit_strategy.split('.')[-1]}
-            -PerFwTg_{period_forward_target}
-            -SL_{stop_loss_in_pips}
-            -RR_{risk_reward_ratio}
-            -TS_{use_trailing_stop}
-        '''.replace("\n", "").strip().replace(" ", "")
-        
+        if model_name:
+            results_path = f'''
+                Model_{model_name}
+                -TrainWw_{train_window}
+                -TrainPd_{train_period}
+                -TradStgy_{trading_strategy.split('.')[-1]}
+                -SLStgy_{stop_loss_strategy.split('.')[-1]}
+                -TPStgy_{take_profit_strategy.split('.')[-1]}
+                -PerFwTg_{period_forward_target}
+                -SL_{stop_loss_in_pips}
+                -RR_{risk_reward_ratio}
+                -INT_{interval}
+                -TTIR_{trades_to_increment_risk}
+                -Lev_{leverage}
+                -RP_{risk_percentage}
+            '''.replace("\n", "").strip().replace(" ", "")
+        else:
+            results_path = f'''
+                TradStgy_{trading_strategy.split('.')[-1]}
+                -SLStgy_{stop_loss_strategy.split('.')[-1]}
+                -TPStgy_{take_profit_strategy.split('.')[-1]}
+                -PerFwTg_{period_forward_target}
+                -SL_{stop_loss_in_pips}
+                -RR_{risk_reward_ratio}
+                -INT_{interval}
+                -TTIR_{trades_to_increment_risk}
+                -Lev_{leverage}
+                -RP_{risk_percentage}
+            '''.replace("\n", "").strip().replace(" ", "")
+
         this_experiment_path = os.path.join(experiments_path, results_path)
         
         if os.path.exists(this_experiment_path):
@@ -121,8 +148,8 @@ def initialize_backtesting():
         print(f'Se ejecutara la configuracion {results_path}')
         
         # Carga del agente de estrategia de trading
-        ml_strategy = 'backbone.utils.trading_logic.ml_strategy'
-        only_strategy = 'backbone.utils.trading_logic.only_strategy'
+        ml_strategy = 'backbone.utils.grid_trading_logic.ml_strategy'
+        only_strategy = 'backbone.utils.grid_trading_logic.only_strategy'
         trading_logic = ml_strategy if model_name else only_strategy
         
         strategy = load_function(trading_strategy)
@@ -143,9 +170,11 @@ def initialize_backtesting():
             risk_reward=risk_reward_ratio,
             risk_percentage=risk_percentage,
             allowed_sessions=allowed_sessions, 
-            use_trailing_stop=use_trailing_stop, 
             pips_per_value=pips_per_value, 
-            trade_with=trade_with
+            trade_with=trade_with,
+            interval=interval,
+            trades_to_increment_risk=trades_to_increment_risk,
+            leverage=leverage,
         )
 
         # Configuración del modelo de machine learning
@@ -180,43 +209,17 @@ def initialize_backtesting():
 
         first_time = False
 
-        if paralelize:
-            process = multiprocessing.Process(
-                target=backtester.start, 
-                args=(
-                    date_from,
-                    symbols_path,
-                    train_window, 
-                    train_period,
-                    mode,
-                    limit_date_train,
-                    this_experiment_path, 
-                    period_forward_target
-                )
-            )
-
-            processes.append(process)
-        else:
-            backtester.start(
-                start_date=date_from,
-                symbols_path=symbols_path,
-                train_window=train_window, 
-                train_period=train_period,
-                mode=mode,
-                limit_date_train=limit_date_train,
-                results_path=this_experiment_path, 
-                period_forward_target=period_forward_target,
-                undersampling=undersampling
-            )
-
-    if processes:
-        # Iniciar todos los procesos
-        for process in processes:
-            process.start()
-
-        # Esperar a que todos los procesos terminen
-        for process in processes:
-            process.join()
+        backtester.start(
+            start_date=date_from,
+            symbols_path=symbols_path,
+            train_window=train_window, 
+            train_period=train_period,
+            mode=mode,
+            limit_date_train=limit_date_train,
+            results_path=this_experiment_path, 
+            period_forward_target=period_forward_target,
+            undersampling=undersampling
+        )
 
 
 

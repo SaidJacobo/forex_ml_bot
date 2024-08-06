@@ -165,7 +165,7 @@ def test_take_operation_decision(actual_market_data, actual_date, expected_actio
 def test_open_position(operation_type, ticker, date, price, expected_units, expected_stop_loss, expected_take_profit):
 
     # Mocking the initial parameters
-    trader.actual_money = 10000
+    trader.balance = 10000
     trader.risk_percentage = 2
     trader.stop_loss_in_pips = 50
     trader.take_profit_in_pips = 50
@@ -199,7 +199,7 @@ def test_close_position(order_id, date, price, comment, initial_positions, expec
 
     # Mocking initial positions and wallet update function
     trader.positions = initial_positions
-    trader.__update_wallet = lambda order: expected_wallet_update
+    trader.__update_account = lambda order: expected_wallet_update
 
     trader.close_position(order_id, date, price, comment)
 

@@ -1,16 +1,15 @@
 mode: train
-paralelize: False
 date_from: '2018-01-01 00:00:00'
-date_to: '2023-01-01 00:00:00'
+date_to: '2021-01-01 00:00:00'
 limit_date_train: '2025-01-01 00:00:00'
-tickers: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
-trade_with: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
+# tickers: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
+tickers: [USDCAD]
+trade_with: [USDCAD]
 # tickers: [XAUUSD, XAGUSD, XPTUSD, XPDUSD]
 # trade_with: [XAUUSD, XAGUSD, XPTUSD, XPDUSD]
 allowed_sessions: [NY, London, 'Sidney', 'Tokio']
 start_money: 1000
 threshold: 0.5
-risk_percentage: 1
 undersampling: False
 
 pips_per_value:
