@@ -20,7 +20,7 @@ class BackTester():
   def save_results(self, results_path:str) -> None:
     os.mkdir(results_path)
     # Guarda resultados
-    if self.botardo.ml_agent is not None:
+    if self.botardo.ml_agent is not None: 
       train_results_df, test_results_df = self.botardo.ml_agent.get_results()
       test_results_df.to_csv(os.path.join(results_path, 'test_res.csv'), index=False)
       train_results_df.to_csv(os.path.join(results_path, 'trainres.csv'), index=False)

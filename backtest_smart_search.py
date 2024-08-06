@@ -18,26 +18,60 @@ def do_simulation(config_to_test, first_time):
     periods_forward_target = config_to_test['periods_forward_target']
     stop_loss_in_pips = config_to_test['stop_loss_in_pips']
     risk_reward_ratio = config_to_test['risk_reward_ratio']
-    take_profit_in_pips = config_to_test['stop_loss_in_pips'] * config_to_test['risk_reward_ratio']
-    use_trailing_stop = config_to_test['use_trailing_stop'] 
     train_period = config_to_test['train_period']
     periods_forward_target = config_to_test['periods_forward_target']
-    use_days_in_position = config_to_test['use_days_in_position']
     model_name = config_to_test['models']
     train_window = config_to_test['train_window']
 
-    results_path = f'''
-        Mode_{mode}
-        -Model_{model_name}
-        -TrainWw_{train_window}
-        -TrainPd_{train_period}
-        -TradStgy_{trading_strategy.split('.')[-1]}
-        -PerFwTg_{periods_forward_target}
-        -SL_{stop_loss_in_pips}
-        -RR_{risk_reward_ratio}
-        -CloseTime_{use_days_in_position}
-        -TS_{use_trailing_stop}
-    '''.replace("\n", "").strip().replace(" ", "")
+
+
+    model_name = config_to_test['models']
+    train_window = config_to_test['train_window']
+    train_period = config_to_test['train_period']
+    trading_strategy = config_to_test['trading_strategy']
+    stop_loss_strategy = config_to_test['stop_loss_strategies']
+    take_profit_strategy = config_to_test['take_profit_strategies']
+    periods_forward_target = config_to_test['periods_forward_target']
+    stop_loss_in_pips = config_to_test['stop_loss_in_pips']
+    risk_reward_ratios = config_to_test['risk_reward_ratio']
+    intervals = config_to_test['intervals']
+    trades_to_increment_risks = config_to_test['trades_to_increment_risks']
+    leverages = config_to_test['leverages']
+    risk_percentages = config_to_test["risk_percentages"] 
+
+    # Definición de la ruta de resultados
+    if model_name:
+        results_path = f'''
+            Model_{model_name}
+            -TrainW_{train_window}
+            -TrainPd_{train_period}
+            -TStgy_{trading_strategy.split('.')[-1]}
+            -SLStgy_{stop_loss_strategy.split('.')[-1]}
+            -TPStgy_{take_profit_strategy.split('.')[-1]}
+            -PerFwTg_{period_forward_target}
+            -SL_{stop_loss_in_pips}
+            -RR_{risk_reward_ratio}
+            -INT_{interval}
+            -TTIR_{trades_to_increment_risk}
+            -Lv_{leverage}
+            -RP_{risk_percentage}
+        '''.replace("\n", "").strip().replace(" ", "")
+    else:
+        results_path = f'''
+            TStgy_{trading_strategy.split('.')[-1]}
+            -SLStgy_{stop_loss_strategy.split('.')[-1]}
+            -TPStgy_{take_profit_strategy.split('.')[-1]}
+            -PerFwTg_{period_forward_target}
+            -SL_{stop_loss_in_pips}
+            -RR_{risk_reward_ratio}
+            -INT_{interval}
+            -TTIR_{trades_to_increment_risk}
+            -Lv_{leverage}
+            -RP_{risk_percentage}
+        '''.replace("\n", "").strip().replace(" ", "")
+
+    this_experiment_path = os.path.join(experiments_path, results_path)
+    
 
     orders = None
 

@@ -152,8 +152,6 @@ def ml_strategy(
         today=today,
         only_indicator_close_buy_condition=only_indicator_close_buy_condition,
         close_price=close_price,
-        high_price=high_price,
-        low_price=low_price,
         only_indicator_close_sell_condition=only_indicator_close_sell_condition,
         model_with_indicator_open_buy_condition=model_with_indicator_open_buy_condition,
         only_indicator_open_buy_condition=only_indicator_open_buy_condition,

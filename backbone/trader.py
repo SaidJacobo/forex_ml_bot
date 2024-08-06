@@ -232,6 +232,7 @@ class ABCTrader(ABC):
     )
 
     del data_daily
+    del df['daily_date']
 
     df['daily_adx'] = df['daily_adx'].shift(24)
     df['daily_sma_26'] = df['daily_sma_26'].shift(24)

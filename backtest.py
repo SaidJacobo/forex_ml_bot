@@ -5,7 +5,6 @@ from backbone.machine_learning_agent import MachineLearningAgent
 from backbone.backtesting_trader import BacktestingTrader
 from backbone.back_tester import BackTester
 from backbone.botardo import Botardo
-import multiprocessing
 from backbone.utils.general_purpose import load_function, get_parameter_combinations
 import random
 
@@ -112,9 +111,9 @@ def initialize_backtesting():
         if model_name:
             results_path = f'''
                 Model_{model_name}
-                -TrainWw_{train_window}
+                -TrainW_{train_window}
                 -TrainPd_{train_period}
-                -TradStgy_{trading_strategy.split('.')[-1]}
+                -TStgy_{trading_strategy.split('.')[-1]}
                 -SLStgy_{stop_loss_strategy.split('.')[-1]}
                 -TPStgy_{take_profit_strategy.split('.')[-1]}
                 -PerFwTg_{period_forward_target}
@@ -122,12 +121,12 @@ def initialize_backtesting():
                 -RR_{risk_reward_ratio}
                 -INT_{interval}
                 -TTIR_{trades_to_increment_risk}
-                -Lev_{leverage}
+                -Lv_{leverage}
                 -RP_{risk_percentage}
             '''.replace("\n", "").strip().replace(" ", "")
         else:
             results_path = f'''
-                TradStgy_{trading_strategy.split('.')[-1]}
+                TStgy_{trading_strategy.split('.')[-1]}
                 -SLStgy_{stop_loss_strategy.split('.')[-1]}
                 -TPStgy_{take_profit_strategy.split('.')[-1]}
                 -PerFwTg_{period_forward_target}
@@ -135,7 +134,7 @@ def initialize_backtesting():
                 -RR_{risk_reward_ratio}
                 -INT_{interval}
                 -TTIR_{trades_to_increment_risk}
-                -Lev_{leverage}
+                -Lv_{leverage}
                 -RP_{risk_percentage}
             '''.replace("\n", "").strip().replace(" ", "")
 
