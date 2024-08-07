@@ -4,7 +4,7 @@ import numpy as np
 from backbone.order import Order
 from pandas import DataFrame
 from abc import ABC, abstractmethod
-from backbone.enums import ActionType
+from backbone.enums import ActionType, OperationType
 from backbone.utils.general_purpose import get_session, diff_pips
 import pandas_ta as ta
 import pandas as pd
@@ -15,21 +15,7 @@ class ABCTrader(ABC):
   def __init__(
         self, 
         trading_strategy, 
-        trading_logic, 
-        stop_loss_strategy, 
-        take_profit_strategy, 
-        threshold:float, 
-        allowed_days_in_position:int,
-        stop_loss_in_pips:int,
-        risk_reward:int,
-        risk_percentage:int,
-        allowed_sessions:List[str],
-        pips_per_value:dict,
-        trade_with:List[str],
-        money:float,
-        interval:int,
-        leverage:int,
-        trades_to_increment_risk:int
+        money:float
     ):
     """
     Inicializa el Agente de Trading.
@@ -39,33 +25,12 @@ class ABCTrader(ABC):
         threshold (int): Umbral superior.
         allowed_days_in_position (int): Días permitidos en una posición.
     """
-    self.allowed_sessions = allowed_sessions
-    self.allowed_days_in_position = allowed_days_in_position
     self.trading_strategy = trading_strategy
-    self.trading_logic = trading_logic
-    self.stop_loss_strategy = stop_loss_strategy
-    self.take_profit_strategy = take_profit_strategy
-    self.threshold = threshold
-    self.stop_loss_in_pips = stop_loss_in_pips
-    self.risk_reward = risk_reward
-    self.risk_percentage = risk_percentage
-
-    self.pips_per_value = pips_per_value
-    self.trade_with = trade_with
-
     self.balance = money
     self.equity = self.balance
     self.margin = 0
     self.free_margin = self.balance
-    self.leverage = leverage
-    
     self.equity_history = {}
-    self.interval = interval
-    
-    self.trades_to_increment_risk = trades_to_increment_risk
-    self.stop_loss = self._calculate_stop_loss()
-    self.take_profit = self._calculate_take_profit()
-
 
 
   def calculate_indicators(self, df:DataFrame, ticker):
@@ -119,7 +84,9 @@ class ABCTrader(ABC):
     df['middle_bband'] = middle_band
     df['lower_bband'] = lower_band
 
-    df['distance_between_bbands'] = (df['upper_bband'] - df['lower_bband']) / self.pips_per_value[ticker]
+    value_pip = self.trading_strategy.pip_value
+
+    df['distance_between_bbands'] = (df['upper_bband'] - df['lower_bband']) / value_pip
     df['distance_between_bbands_shift_1'] = df['distance_between_bbands'].shift(1)
     df['distance_between_bbands_shift_2'] = df['distance_between_bbands'].shift(2)
     df['distance_between_bbands_shift_3'] = df['distance_between_bbands'].shift(3)
@@ -136,26 +103,26 @@ class ABCTrader(ABC):
     df['macdsignal'] = macdsignal
     df['macdhist'] = macdhist
 
-    df['diff_pips_ch'] = (df['Close'] - df['High']) / self.pips_per_value[ticker]
-    df['diff_pips_co'] = (df['Close'] - df['Open']) / self.pips_per_value[ticker]
-    df['diff_pips_cl'] = (df['Close'] - df['Low']) / self.pips_per_value[ticker]
-    df['diff_pips_hl'] = (df['High'] - df['Low']) / self.pips_per_value[ticker]
+    df['diff_pips_ch'] = (df['Close'] - df['High']) / value_pip
+    df['diff_pips_co'] = (df['Close'] - df['Open']) / value_pip
+    df['diff_pips_cl'] = (df['Close'] - df['Low']) / value_pip
+    df['diff_pips_hl'] = (df['High'] - df['Low']) / value_pip
 
-    df['diff_pips_1_day'] = (df['Close'] - df['Close'].shift(1)) / self.pips_per_value[ticker]
-    df['diff_pips_2_day'] = (df['Close'].shift(1) - df['Close'].shift(2)) / self.pips_per_value[ticker]
-    df['diff_pips_3_day'] = (df['Close'].shift(2) - df['Close'].shift(3)) / self.pips_per_value[ticker]
+    df['diff_pips_1_day'] = (df['Close'] - df['Close'].shift(1)) / value_pip
+    df['diff_pips_2_day'] = (df['Close'].shift(1) - df['Close'].shift(2)) / value_pip
+    df['diff_pips_3_day'] = (df['Close'].shift(2) - df['Close'].shift(3)) / value_pip
     
-    df['diff_pips_h'] = (df['High'] - df['High'].shift(1)) / self.pips_per_value[ticker]
-    df['diff_pips_h_shift_1'] = (df['High'].shift(1) - df['High'].shift(2)) / self.pips_per_value[ticker]
-    df['diff_pips_h_shift_2'] = (df['High'].shift(2) - df['High'].shift(3)) / self.pips_per_value[ticker]
+    df['diff_pips_h'] = (df['High'] - df['High'].shift(1)) / value_pip
+    df['diff_pips_h_shift_1'] = (df['High'].shift(1) - df['High'].shift(2)) / value_pip
+    df['diff_pips_h_shift_2'] = (df['High'].shift(2) - df['High'].shift(3)) / value_pip
     
-    df['diff_pips_o'] = (df['Open'] - df['Open'].shift(1)) / self.pips_per_value[ticker]
-    df['diff_pips_o_shift_1'] = (df['Open'].shift(1) - df['Open'].shift(2)) / self.pips_per_value[ticker]
-    df['diff_pips_o_shift_2'] = (df['Open'].shift(2) - df['Open'].shift(3)) / self.pips_per_value[ticker]
+    df['diff_pips_o'] = (df['Open'] - df['Open'].shift(1)) / value_pip
+    df['diff_pips_o_shift_1'] = (df['Open'].shift(1) - df['Open'].shift(2)) / value_pip
+    df['diff_pips_o_shift_2'] = (df['Open'].shift(2) - df['Open'].shift(3)) / value_pip
     
-    df['diff_pips_l'] = (df['Low'] - df['Low'].shift(1)) / self.pips_per_value[ticker]
-    df['diff_pips_l_shift_1'] = (df['Low'].shift(1) - df['Low'].shift(2)) / self.pips_per_value[ticker]
-    df['diff_pips_l_shift_2'] = (df['Low'].shift(2) - df['Low'].shift(3)) / self.pips_per_value[ticker]
+    df['diff_pips_l'] = (df['Low'] - df['Low'].shift(1)) / value_pip
+    df['diff_pips_l_shift_1'] = (df['Low'].shift(1) - df['Low'].shift(2)) / value_pip
+    df['diff_pips_l_shift_2'] = (df['Low'].shift(2) - df['Low'].shift(3)) / value_pip
 
     df['hour'] = df.Date.dt.hour 
     df['day'] = df.Date.dt.day 
@@ -250,57 +217,22 @@ class ABCTrader(ABC):
   
   def calculate_operation_sides(self, instrument):
       window = 3 # las condiciones se deben cumplir en un intervalo de tres horas
-      instrument_with_sides = self.trading_strategy(instrument, window=window) 
+      instrument_with_sides = self.trading_strategy.calculate_operation_sides(instrument) 
 
       return instrument_with_sides
 
-  def _calculate_units_size(self, price, ticker, get_result_in_lots=False):
-        open_positions = self.get_open_orders(symbol=ticker)
-
-        # Ajustar el porcentaje de riesgo basado en las posiciones abiertas
-        risk_percentage = (len(open_positions) - self.trades_to_increment_risk) * 1.5
-
-        risk_percentage = 1 if risk_percentage <= 0 else risk_percentage
-
-        # Calcular unidades y valor total de la posición
-        units = (self.balance * (risk_percentage / 100)) * self.leverage / price
-        total_value = price * units
-
-        # Calcular el margen requerido
-        margin_required = total_value / self.leverage
-
-        if get_result_in_lots:
-          lot_size = 100000
-          number_of_lots = round(units / lot_size, 2)
-          
-          return number_of_lots, margin_required
-
-        return units, margin_required
-
-
-  def _calculate_stop_loss(self):
-        money_stop_loss = self.stop_loss_strategy(
-           balance=self.balance,
-           risk_percentage=self.risk_percentage
-        )
-
-        return money_stop_loss
- 
-
-  def _calculate_take_profit(self):
-      
-      money_take_profit = self.take_profit_strategy(
-         balance=self.balance,
-        #  risk_percentage=self.risk_percentage,
-         risk_percentage=1,
-         risk_reward=self.risk_reward
-      )
-
-      return money_take_profit
-
 
   @abstractmethod
-  def open_position(self, operation_type:str, ticker:str, date:str, price:float, market_data) -> None:
+  def open_position(
+        self,
+        today,
+        operation_type:OperationType,
+        units:int,
+        sl:int,
+        tp:int,
+        margin_required:int,
+        price:float 
+  ) -> None:
     """Abre una nueva posición de trading.
 
     Args:
@@ -312,7 +244,7 @@ class ABCTrader(ABC):
     pass
 
   @abstractmethod
-  def close_position(self, order_id:int, date:str, price:float, comment:str) -> None:
+  def close_position(self, oerders:List[Order], date:str, price:float, comment:str) -> None:
     """Cierra una posición de trading.
 
     Args:
@@ -333,7 +265,7 @@ class ABCTrader(ABC):
     pass
 
   
-  def take_operation_decision(self, actual_market_data, actual_date, allowed_time_to_trade):
+  def take_operation_decision(self, actual_market_data, actual_date, allowed_time_to_trade, price=None):
     """Toma la decisión de operación basada en la estrategia de trading.
 
     Args:
@@ -343,59 +275,53 @@ class ABCTrader(ABC):
     result = None
     ticker = actual_market_data['ticker']
     
-    if ticker in self.trade_with:
-      open_positions = self.get_open_orders(symbol=ticker) # ADVERTENCIA aca se obtienen las ordenes
-      
-      result = self.trading_logic(
-        actual_date,
-        actual_market_data, 
-        open_positions,
-        self.threshold,
-        self.take_profit,
-        self.stop_loss,
-        self.interval
-      )
-      print(ticker,  result)
-      
-      if result.action != ActionType.WAIT:
-        price = actual_market_data['Close']
+    open_positions = self.get_open_orders(symbol=ticker) # ADVERTENCIA aca se obtienen las ordenes
     
-        if result.action == ActionType.OPEN and allowed_time_to_trade:
-          self.open_position(
-            operation_type=result.operation_type, 
-            ticker=ticker, 
-            date=actual_date, 
-            price=price,
-            market_data=actual_market_data,
-          )
-          
-        elif result.action == ActionType.CLOSE:
-          self.close_position(
-            order_id=result.order_id, # pero aca se manda el id, y del otro lado se la vuelve a buscar
-            date=actual_date, 
-            price=price, 
-            comment=result.comment
-          )
+    result = self.trading_strategy.order_management(
+      today=actual_date, 
+      market_data=actual_market_data, 
+      open_orders=open_positions, 
+      balance=self.balance, 
+      equity=self.equity, 
+      margin=self.margin, 
+      price=price,
+    )
 
-        elif result.action == ActionType.CLOSE_ALL:
+    for action, values in result.items():
+      if action == ActionType.CLOSE and values:
+        self.close_position(
+          orders=values, # pero aca se manda el id, y del otro lado se la vuelve a buscar
+          date=actual_date, 
+          price=price, 
+          comment=''
+        )
+  
+      if action == ActionType.OPEN and values:
+        operation_type, units, tp, sl, margin_required = values
+        self.open_position(
+          today=actual_date,
+          operation_type=operation_type,
+          units=units,
+          sl=sl,
+          tp=tp,
+          margin_required=margin_required,
+          price=price
+        )
+        
 
-          self.close_all_positions(
-            positions=open_positions,
-            date=actual_date, 
-            price=price, 
-            comment=result.comment
-          )
+      # if result.action == ActionType.UPDATE:
+      #   self.update_position(
+      #     order_id=result.order_id, # pero aca se manda el id, y del otro lado se la vuelve a buscar
+      #     actual_price=price, 
+      #     comment=result.comment
+      #   ) 
 
-        elif result.action == ActionType.UPDATE:
-          self.update_position(
-            order_id=result.order_id, # pero aca se manda el id, y del otro lado se la vuelve a buscar
-            actual_price=price, 
-            comment=result.comment
-          ) 
 
-          # Quiza se puede mandar directamente la orden y listo
+        # Quiza se puede mandar directamente la orden y listo
     return result
   
+
+
   @abstractmethod
   def get_open_orders(self, ticket:int=None, symbol:str=None) -> List[Order]:
     """Obtiene las órdenes de compra y venta realizadas.

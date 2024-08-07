@@ -44,7 +44,7 @@ def initialize_backtesting():
     limit_date_train = config['limit_date_train']
     date_from = datetime.strptime(config['date_from'], date_format)
     date_to = datetime.strptime(config['date_to'], date_format)
-    tickers = config["tickers"] 
+    ticker = config["ticker"] 
     undersampling = config['undersampling']
     allowed_sessions = config['allowed_sessions']
 
@@ -56,8 +56,6 @@ def initialize_backtesting():
     train_window = parameters['train_window']
     train_period = parameters['train_period']
     trading_strategies = parameters['trading_strategy']
-    stop_loss_strategies = parameters['stop_loss_strategies']
-    take_profit_strategies = parameters['take_profit_strategies']
     periods_forward_target = parameters['periods_forward_target']
     stop_loses_in_pips = parameters['stop_loss_in_pips']
     risk_reward_ratios = parameters['risk_reward_ratio']
@@ -75,8 +73,6 @@ def initialize_backtesting():
         train_window, 
         train_period, 
         trading_strategies, 
-        stop_loss_strategies, 
-        take_profit_strategies, 
         periods_forward_target, 
         stop_loses_in_pips, 
         risk_reward_ratios,
@@ -96,8 +92,6 @@ def initialize_backtesting():
             train_window, 
             train_period, 
             trading_strategy, 
-            stop_loss_strategy, 
-            take_profit_strategy, 
             period_forward_target, 
             stop_loss_in_pips, 
             risk_reward_ratio, 
@@ -114,8 +108,6 @@ def initialize_backtesting():
                 -TrainW_{train_window}
                 -TrainPd_{train_period}
                 -TStgy_{trading_strategy.split('.')[-1]}
-                -SLStgy_{stop_loss_strategy.split('.')[-1]}
-                -TPStgy_{take_profit_strategy.split('.')[-1]}
                 -PerFwTg_{period_forward_target}
                 -SL_{stop_loss_in_pips}
                 -RR_{risk_reward_ratio}
@@ -127,8 +119,6 @@ def initialize_backtesting():
         else:
             results_path = f'''
                 TStgy_{trading_strategy.split('.')[-1]}
-                -SLStgy_{stop_loss_strategy.split('.')[-1]}
-                -TPStgy_{take_profit_strategy.split('.')[-1]}
                 -PerFwTg_{period_forward_target}
                 -SL_{stop_loss_in_pips}
                 -RR_{risk_reward_ratio}
@@ -147,33 +137,23 @@ def initialize_backtesting():
         print(f'Se ejecutara la configuracion {results_path}')
         
         # Carga del agente de estrategia de trading
-        ml_strategy = 'backbone.utils.grid_trading_logic.ml_strategy'
-        only_strategy = 'backbone.utils.grid_trading_logic.only_strategy'
-        trading_logic = ml_strategy if model_name else only_strategy
-        
         strategy = load_function(trading_strategy)
-        logic = load_function(trading_logic)
-        sl_strategy = load_function(stop_loss_strategy)
-        tp_strategy = load_function(take_profit_strategy)
-
+        strategy = strategy(
+            ticker=ticker, 
+            pip_value=pips_per_value[ticker], 
+            risk_reward_ratio=risk_reward_ratio, 
+            risk_percentage=risk_percentage,
+            stop_loss_in_pips=stop_loss_in_pips,
+            allowed_sessions=allowed_sessions, 
+            trades_to_increment_risk=trades_to_increment_risk,
+            leverage=leverage,
+            interval=interval,
+            threshold=config['threshold']
+        )
 
         trader = BacktestingTrader(
             money=config['start_money'], 
             trading_strategy=strategy,
-            stop_loss_strategy=sl_strategy,
-            take_profit_strategy=tp_strategy,
-            trading_logic=logic,
-            threshold=config['threshold'],
-            allowed_days_in_position=period_forward_target,
-            stop_loss_in_pips=stop_loss_in_pips,
-            risk_reward=risk_reward_ratio,
-            risk_percentage=risk_percentage,
-            allowed_sessions=allowed_sessions, 
-            pips_per_value=pips_per_value, 
-            trade_with=trade_with,
-            interval=interval,
-            trades_to_increment_risk=trades_to_increment_risk,
-            leverage=leverage,
         )
 
         # Configuración del modelo de machine learning
@@ -184,11 +164,12 @@ def initialize_backtesting():
         if model_name is not None:
             param_grid = model_configs[model_name]['param_grid']
             model = model_configs[model_name]['model']
-            mla = MachineLearningAgent(tickers=tickers, model=model, param_grid=param_grid)
+            mla = MachineLearningAgent(tickers=[ticker], model=model, param_grid=param_grid)
+            pass
 
         # Inicio del backtesting
         botardo = Botardo(
-            tickers=tickers, 
+            tickers=[ticker], 
             ml_agent=mla, 
             trader=trader
         )

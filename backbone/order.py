@@ -14,6 +14,7 @@ class Order():
             id:str=None, 
             stop_loss:float=None, 
             take_profit:float=None,
+            margin_required:float=None,
         ):
         self.id = uuid.uuid1() if not id else id
         self.ticker = ticker
@@ -31,6 +32,7 @@ class Order():
         self.position_value = round(self.open_price * self.units, 5)
         self.comment=None
         self.pip_value = pip_value
+        self.margin_required = margin_required
 
     def update(self, sl=None, tp=None):
         if sl:

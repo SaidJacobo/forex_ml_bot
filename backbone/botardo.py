@@ -163,16 +163,17 @@ class Botardo():
       instrument = self.instruments[ticker].copy()
       instrument = self.trader.calculate_operation_sides(instrument=instrument)
 
-      instrument['target'] = apply_triple_barrier(
-        market_data=instrument,
-        stop_loss_strategy=self.trader.stop_loss_strategy,
-        stop_loss_in_pips=self.trader.stop_loss_in_pips,
-        risk_reward=self.trader.risk_reward,
-        take_profit_strategy=self.trader.take_profit_strategy,
-        side=instrument.side,
-        max_holding_period=self.trader.allowed_days_in_position, 
-        pip_size=self.trader.pips_per_value[ticker]
-      )
+      instrument['target'] = 0 # ADVERTENCIA cambiar
+      # instrument['target'] = apply_triple_barrier(
+      #   market_data=instrument,
+      #   stop_loss_strategy=self.trader.stop_loss_strategy,
+      #   stop_loss_in_pips=self.trader.stop_loss_in_pips,
+      #   risk_reward=self.trader.risk_reward,
+      #   take_profit_strategy=self.trader.take_profit_strategy,
+      #   side=instrument.side,
+      #   max_holding_period=self.trader.allowed_days_in_position, 
+      #   pip_size=self.trader.pips_per_value[ticker]
+      # )
 
       self.instruments[ticker].loc[instrument.index, 'side'] = instrument.side
       self.instruments[ticker].loc[instrument.index, 'target'] = instrument.target
@@ -221,7 +222,8 @@ class Botardo():
       train_period:int, 
       train_window:int, 
       period_forward_target:int,
-      undersampling:bool
+      undersampling:bool, 
+      price:float=None
     ) -> None:
     """Flujo de trabajo del bot de trading y aprendizaje automático.
 
@@ -322,10 +324,14 @@ class Botardo():
       actual_equity = self.trader.update_equity(actual_date, today_market_data.loc[index].Close)
       margin = self.trader.margin
 
+      if not price:
+        price = today_market_data.iloc[0].Close
+
       result = self.trader.take_operation_decision(
         actual_market_data=today_market_data.loc[index].drop(labels=['target']),
         actual_date=actual_date, 
-        allowed_time_to_trade=allowed_time_to_trade
+        allowed_time_to_trade=allowed_time_to_trade,
+        price=price
       )
 
     return actual_equity > margin

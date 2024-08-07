@@ -12,41 +12,12 @@ class BacktestingTrader(ABCTrader):
     def __init__(
             self, 
             money: float, 
-            trading_strategy, 
-            stop_loss_strategy, 
-            take_profit_strategy, 
-            trading_logic, 
-            threshold: float, 
-            allowed_days_in_position: int, 
-            stop_loss_in_pips: int, 
-            risk_reward: int, 
-            risk_percentage: int,
-            allowed_sessions:List[str],
-            pips_per_value:dict,
-            trade_with:List[str],
-            interval:int,
-            leverage:int,
-            trades_to_increment_risk:int
-
+            trading_strategy
         ):
         
         super().__init__(
-            trading_strategy, 
-            trading_logic, 
-            stop_loss_strategy, 
-            take_profit_strategy, 
-            threshold, 
-            allowed_days_in_position, 
-            stop_loss_in_pips, 
-            risk_reward, 
-            risk_percentage,
-            allowed_sessions,
-            pips_per_value,
-            trade_with,
-            money,
-            interval,
-            leverage,
-            trades_to_increment_risk
+            trading_strategy=trading_strategy,
+            money=money
         )
 
         self.positions : List[Order] = []
@@ -54,12 +25,11 @@ class BacktestingTrader(ABCTrader):
     
     def __update_account(self, order:Order) -> None:
         # Calcular el valor total de la posición y el margen requerido
-        total_value = order.open_price * order.units
-        margin_required = total_value / self.leverage
+
 
         # Actualizar el balance y el equity
         self.balance += order.profit
-        self.margin -= margin_required  # Devolver el margen al balance
+        self.margin -= order.margin_required  # Devolver el margen al balance
         
         self.free_margin = self.equity - self.margin  # Devolver el margen al balance
 
@@ -86,16 +56,16 @@ class BacktestingTrader(ABCTrader):
     
     
     def open_position(
-            self, 
-            operation_type: OperationType, 
-            ticker: str, 
-            date: str, 
-            price: float, 
-            market_data, 
+        self,
+        today,
+        operation_type:OperationType,
+        units:int,
+        sl:int,
+        tp:int,
+        margin_required:int,
+        price:float 
         ) -> None:
         
-        units, margin_required = self._calculate_units_size(price=price, ticker=ticker)
-
         if self.balance < margin_required:
             print("No hay suficiente balance para abrir la posición.")
         else:
@@ -106,45 +76,31 @@ class BacktestingTrader(ABCTrader):
             # Crear la orden y agregarla a las posiciones abiertas
             order = Order(
                 order_type=operation_type,
-                ticker=ticker,
-                open_time=date,
+                ticker=self.trading_strategy.ticker,
+                open_time=today,
                 open_price=price,
                 units=units,
                 stop_loss=None,  # Por ahora queda así
                 take_profit=None,  # Por ahora queda así
-                pip_value=self.pips_per_value[ticker]
+                pip_value=self.trading_strategy.pip_value,
+                margin_required=margin_required
             )
             self.positions.append(order)
 
-            print('=' * 16, f'Se abrió una nueva posición el {date}', '=' * 16)
+            print('=' * 16, f'Se abrió una nueva posición el {today}', '=' * 16)
             print(f'Units: {units}, Margin Required: {margin_required}')
             print(f'New Balance: {self.balance}')
 
 
-    def close_all_positions(
-            self, 
-            positions, 
-            date:str, 
-            price:float, 
-            comment:str, 
-        ) -> None:
+    def close_position(self, orders:List[Order], date:str, price:float, comment:str) -> None:
+        for order in orders:
+            order.close(close_price=price, close_time=date, comment=comment)
+            
+            self.__update_account(order)
 
-        for position in positions:
-            position.close(close_price=price, close_time=date, comment=comment)
-           
-            self.__update_account(position)
-
-        self.equity = self.balance  # En un sistema más complejo, equity podría calcularse de otra manera
+        self.equity = self.balance
 
         print('='*16, f'se cerro una posicion el {date}', '='*16)
-        self.take_profit = self._calculate_take_profit() 
-        self.stop_loss = self._calculate_stop_loss()
-
-
-
-    def close_position(self, order_id:int, date:str, price:float, comment:str) -> None:
-        pass
-
 
 
     def get_open_orders(self, ticket:int=None, symbol:str=None) -> List[Order]:
