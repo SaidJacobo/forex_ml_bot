@@ -20,7 +20,6 @@ class BacktestingTrader(ABCTrader):
             money=money
         )
 
-        self.positions : List[Order] = []
         self.wallet_evolution = {}
     
     def __update_account(self, order:Order) -> None:
@@ -60,6 +59,7 @@ class BacktestingTrader(ABCTrader):
         today,
         operation_type:OperationType,
         units:int,
+        lots:float,
         sl:int,
         tp:int,
         margin_required:int,
@@ -80,8 +80,8 @@ class BacktestingTrader(ABCTrader):
                 open_time=today,
                 open_price=price,
                 units=units,
-                stop_loss=None,  # Por ahora queda así
-                take_profit=None,  # Por ahora queda así
+                stop_loss=sl,  # Por ahora queda así
+                take_profit=tp,  # Por ahora queda así
                 pip_value=self.trading_strategy.pip_value,
                 margin_required=margin_required
             )
@@ -92,13 +92,15 @@ class BacktestingTrader(ABCTrader):
             print(f'New Balance: {self.balance}')
 
 
-    def close_position(self, orders:List[Order], date:str, price:float, comment:str) -> None:
-        for order in orders:
-            order.close(close_price=price, close_time=date, comment=comment)
+    def close_position(self, orders, date:str, price:float, comment:str) -> None:
+        for order_to_close in orders:
+            order = order_to_close.order
+
+            order.close(close_price=order_to_close.close_price, close_time=date, comment=order_to_close.close_type)
             
             self.__update_account(order)
 
-        self.equity = self.balance
+            self.equity = self.balance
 
         print('='*16, f'se cerro una posicion el {date}', '='*16)
 

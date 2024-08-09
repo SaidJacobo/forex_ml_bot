@@ -6,7 +6,7 @@ models: [
 ]
 
 train_window: [
-  11520, # dos anios
+  # 11520, # dos anios
   # 5760, # un anio
   # 1920, # cuatro meses
   # 1440, # tres meses
@@ -16,7 +16,7 @@ train_window: [
   # 480, # un mes
   # 360, # tres semanas 
   # 240, # dos semanas
-  # 120, # una semana
+  120, # una semana
 ] # tamanio de la ventana de entrenamiento
 
 train_period: [
@@ -24,29 +24,6 @@ train_period: [
   # 168, 
   # 480, 
 ] # frecuencia con la que se entrena
-
-stop_loss_in_pips: [
-  # 3,
-  # 5,
-  # 8,
-  # 10,
-  # 15,
-  20,
-  # 25,
-]
-
-risk_reward_ratio: [
-  # 0.5,
-  1,
-  # 2,
-  # 3,
-  # 4,
-  # 5,
-  # 6, 
-  # 7,
-  # 8,
-  # 9
-]
 
 periods_forward_target: [
   # 4,
@@ -59,7 +36,9 @@ periods_forward_target: [
 ]
 
 trading_strategy: [
-  'backbone.strategies.grid_smi.GridSmiAdx',
+  # 'backbone.strategies.consecutive_candles.ConsecutiveCandles',
+  'backbone.strategies.consecutive_candles.ConsecutiveCandlesV4',
+  # 'backbone.strategies.consecutive_candles.ConsecutiveCandlesV3',
 ]
 
 intervals: [
@@ -69,22 +48,53 @@ intervals: [
   # 8
 ]
 
-trades_to_increment_risks: [
+stop_loss_in_pips: [
+  # 3,
+  # 5,
+  # 8,
+  # 10,
+  # 15,
+  # 20,
+  50,
+  # 60,
+  100
+]
+
+risk_reward_ratio: [
+  0.1,
+  0.2,
+  0.5,
   # 1,
-  2,
+  # 2,
+  # 3,
+  # 4,
+  # 5,
+  # 6, 
+  # 7,
+  # 8,
+  # 9
+]
+
+trades_to_increment_risks: [
+  1,
+  # 2,
   # 3,
   # 4
 ]
 
 
 leverages: [
+  # 1,
   # 100,
-  # 200,
-  500,
+  200,
+  # 500,
 ]
 
 risk_percentages: [
-  # 5, 
+  1, 
+  # 3,
+  # 4, 
+  5, 
   # 10, 
   15, 
   # 20, 

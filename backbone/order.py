@@ -42,7 +42,6 @@ class Order():
             self.take_profit=tp
             
     def close(self, close_price:float, close_time:str, comment:str) -> None:
-        
         self.close_price = close_price
         self.close_time = close_time
         self.profit, self.profit_in_pips = self.get_profit(self.close_price)

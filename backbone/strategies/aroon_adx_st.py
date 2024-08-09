@@ -9,7 +9,7 @@ from collections import namedtuple
 # Declaring namedtuple()
 CloseOrderFromat = namedtuple('CloseOrderFromat', ['order', 'close_type', 'close_price'])
 
-class GridSmiAdxV2():
+class AroonAdxSt():
     def __init__(
             self,
             ticker, 
@@ -109,50 +109,43 @@ class GridSmiAdxV2():
                 is_pullback = market_data['max_min'] == 1
                 candlestick_pattern = (market_data['engulfing'] == -100) or (market_data['hanging_man'] == -100) or (market_data['shooting_star'] == -100) or (market_data['marubozu'] == -100) or (market_data['evening_star'] == -100) or (market_data['three_black_crows'] == -100)
             
-            if is_pullback or candlestick_pattern:
+            if is_pullback and candlestick_pattern:
                 return operation_type
 
     def calculate_operation_sides(self, prices_with_indicators):
-        
+        adx_value = 25
+        aroon_value = 40
+
         df = prices_with_indicators.copy()
-        
-        long_signals = (
-            (df['SQZ_OFF'] == 1) 
-            & (df['SQZ_OFF'].shift(1) == 1)  
-            & (df['SQZ_OFF'].shift(2) == 0)  
-            & (df['SQZ'] > 0)  
-            & (df['SQZ'] > df['SQZ'].shift(1))  
-            & (df['SQZ'].shift(1) > df['SQZ'].shift(2))  
-            & (df['SQZ'].shift(2) > df['SQZ'].shift(3))  
-            & (df['adx'] > 25) 
-            & (df['supertrend'] == 1) 
-            & (df['Close'] > df['daily_sma_26']) 
-            & (df['sma_9'] > df['sma_26']) 
-            & (df['sma_9'].shift(1) > df['sma_26'].shift(1)) 
-            & (df['sma_9'].shift(2) > df['sma_26'].shift(2)) 
-            & (df['sma_9'].shift(3) > df['sma_26'].shift(3)) 
-            & (df['sma_9'].shift(4) > df['sma_26'].shift(4)) 
-        )
 
         short_signals = (
-            (df['SQZ_OFF'] == 1) 
-            & (df['SQZ_OFF'].shift(1) == 1) 
-            & (df['SQZ_OFF'].shift(2) == 0) 
-            & (df['SQZ'] < 0) 
-            & (df['SQZ'] < df['SQZ'].shift(1)) 
-            & (df['SQZ'].shift(1) < df['SQZ'].shift(2)) 
-            & (df['SQZ'].shift(2) < df['SQZ'].shift(3)) 
-            & (df['adx'] > 25)
-            & (df['supertrend'] == -1) 
-            & (df['Close'] < df['daily_sma_26'])
-            & (df['sma_9'] < df['sma_26'])
-            & (df['sma_9'].shift(1) < df['sma_26'].shift(1)) 
-            & (df['sma_9'].shift(2) < df['sma_26'].shift(2)) 
-            & (df['sma_9'].shift(3) < df['sma_26'].shift(3)) 
-            & (df['sma_9'].shift(4) < df['sma_26'].shift(4)) 
-
+            ((df['aroon'] >= aroon_value)) &
+            (df['supertrend'] == -1) &
+            ((df['adx'] > adx_value)) 
+            & (
+                (df['engulfing'] == -100) 
+                | (df['hanging_man'] == -100)
+                | (df['shooting_star'] == -100)
+                | (df['marubozu'] == -100)
+                | (df['evening_star'] == -100)
+                | (df['three_black_crows'] == -100)
+            )
         )
-        
+
+        long_signals = (
+            ((df['aroon'] <= -aroon_value)) &
+            (df['supertrend'] == 1) &
+            ((df['adx'] > adx_value)) 
+            & (
+                (df['engulfing'] == 100) 
+                | (df['hammer'] == 100)
+                | (df['inverted_hammer'] == 100)
+                | (df['marubozu'] == 100)
+                | (df['morning_star'] == 100)
+                | (df['three_white_soldiers'] == 100)
+            )
+        )
+
         df.loc[short_signals, 'side'] = -1
         df.loc[long_signals, 'side'] = 1
 
@@ -228,9 +221,8 @@ class GridSmiAdxV2():
 
     def _calculate_units_size(self, balance, open_positions, price):
         # Ajustar el porcentaje de riesgo basado en las posiciones abiertas
-        risk_percentage = self.risk_percentage * (len(open_positions) - self.trades_to_increment_risk) * 1.5
-        
-        risk_percentage = self.risk_percentage if risk_percentage <= 0 else risk_percentage
+        risk_percentage = (len(open_positions) - self.trades_to_increment_risk) * 1.5
+        risk_percentage = 1 if risk_percentage <= 0 else risk_percentage
 
         # Calcular el riesgo monetario permitido basado en el balance y el porcentaje de riesgo
         risk_amount = balance * (risk_percentage / 100)
@@ -253,7 +245,6 @@ class GridSmiAdxV2():
 
         return units, lots, margin_required
     
-    
     def _calculate_stop_loss(self, operation_type, price):
         price_sl = None
         if operation_type == OperationType.BUY:
@@ -266,12 +257,10 @@ class GridSmiAdxV2():
     
 
     def _calculate_take_profit(self, operation_type, price):
-        
         price_tp = None
         if operation_type == OperationType.BUY:
             price_tp = price + (self.take_profit_in_pips * self.pip_value)
         
         elif operation_type == OperationType.SELL:
             price_tp = price - (self.take_profit_in_pips * self.pip_value)
-            
         return round(price_tp, 4)

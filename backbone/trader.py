@@ -31,6 +31,7 @@ class ABCTrader(ABC):
     self.margin = 0
     self.free_margin = self.balance
     self.equity_history = {}
+    self.positions : List[Order] = []
 
 
   def calculate_indicators(self, df:DataFrame, ticker):
@@ -44,6 +45,7 @@ class ABCTrader(ABC):
     """
     df.sort_values(by='Date', ascending=True, inplace=True)
 
+    df['sma_5'] = talib.SMA(df['Close'], timeperiod=5)
     df['sma_9'] = talib.SMA(df['Close'], timeperiod=9)
     df['sma_12'] = talib.SMA(df['Close'], timeperiod=12)
     df['sma_26'] = talib.SMA(df['Close'], timeperiod=26)
@@ -55,8 +57,8 @@ class ABCTrader(ABC):
     window = 3
 
     # Detectar máximos y mínimos locales
-    df['max'] = df['Close'].rolling(window=window, center=True).apply(lambda x: x.argmax() == (window // 2), raw=True)
-    df['min'] = df['Close'].rolling(window=window, center=True).apply(lambda x: x.argmin() == (window // 2), raw=True)
+    df['max'] = df['sma_5'].rolling(window=window, center=True).apply(lambda x: x.argmax() == (window // 2), raw=True)
+    df['min'] = df['sma_5'].rolling(window=window, center=True).apply(lambda x: x.argmin() == (window // 2), raw=True)
 
     # Marcar los máximos y mínimos
     df['max'] = df['max'].astype(bool) * df['Close']
@@ -92,16 +94,6 @@ class ABCTrader(ABC):
     df['distance_between_bbands_shift_3'] = df['distance_between_bbands'].shift(3)
     df['distance_between_bbands_shift_4'] = df['distance_between_bbands'].shift(4)
     df['distance_between_bbands_shift_5'] = df['distance_between_bbands'].shift(5)
-
-    df['atr'] = talib.ATR(df['High'], df['Low'], df['Close'], timeperiod=14)
-
-    df['mfi'] = talib.MFI(df['High'], df['Low'], df['Close'], df['Volume'], timeperiod=14)
-
-
-    macd, macdsignal, macdhist = talib.MACD(df['Close'], fastperiod=12, slowperiod=26, signalperiod=9)
-    df['macd'] = macd
-    df['macdsignal'] = macdsignal
-    df['macdhist'] = macdhist
 
     df['diff_pips_ch'] = (df['Close'] - df['High']) / value_pip
     df['diff_pips_co'] = (df['Close'] - df['Open']) / value_pip
@@ -153,7 +145,6 @@ class ABCTrader(ABC):
 
     df['three_black_crows'] = talib.CDL3BLACKCROWS(df.Open, df.High, df.Low, df.Close)
     df['three_white_soldiers'] = talib.CDL3WHITESOLDIERS(df.Open, df.High, df.Low, df.Close)
-     
 
     window = 24
     rolling_high = df['High'].rolling(window=window).max()
@@ -210,6 +201,34 @@ class ABCTrader(ABC):
     df['SQZ_OFF'] = smi['SQZ_OFF']
     df['SQZ_NO'] = smi['SQZ_NO']
 
+    df['engulfing'] = 0
+
+    df['engulfing'] = np.where(
+        (df['Close'] > df['Open']) # Vela alcista
+        & (df['Close'].shift(1) < df['Open'].shift(1)) # Vela bajista
+        & (df['Close'] >= df['Open'].shift(1)) # Cierre de la vela alcista por encima del high de la vela bajista anterior
+        , 1, df['engulfing']
+    )
+
+    df['engulfing'] = np.where(
+        (df['Close'] < df['Open']) # Vela bajista
+        & (df['Close'].shift(1) > df['Open'].shift(1)) # Vela alcista
+        & (df['Close'] <= df['Open'].shift(1)) # Cierre de la vela bajista por debajo del low de la vela alcista anterior
+        , -1
+        , df['engulfing']
+    )
+
+    df['direction'] = df['Close'] > df['Open']
+    df['direction'] = df['direction'].map({True: 'Bullish', False: 'Bearish'})
+
+    df['Group'] = (df['direction'] != df['direction'].shift()).cumsum()
+    df['consecutive_candles'] = df.groupby('Group').cumcount() + 1
+
+    quantile = 0.3
+    range = df['High'] - df['Low']
+    acum_threshold = range.rolling(window=24, min_periods=1).apply(lambda x: x.quantile(quantile), raw=False)
+    df['is_acumulation'] = range < acum_threshold
+    df['is_acumulation'] = df['is_acumulation']
 
     df = df.dropna()
 
@@ -228,6 +247,7 @@ class ABCTrader(ABC):
         today,
         operation_type:OperationType,
         units:int,
+        lots:float,
         sl:int,
         tp:int,
         margin_required:int,
@@ -244,7 +264,7 @@ class ABCTrader(ABC):
     pass
 
   @abstractmethod
-  def close_position(self, oerders:List[Order], date:str, price:float, comment:str) -> None:
+  def close_position(self, oerders, date:str, price:float, comment:str) -> None:
     """Cierra una posición de trading.
 
     Args:
@@ -280,7 +300,7 @@ class ABCTrader(ABC):
     result = self.trading_strategy.order_management(
       today=actual_date, 
       market_data=actual_market_data, 
-      open_orders=open_positions, 
+      total_orders=self.positions, 
       balance=self.balance, 
       equity=self.equity, 
       margin=self.margin, 
@@ -297,11 +317,12 @@ class ABCTrader(ABC):
         )
   
       if action == ActionType.OPEN and values:
-        operation_type, units, tp, sl, margin_required = values
+        operation_type, units, lots, tp, sl, margin_required = values
         self.open_position(
           today=actual_date,
           operation_type=operation_type,
           units=units,
+          lots=lots,
           sl=sl,
           tp=tp,
           margin_required=margin_required,
