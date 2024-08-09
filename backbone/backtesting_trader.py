@@ -92,8 +92,8 @@ class BacktestingTrader(ABCTrader):
             print(f'New Balance: {self.balance}')
 
 
-    def close_position(self, orders, date:str, price:float, comment:str) -> None:
-        for order_to_close in orders:
+    def close_position(self, orders_package, date:str, price:float, comment:str) -> None:
+        for order_to_close in orders_package:
             order = order_to_close.order
 
             order.close(close_price=order_to_close.close_price, close_time=date, comment=order_to_close.close_type)
@@ -104,6 +104,15 @@ class BacktestingTrader(ABCTrader):
 
         print('='*16, f'se cerro una posicion el {date}', '='*16)
 
+
+    def update_position(self, orders_package) -> None:
+        for order_to_update in orders_package:
+            order = order_to_update.order
+            tp = order_to_update.tp
+            sl = order_to_update.sl
+
+            order.update(sl=sl, tp=tp)
+            
 
     def get_open_orders(self, ticket:int=None, symbol:str=None) -> List[Order]:
         open_orders = None

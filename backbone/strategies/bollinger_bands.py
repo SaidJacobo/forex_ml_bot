@@ -8,7 +8,6 @@ from collections import namedtuple
 
 # Declaring namedtuple()
 CloseOrderFromat = namedtuple('CloseOrderFromat', ['order', 'close_type', 'close_price'])
-ModifyOrderFromat = namedtuple('ModifyOrderFromat', ['order', 'sl', 'tp'])
 
 class ConsecutiveCandlesV4():
     def __init__(
@@ -57,15 +56,15 @@ class ConsecutiveCandlesV4():
         # primero se fija si hay que cerrar ordenes antes de hacer nada
         open_orders = [order for order in total_orders if order.close_time is None]
 
-        _, ops_to_close = self.close_signal(
+        _, ops = self.close_signal(
             today=today, 
             market_data=market_data, 
             open_orders=open_orders,
             balance=balance,
             price=price
         )
-        if ops_to_close:
-            result[ActionType.CLOSE] = ops_to_close # se cierran todas las ops
+
+        result[ActionType.CLOSE] = ops # se cierran todas las ops
         
         operation_type = self.enter_signal(
             market_data=market_data, 
@@ -80,23 +79,10 @@ class ConsecutiveCandlesV4():
                 price, 
             )
             
-            # si hay mas de una orden abierta deberia calcular un stop loss global
-            sl = self._calculate_stop_loss(operation_type, price, open_orders, balance, units)
-
-            # lo mismo el tp
-            tp = self._calculate_take_profit(operation_type, price, open_orders, balance, units)
+            sl = self._calculate_stop_loss(operation_type, price)
+            tp = self._calculate_take_profit(operation_type, price)
 
             result[ActionType.OPEN] = (operation_type, units, lots, tp, sl, margin_required)
-
-            # y despues mandar a modificar las demas ordenes abiertas con el nuevo SL y TP
-            if open_orders:
-                for order in open_orders:
-                    if not any(order.id == close_order.order.id for close_order in result[ActionType.CLOSE]):
-                        result[ActionType.UPDATE].append(
-                            ModifyOrderFromat(order, sl, tp)
-                        )
-
-
 
         return result
 
@@ -135,15 +121,15 @@ class ConsecutiveCandlesV4():
 
         if in_loss:
             if operation_type==OperationType.BUY:
-                in_resistance = price <= market_data.s1 or price <= market_data.s2 or price <= market_data.s3
+                is_pullback = market_data.is_acumulation
                 candlestick_pattern = (market_data['engulfing'] == 1) or (market_data['hammer'] == 100) or (market_data['inverted_hammer'] == 100) or (market_data['marubozu'] == 100) or (market_data['morning_star'] == 100) or (market_data['three_white_soldiers'] == 100)
                 # consecutive_candles = market_data.consecutive_candles >= 4 and market_data.direction == 'Bearish'
             else:
-                in_resistance = price >= market_data.r1 or price >= market_data.r2 or price >= market_data.r3
+                is_pullback = market_data.is_acumulation
                 candlestick_pattern = (market_data['engulfing'] == -1) or (market_data['hanging_man'] == -100) or (market_data['shooting_star'] == -100) or (market_data['marubozu'] == -100) or (market_data['evening_star'] == -100) or (market_data['three_black_crows'] == -100)
                 # consecutive_candles = market_data.consecutive_candles >= 4 and market_data.direction == 'Bullish'
             
-            if in_resistance or candlestick_pattern:
+            if is_pullback or candlestick_pattern:
                 return operation_type
         
         return None
@@ -185,28 +171,78 @@ class ConsecutiveCandlesV4():
         low_price = market_data.Low
 
         orders_to_close = []
+        # si hay mas de una operacion abierta se activa el grid y se empiezan a promediar los profits y las perdidas
+        if len(open_orders) > 1:
+            last_order = max(open_orders, key=lambda ord: ord.open_time)
+            
+            risk_money = balance * self.risk_percentage / 100
+            take_profit_money = balance * self.risk_percentage / 100 * self.risk_reward_ratio
 
-        for open_order in open_orders:
-            if open_order.operation_type == OperationType.BUY:
-                if low_price <= open_order.stop_loss:
-                    orders_to_close.append(
-                        CloseOrderFromat(open_order, ClosePositionType.STOP_LOSS, open_order.stop_loss)
-                    )
+            total_units = sum(order.units for order in open_orders)
+            weighted_open_price = sum(order.open_price * order.units for order in open_orders) / total_units
+            
+            if last_order.operation_type == OperationType.BUY:
+                # Calcular el precio necesario para alcanzar la pérdida y ganancia deseada
+                loss_needed_per_unit = risk_money / total_units
+                limit_price = weighted_open_price - loss_needed_per_unit
+
+                win_needed_per_unit = take_profit_money / total_units
+                take_profit_price = weighted_open_price + win_needed_per_unit
+
+                if low_price < limit_price:
+                    for open_order in open_orders:
+                        orders_to_close.append(
+                            CloseOrderFromat(open_order, None, limit_price)
+                        )
+                if high_price > take_profit_price:
+                    for open_order in open_orders:
+                        orders_to_close.append(
+                            CloseOrderFromat(open_order, None, take_profit_price)
+                        )
+
+            if last_order.operation_type == OperationType.SELL:
+                # Calcular el precio necesario para alcanzar la pérdida y ganancia deseada
+                loss_needed_per_unit = risk_money / total_units
+                limit_price = weighted_open_price + loss_needed_per_unit
+
+                win_needed_per_unit = take_profit_money / total_units
+                take_profit_price = weighted_open_price - win_needed_per_unit
                 
-                if high_price >= open_order.take_profit:
-                    orders_to_close.append(
-                        CloseOrderFromat(open_order, ClosePositionType.TAKE_PROFIT, open_order.take_profit)
-                    )
+                if high_price > limit_price:
+                    for open_order in open_orders:
+                        orders_to_close.append(
+                            CloseOrderFromat(open_order, None, limit_price)
+                        )
 
-            if open_order.operation_type == OperationType.SELL:
-                if high_price >= open_order.stop_loss:
-                    orders_to_close.append(
-                        CloseOrderFromat(open_order, ClosePositionType.STOP_LOSS, open_order.stop_loss)
-                    )                    
-                if low_price <= open_order.take_profit:
-                    orders_to_close.append(
-                        CloseOrderFromat(open_order, ClosePositionType.TAKE_PROFIT, open_order.take_profit)
-                    )
+                if low_price < take_profit_price:
+                    for open_order in open_orders:
+                        orders_to_close.append(
+                            CloseOrderFromat(open_order, None, take_profit_price)
+                        )
+        
+        else:
+            # si hay una sola se utiliza el sl y tp de toda la vida
+            for open_order in open_orders:
+                if open_order.operation_type == OperationType.BUY:
+                    if low_price <= open_order.stop_loss:
+                        orders_to_close.append(
+                            CloseOrderFromat(open_order, ClosePositionType.STOP_LOSS, open_order.stop_loss)
+                        )
+                    
+                    if high_price >= open_order.take_profit:
+                        orders_to_close.append(
+                            CloseOrderFromat(open_order, ClosePositionType.TAKE_PROFIT, open_order.take_profit)
+                        )
+
+                if open_order.operation_type == OperationType.SELL:
+                    if high_price >= open_order.stop_loss:
+                        orders_to_close.append(
+                            CloseOrderFromat(open_order, ClosePositionType.STOP_LOSS, open_order.stop_loss)
+                        )                    
+                    if low_price <= open_order.take_profit:
+                        orders_to_close.append(
+                            CloseOrderFromat(open_order, ClosePositionType.TAKE_PROFIT, open_order.take_profit)
+                        )
        
         if orders_to_close:
             return ActionType.CLOSE, orders_to_close 
@@ -254,56 +290,24 @@ class ConsecutiveCandlesV4():
         return units, lots, margin_required
     
     
-    def _calculate_stop_loss(self, operation_type, price, open_orders, balance, units):
+    def _calculate_stop_loss(self, operation_type, price):
         price_sl = None
-        total_units = None
-        weighted_open_price = None
-
-        risk_money = balance * self.risk_percentage / 100
-
-        if len(open_orders) > 0:
-            total_units = sum(order.units for order in open_orders) + units
-            weighted_open_price = (sum(order.open_price * order.units for order in open_orders) + price * units) / total_units
-
-        else:
-            total_units = units
-            weighted_open_price = price
-            
         if operation_type == OperationType.BUY:
-            # Calcular el precio necesario para alcanzar la pérdida y ganancia deseada
-            loss_needed_per_unit = risk_money / total_units
-            price_sl = weighted_open_price - loss_needed_per_unit
-
-        if operation_type == OperationType.SELL:
-            # Calcular el precio necesario para alcanzar la pérdida y ganancia deseada
-            loss_needed_per_unit = risk_money / total_units
-            price_sl = weighted_open_price + loss_needed_per_unit
+            price_sl = price - (self.stop_loss_in_pips * self.pip_value)
+        
+        elif operation_type == OperationType.SELL:
+            price_sl = price + (self.stop_loss_in_pips * self.pip_value)
             
         return round(price_sl, 5)
     
 
-    def _calculate_take_profit(self, operation_type, price, open_orders, balance, units):
+    def _calculate_take_profit(self, operation_type, price):
         
-        total_units = None
-        weighted_open_price = None
         price_tp = None
-
-        take_profit_money = balance * self.risk_percentage / 100 * self.risk_reward_ratio
-        
-        if len(open_orders) > 0:
-            total_units = sum(order.units for order in open_orders) + units
-            weighted_open_price = (sum(order.open_price * order.units for order in open_orders) + price * units) / total_units
-        else:
-            total_units = units
-            weighted_open_price = price
-            
         if operation_type == OperationType.BUY:
-            win_needed_per_unit = take_profit_money / total_units
-            price_tp = weighted_open_price + win_needed_per_unit
-
-        if operation_type == OperationType.SELL:           
-            win_needed_per_unit = take_profit_money / total_units
-            price_tp = weighted_open_price - win_needed_per_unit
-                
+            price_tp = price + (self.take_profit_in_pips * self.pip_value)
+        
+        elif operation_type == OperationType.SELL:
+            price_tp = price - (self.take_profit_in_pips * self.pip_value)
             
         return round(price_tp, 5)

@@ -146,21 +146,15 @@ class ABCTrader(ABC):
     df['three_black_crows'] = talib.CDL3BLACKCROWS(df.Open, df.High, df.Low, df.Close)
     df['three_white_soldiers'] = talib.CDL3WHITESOLDIERS(df.Open, df.High, df.Low, df.Close)
 
-    window = 24
-    rolling_high = df['High'].rolling(window=window).max()
-    rolling_low = df['Low'].rolling(window=window).min()
-    rolling_close = df['Close'].rolling(window=window).mean()
-
-    # Calcular el punto pivote principal (PP)
-    pivot = (rolling_high + rolling_low + rolling_close) / 3
-
     # Calcular niveles de resistencia y soporte
-    df['r1'] = ((2 * pivot) - rolling_low).round(5)
-    df['s1'] = ((2 * pivot) - rolling_high).round(5)
-    df['r2'] = (pivot + (rolling_high - rolling_low)).round(5)
-    df['s2'] = (pivot - (rolling_high - rolling_low)).round(5)
-    df['r3'] = (rolling_high + 2 * (pivot - rolling_low)).round(5)
-    df['s3'] = (rolling_low - 2 * (rolling_high - pivot)).round(5)
+    df['r1'] = df['High'].rolling(window=8).max().shift(1)
+    df['s1'] = df['Low'].rolling(window=8).min().shift(1)
+
+    df['r2'] = df['High'].rolling(window=24).max().shift(1)
+    df['s2'] = df['Low'].rolling(window=24).min().shift(1)
+
+    df['r3'] = df['High'].rolling(window=48).max().shift(1)
+    df['s3'] = df['Low'].rolling(window=48).min().shift(1)
 
     df['adx'] = talib.ADX(df['High'], df['Low'], df['Close'], timeperiod=14)
 
@@ -225,9 +219,9 @@ class ABCTrader(ABC):
     df['consecutive_candles'] = df.groupby('Group').cumcount() + 1
 
     quantile = 0.3
-    range = df['High'] - df['Low']
-    acum_threshold = range.rolling(window=24, min_periods=1).apply(lambda x: x.quantile(quantile), raw=False)
-    df['is_acumulation'] = range < acum_threshold
+    range_ = df['High'] - df['Low']
+    acum_threshold = range_.rolling(window=24, min_periods=1).apply(lambda x: x.quantile(quantile), raw=False)
+    df['is_acumulation'] = range_ < acum_threshold
     df['is_acumulation'] = df['is_acumulation']
 
     df = df.dropna()
@@ -310,7 +304,7 @@ class ABCTrader(ABC):
     for action, values in result.items():
       if action == ActionType.CLOSE and values:
         self.close_position(
-          orders=values, # pero aca se manda el id, y del otro lado se la vuelve a buscar
+          orders_package=values,
           date=actual_date, 
           price=price, 
           comment=''
@@ -330,15 +324,12 @@ class ABCTrader(ABC):
         )
         
 
-      # if result.action == ActionType.UPDATE:
-      #   self.update_position(
-      #     order_id=result.order_id, # pero aca se manda el id, y del otro lado se la vuelve a buscar
-      #     actual_price=price, 
-      #     comment=result.comment
-      #   ) 
+      if action == ActionType.UPDATE and values:
+        self.update_position(
+          orders_package=values,
+        ) 
 
 
-        # Quiza se puede mandar directamente la orden y listo
     return result
   
 

@@ -57,14 +57,14 @@ stop_loss_in_pips: [
   # 20,
   50,
   # 60,
-  100
+  # 100
 ]
 
 risk_reward_ratio: [
   0.1,
   0.2,
   0.5,
-  # 1,
+  1,
   # 2,
   # 3,
   # 4,
@@ -76,16 +76,16 @@ risk_reward_ratio: [
 ]
 
 trades_to_increment_risks: [
-  1,
-  # 2,
-  # 3,
+  # 1,
+  2,
+  3,
   # 4
 ]
 
 
 leverages: [
   # 1,
-  # 100,
+  100,
   200,
   # 500,
 ]
@@ -95,7 +95,7 @@ risk_percentages: [
   # 3,
   # 4, 
   5, 
-  # 10, 
+  10, 
   15, 
   # 20, 
   # 30, 
