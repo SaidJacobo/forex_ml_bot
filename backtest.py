@@ -9,7 +9,7 @@ from backbone.utils.general_purpose import load_function, get_parameter_combinat
 import random
 
 
-date_format = '%Y-%m-%d %H:00:00'
+date_format = '%Y-%m-%d %H:%M:00'
 
 def initialize_backtesting():
     root = './backbone/data'
@@ -63,7 +63,9 @@ def initialize_backtesting():
     trades_to_increment_risks = parameters['trades_to_increment_risks']
     leverages = parameters['leverages']
     risk_percentages = parameters["risk_percentages"] 
-
+    grid_sizes = parameters["grid_sizes"] 
+    multipliers = parameters["multipliers"] 
+    start_lots = parameters["start_lots"] 
 
     max_window = max(train_window)
 
@@ -79,7 +81,10 @@ def initialize_backtesting():
         intervals,
         trades_to_increment_risks,
         leverages,
-        risk_percentages
+        risk_percentages,
+        grid_sizes,
+        multipliers,
+        start_lots
     )
 
     random.shuffle(parameter_combinations)
@@ -98,7 +103,10 @@ def initialize_backtesting():
             interval,
             trades_to_increment_risk,
             leverage,
-            risk_percentage
+            risk_percentage,
+            grid_size,
+            multiplier,
+            start_lot
         ) = combination
 
         # Definición de la ruta de resultados
@@ -110,22 +118,29 @@ def initialize_backtesting():
                 -TStgy_{trading_strategy.split('.')[-1]}
                 -PerFwTg_{period_forward_target}
                 -SL_{stop_loss_in_pips}
-                -RR_{risk_reward_ratio}
-                -INT_{interval}
-                -TTIR_{trades_to_increment_risk}
-                -Lv_{leverage}
-                -RP_{risk_percentage}
+                -RiskReward_{risk_reward_ratio}
+                -Interval_{interval}
+                -IncrentRiskAfter_{trades_to_increment_risk}
+                -Leverage_{leverage}
+                -Risk_{risk_percentage}
+                -gridSize_{grid_size}
+                -multiplier_{multiplier}
+                -startLot_{start_lot}
             '''.replace("\n", "").strip().replace(" ", "")
         else:
             results_path = f'''
                 TStgy_{trading_strategy.split('.')[-1]}
                 -PerFwTg_{period_forward_target}
                 -SL_{stop_loss_in_pips}
-                -RR_{risk_reward_ratio}
-                -INT_{interval}
-                -TTIR_{trades_to_increment_risk}
-                -Lv_{leverage}
-                -RP_{risk_percentage}
+                -RiskReward_{risk_reward_ratio}
+                -Interval_{interval}
+                -IncrentRiskAfter_{trades_to_increment_risk}
+                -Leverage_{leverage}
+                -Risk_{risk_percentage}
+                -gridSize_{grid_size}
+                -multiplier_{multiplier}
+                -startLot_{start_lot}
+
             '''.replace("\n", "").strip().replace(" ", "")
 
         this_experiment_path = os.path.join(experiments_path, results_path)
@@ -148,7 +163,10 @@ def initialize_backtesting():
             trades_to_increment_risk=trades_to_increment_risk,
             leverage=leverage,
             interval=interval,
-            threshold=config['threshold']
+            threshold=config['threshold'],
+            grid_size=grid_size,
+            multiplier=multiplier,
+            start_lot=start_lot
         )
 
         trader = BacktestingTrader(
@@ -179,7 +197,7 @@ def initialize_backtesting():
         # si hay menos archivos de symbolos csv que la cantidad de tickers con la que trabajo
         botardo.get_symbols_and_generate_indicators(
             symbols_path=symbols_path, 
-            date_from=date_from - timedelta(hours=max_window),
+            date_from=date_from - timedelta(minutes=max_window),
             date_to=date_to,
             # Si no se guarda el dataset se descargara por cada configuracion
             save=first_time,

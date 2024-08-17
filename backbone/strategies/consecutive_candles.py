@@ -6,11 +6,13 @@ from backbone.order import Order
 from backbone.strategies.strategy import Strategy
 from collections import namedtuple
 
+from backbone.utils.general_purpose import diff_pips
+
 # Declaring namedtuple()
 CloseOrderFromat = namedtuple('CloseOrderFromat', ['order', 'close_type', 'close_price'])
 ModifyOrderFromat = namedtuple('ModifyOrderFromat', ['order', 'sl', 'tp'])
 
-class ConsecutiveCandlesV4():
+class ConsecutiveCandlesV6():
     def __init__(
             self,
             ticker, 
@@ -22,7 +24,10 @@ class ConsecutiveCandlesV4():
             trades_to_increment_risk:int,
             leverage:int,
             interval:int,
-            threshold:float
+            threshold:float,
+            grid_size:int,
+            multiplier:float,
+            start_lot:float
 
         ):
             self.ticker = ticker
@@ -36,6 +41,9 @@ class ConsecutiveCandlesV4():
             self.leverage = leverage
             self.interval = interval
             self.threshold = threshold
+            self.grid_size = grid_size
+            self.multiplier = multiplier
+            self.start_lot = start_lot
 
 
     def order_management(
@@ -66,40 +74,38 @@ class ConsecutiveCandlesV4():
         )
         if ops_to_close:
             result[ActionType.CLOSE] = ops_to_close # se cierran todas las ops
-        
-        operation_type = self.enter_signal(
-            market_data=market_data, 
-            open_orders=open_orders, 
-            price=price
-        )
-        if operation_type != None:
 
-            units, lots, margin_required = self._calculate_units_size(
-                balance, 
-                total_orders, 
-                price, 
+        else:
+            operation_type = self.enter_signal(
+                market_data=market_data, 
+                open_orders=open_orders, 
+                price=price
             )
-            
-            # si hay mas de una orden abierta deberia calcular un stop loss global
-            sl = self._calculate_stop_loss(operation_type, price, open_orders, balance, units)
+            if operation_type != None:
 
-            # lo mismo el tp
-            tp = self._calculate_take_profit(operation_type, price, open_orders, balance, units)
+                units, lots, margin_required = self._calculate_units_size(
+                    balance, 
+                    total_orders, 
+                    price, 
+                )
+                
+                # si hay mas de una orden abierta deberia calcular un stop loss global
+                sl = self._calculate_stop_loss(operation_type, price, open_orders, balance, units)
 
-            result[ActionType.OPEN] = (operation_type, units, lots, tp, sl, margin_required)
+                # lo mismo el tp
+                tp = self._calculate_take_profit(operation_type, price, open_orders, balance, units)
 
-            # y despues mandar a modificar las demas ordenes abiertas con el nuevo SL y TP
-            if open_orders:
-                for order in open_orders:
-                    if not any(order.id == close_order.order.id for close_order in result[ActionType.CLOSE]):
-                        result[ActionType.UPDATE].append(
-                            ModifyOrderFromat(order, sl, tp)
-                        )
+                result[ActionType.OPEN] = (operation_type, units, lots, tp, sl, margin_required)
 
-
+                # y despues mandar a modificar las demas ordenes abiertas con el nuevo SL y TP
+                if open_orders:
+                    for order in open_orders:
+                        if not any(order.id == close_order.order.id for close_order in result[ActionType.CLOSE]):
+                            result[ActionType.UPDATE].append(
+                                ModifyOrderFromat(order, sl, tp)
+                            )
 
         return result
-
 
     def calculate_operation_sides(self, prices_with_indicators):
         df = prices_with_indicators.copy()
@@ -107,11 +113,14 @@ class ConsecutiveCandlesV4():
         long_signals = (
             (df['consecutive_candles'] >= 5) 
             & (df['direction'] == 'Bearish')  
+            # & (df['Close'] > df['sma_200'])  
         )
 
         short_signals = (
             (df['consecutive_candles'] >= 5) 
-            & (df['direction'] == 'Bullish')  
+            & (df['direction'] == 'Bullish') 
+            # & (df['Close'] < df['sma_200'])  
+
         )
         
         df.loc[short_signals, 'side'] = -1
@@ -134,16 +143,10 @@ class ConsecutiveCandlesV4():
             in_loss = price > last_order.open_price
 
         if in_loss:
-            if operation_type==OperationType.BUY:
-                in_resistance = price <= market_data.s1 or price <= market_data.s2 or price <= market_data.s3
-                candlestick_pattern = (market_data['engulfing'] == 1) or (market_data['hammer'] == 100) or (market_data['inverted_hammer'] == 100) or (market_data['marubozu'] == 100) or (market_data['morning_star'] == 100) or (market_data['three_white_soldiers'] == 100)
-                # consecutive_candles = market_data.consecutive_candles >= 4 and market_data.direction == 'Bearish'
-            else:
-                in_resistance = price >= market_data.r1 or price >= market_data.r2 or price >= market_data.r3
-                candlestick_pattern = (market_data['engulfing'] == -1) or (market_data['hanging_man'] == -100) or (market_data['shooting_star'] == -100) or (market_data['marubozu'] == -100) or (market_data['evening_star'] == -100) or (market_data['three_black_crows'] == -100)
-                # consecutive_candles = market_data.consecutive_candles >= 4 and market_data.direction == 'Bullish'
+            pips = diff_pips(price1=price, price2=last_order.open_price, absolute=True, pip_value=last_order.pip_value)
             
-            if in_resistance or candlestick_pattern:
+            dinamic_grid_size = self.grid_size * (market_data.atr * 1000)
+            if pips > dinamic_grid_size:
                 return operation_type
         
         return None
@@ -184,9 +187,20 @@ class ConsecutiveCandlesV4():
         high_price = market_data.High
         low_price = market_data.Low
 
+        if open_orders:
+            first_order = min(open_orders, key=lambda ord: ord.open_time)
+            # hours_in_position = (today - first_order.open_time).total_seconds() // 3600
+            
+
         orders_to_close = []
 
         for open_order in open_orders:
+            # if hours_in_position >= 72:
+            #     orders_to_close.append(
+            #         CloseOrderFromat(open_order, ClosePositionType.TIME, price)
+            #     ) 
+            #     continue
+
             if open_order.operation_type == OperationType.BUY:
                 if low_price <= open_order.stop_loss:
                     orders_to_close.append(
@@ -221,7 +235,7 @@ class ConsecutiveCandlesV4():
             profit = None
 
             if order.close_time:
-                profit = order.profit
+                break
             else:
                 profit, _ = order.get_profit(price)
 
@@ -231,15 +245,21 @@ class ConsecutiveCandlesV4():
                 break
 
         # Ajustar el porcentaje de riesgo basado en las posiciones abiertas
-        risk_percentage = self.risk_percentage + loss_orders * 1.5        
 
-        risk_amount = balance * (risk_percentage / 100)
+        units = self.start_lot * loss_orders * self.multiplier
+        units = self.start_lot if units == 0 else units
 
-        # Calcular el valor monetario del stop loss en función de los pips
-        stop_loss_value = self.stop_loss_in_pips * self.pip_value
+        # risk_percentage = self.risk_percentage + loss_orders * 2       
 
-        # Calcular unidades basadas en el riesgo permitido y el stop loss
-        units = risk_amount / stop_loss_value
+        # risk_amount = balance * (risk_percentage / 100)
+
+        # # Calcular el valor monetario del stop loss en función de los pips
+        # # stop_loss_value = self.stop_loss_in_pips * self.pip_value
+
+        # # Calcular unidades basadas en el riesgo permitido y el stop loss
+        # units = risk_amount / price
+        # if units < 50000:
+        #     units = 5000
 
         # Calcular el valor total de la posición apalancada
         leveraged_units = units * self.leverage
@@ -288,7 +308,7 @@ class ConsecutiveCandlesV4():
         weighted_open_price = None
         price_tp = None
 
-        take_profit_money = balance * self.risk_percentage / 100 * self.risk_reward_ratio
+        take_profit_money = balance * self.risk_reward_ratio
         
         if len(open_orders) > 0:
             total_units = sum(order.units for order in open_orders) + units

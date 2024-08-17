@@ -9,6 +9,89 @@ from backbone.utils.general_purpose import get_session, diff_pips
 import pandas_ta as ta
 import pandas as pd
 
+
+class RMITrendSniper:
+    def __init__(self, length=14, positive_above=66, negative_below=30, ema_length=5):
+        self.length = length
+        self.positive_above = positive_above
+        self.negative_below = negative_below
+        self.ema_length = ema_length
+    
+    def calculate_rmi(self, df):
+        # Calcula el RSI
+        data = df.copy()
+        delta = data['Close'].diff()
+        gain = np.where(delta > 0, delta, 0)
+        loss = np.where(delta < 0, -delta, 0)
+        avg_gain = pd.Series(gain).rolling(window=self.length, min_periods=1).mean()
+        avg_loss = pd.Series(loss).rolling(window=self.length, min_periods=1).mean()
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+        
+        # Calcula el MFI (Money Flow Index)
+        typical_price = (data['High'] + data['Low'] + data['Close']) / 3
+        money_flow = typical_price * data['Volume']
+        pos_flow = np.where(typical_price > typical_price.shift(1), money_flow, 0)
+        neg_flow = np.where(typical_price < typical_price.shift(1), money_flow, 0)
+        pos_mf = pd.Series(pos_flow).rolling(window=self.length, min_periods=1).sum()
+        neg_mf = pd.Series(neg_flow).rolling(window=self.length, min_periods=1).sum()
+        mfi = 100 - (100 / (1 + pos_mf / neg_mf))
+        
+        # Calcula RMI-MFI
+        rmi_mfi = (rsi + mfi) / 2
+        
+        return rmi_mfi
+    
+    def calculate_signals(self, data):
+        rmi_mfi = self.calculate_rmi(data)
+        ema = data['Close'].ewm(span=self.ema_length, adjust=False).mean()
+        ema_change = ema.diff()
+
+        p_mom = (rmi_mfi.shift(1) < self.positive_above) & (rmi_mfi > self.positive_above) & (rmi_mfi > self.negative_below) & (ema_change > 0)
+        n_mom = (rmi_mfi < self.negative_below) & (ema_change < 0)
+        
+        # Definir las condiciones de momento positivo y negativo
+        data['signal'] = 0
+        data.loc[p_mom, 'signal'] = 1
+        data.loc[n_mom, 'signal'] = -1
+        
+        return data.signal
+    
+    def apply(self, data):
+        data = self.calculate_signals(data)
+        return data
+
+def bollinger_bands_filter(df, length=55, mult=1.0, close_col='Close'):
+    # Calcular la media móvil simple (SMA)
+    sma = df[close_col].rolling(window=length).mean()
+    
+    # Calcular la desviación estándar
+    std_dev = df[close_col].rolling(window=length).std()
+    
+    # Calcular las Bandas de Bollinger
+    upper_band = sma + (mult * std_dev)
+    lower_band = sma - (mult * std_dev)
+    
+    # Condiciones de compra y venta
+    long = df[close_col] > upper_band
+    short = df[close_col] < lower_band
+    
+    # Convertir a booleanos
+    long = long.astype(bool)
+    short = short.astype(bool)
+    
+    # Señales de compra y venta
+    long_signal = long & ~long.shift(1).astype(bool)
+    short_signal = short & ~short.shift(1).astype(bool)
+
+    signal = np.zeros(df.shape[0])
+    
+    signal = np.where(((long_signal == True) ), 1, signal)
+    signal = np.where(((short_signal == True) ), -1, signal)
+
+    return signal
+
+
 class ABCTrader(ABC):
   """Agente de Trading para tomar decisiones de compra y venta."""
 
@@ -51,7 +134,25 @@ class ABCTrader(ABC):
     df['sma_26'] = talib.SMA(df['Close'], timeperiod=26)
     df['sma_50'] = talib.SMA(df['Close'], timeperiod=50)
     df['sma_200'] = talib.SMA(df['Close'], timeperiod=200)
+    
+    value_pip = self.trading_strategy.pip_value
 
+    df['diff_pips_sma_200_26'] = df.apply(
+        lambda row: diff_pips(row['sma_200'], row['sma_26'], pip_value=value_pip), 
+        axis=1
+    )
+
+    macd, macdsignal, macdhist = talib.MACD(df['Close'], fastperiod=12, slowperiod=26, signalperiod=9)
+    df['macd'] = macd
+    df['macdsignal'] = macdsignal
+    df['macdhist'] = macdhist
+
+    df['bband_filter_signal'] = bollinger_bands_filter(df)
+
+    df['atr'] = talib.ATR(df['High'], df['Low'], df['Close'], timeperiod=14)
+
+    rmi_trend_sniper = RMITrendSniper()
+    df['rmi_signal'] = rmi_trend_sniper.apply(df)
 
     # Definir el tamaño de la ventana
     window = 3
@@ -86,7 +187,6 @@ class ABCTrader(ABC):
     df['middle_bband'] = middle_band
     df['lower_bband'] = lower_band
 
-    value_pip = self.trading_strategy.pip_value
 
     df['distance_between_bbands'] = (df['upper_bband'] - df['lower_bband']) / value_pip
     df['distance_between_bbands_shift_1'] = df['distance_between_bbands'].shift(1)
@@ -159,35 +259,35 @@ class ABCTrader(ABC):
     df['adx'] = talib.ADX(df['High'], df['Low'], df['Close'], timeperiod=14)
 
     # Daily ADX
-    df['daily_date'] = df['Date'].dt.floor('D')
-    data_daily = df[['Date','Open','High','Low','Close']].copy()
-    data_daily['daily_date'] = data_daily['Date'].dt.floor('D')
+    # df['daily_date'] = df['Date'].dt.floor('D')
+    # data_daily = df[['Date','Open','High','Low','Close']].copy()
+    # data_daily['daily_date'] = data_daily['Date'].dt.floor('D')
 
-    # Agrupar los datos por día y calcular los valores OHLC diarios
-    data_daily = data_daily.groupby('daily_date').agg({
-        'Open': 'first',
-        'High': 'max',
-        'Low': 'min',
-        'Close': 'last'
-    }).reset_index()
+    # # Agrupar los datos por día y calcular los valores OHLC diarios
+    # data_daily = data_daily.groupby('daily_date').agg({
+    #     'Open': 'first',
+    #     'High': 'max',
+    #     'Low': 'min',
+    #     'Close': 'last'
+    # }).reset_index()
 
-    # Calcular el ADX en la temporalidad diaria
-    data_daily['daily_adx'] = talib.ADX(data_daily['High'], data_daily['Low'], data_daily['Close'], timeperiod=14)
+    # # Calcular el ADX en la temporalidad diaria
+    # data_daily['daily_adx'] = talib.ADX(data_daily['High'], data_daily['Low'], data_daily['Close'], timeperiod=14)
     
-    data_daily['daily_sma_26'] = talib.SMA(data_daily['Close'], timeperiod=26)
+    # data_daily['daily_sma_26'] = talib.SMA(data_daily['Close'], timeperiod=26)
 
-    # Merge los valores del ADX diario con el DataFrame horario
-    df = pd.merge_asof(
-        df, 
-        data_daily[['daily_date', 'daily_adx', 'daily_sma_26']].sort_values('daily_date'), 
-        on='daily_date', 
-    )
+    # # Merge los valores del ADX diario con el DataFrame horario
+    # df = pd.merge_asof(
+    #     df, 
+    #     data_daily[['daily_date', 'daily_adx', 'daily_sma_26']].sort_values('daily_date'), 
+    #     on='daily_date', 
+    # )
 
-    del data_daily
-    del df['daily_date']
+    # del data_daily
+    # del df['daily_date']
 
-    df['daily_adx'] = df['daily_adx'].shift(24)
-    df['daily_sma_26'] = df['daily_sma_26'].shift(24)
+    # df['daily_adx'] = df['daily_adx'].shift(24)
+    # df['daily_sma_26'] = df['daily_sma_26'].shift(24)
 
     smi = ta.squeeze(df['High'], df['Low'], df['Close'], LazyBear=True)
     df['SQZ'] = smi['SQZ_20_2.0_20_1.5']
@@ -218,11 +318,11 @@ class ABCTrader(ABC):
     df['Group'] = (df['direction'] != df['direction'].shift()).cumsum()
     df['consecutive_candles'] = df.groupby('Group').cumcount() + 1
 
-    quantile = 0.3
-    range_ = df['High'] - df['Low']
-    acum_threshold = range_.rolling(window=24, min_periods=1).apply(lambda x: x.quantile(quantile), raw=False)
-    df['is_acumulation'] = range_ < acum_threshold
-    df['is_acumulation'] = df['is_acumulation']
+    # quantile = 0.3
+    # range_ = df['High'] - df['Low']
+    # acum_threshold = range_.rolling(window=24, min_periods=1).apply(lambda x: x.quantile(quantile), raw=False)
+    # df['is_acumulation'] = range_ < acum_threshold
+    # df['is_acumulation'] = df['is_acumulation']
 
     df = df.dropna()
 

@@ -32,7 +32,7 @@ class Botardo():
     self.trader = trader
     self.tickers = tickers
     self.instruments = {}
-    self.date_format = '%Y-%m-%d %H:00:00'
+    self.date_format = '%Y-%m-%d %H:%M:00'
 
   def _get_symbols_from_provider(self, date_from:str, date_to:str, ticker:str) -> None:
     print("MetaTrader5 package author: ", mt5.__author__)
@@ -49,7 +49,7 @@ class Botardo():
     utc_from = datetime.strptime(date_from, self.date_format).replace(tzinfo=timezone)
     utc_to = datetime.strptime(date_to, self.date_format).replace(tzinfo=timezone)
 
-    rates = mt5.copy_rates_range(ticker, mt5.TIMEFRAME_H1, utc_from, utc_to)
+    rates = mt5.copy_rates_range(ticker, mt5.TIMEFRAME_M5, utc_from, utc_to)
 
     # shut down connection to the MetaTrader 5 terminal
     mt5.shutdown()

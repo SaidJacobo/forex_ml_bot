@@ -78,7 +78,7 @@ class BackTester():
 
     print('='*16, 'Iniciando backtesting', '='*16)
 
-    start_date = start_date.strftime('%Y-%m-%d %H:00:00') if mode=='train' else limit_date_train
+    start_date = start_date.strftime('%Y-%m-%d %H:%M:00') if mode=='train' else limit_date_train
     dates = dates[dates > start_date]
 
     for actual_date in dates:

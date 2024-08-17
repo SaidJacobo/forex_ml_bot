@@ -35,7 +35,10 @@ def get_parameter_combinations(
         intervals,
         trades_to_increment_risks,
         leverages,
-        risk_percentages
+        risk_percentages, 
+        grid_sizes,
+        multipliers,
+        start_lots
     ):
 
     parameter_combinations = []
@@ -51,7 +54,10 @@ def get_parameter_combinations(
             intervals,
             trades_to_increment_risks,
             leverages,
-            risk_percentages
+            risk_percentages,
+            grid_sizes,
+            multipliers,
+            start_lots
         ))
 
         models.remove(None)
@@ -67,7 +73,10 @@ def get_parameter_combinations(
         intervals,
         trades_to_increment_risks,
         leverages,
-        risk_percentages
+        risk_percentages,
+        grid_sizes,
+        multipliers,
+        start_lots
     ))
 
     return parameter_combinations
