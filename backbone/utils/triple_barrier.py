@@ -8,10 +8,8 @@ from backbone.utils.general_purpose import diff_pips
 
 def apply_triple_barrier(
     market_data,
-    stop_loss_strategy,
     stop_loss_in_pips,
-    risk_reward,
-    take_profit_strategy,
+    take_profit_in_pips,
     side,
     max_holding_period=50, 
     pip_size=0.0001
@@ -20,7 +18,6 @@ def apply_triple_barrier(
     close_prices = market_data.Close
     high_prices = market_data.High
     low_prices = market_data.Low
-    take_profit_in_pips = stop_loss_in_pips * risk_reward
 
     barriers = []
     for index in range(len(close_prices)):
@@ -28,12 +25,12 @@ def apply_triple_barrier(
         
         if side[index] == 1:
             # Para una señal de compra
-            upper_barrier_level = round(actual_close_price + (take_profit_in_pips * pip_size), 4)
-            lower_barrier_level = round(actual_close_price - (stop_loss_in_pips * pip_size), 4)
+            upper_barrier_level = round(actual_close_price + (take_profit_in_pips * pip_size), 5)
+            lower_barrier_level = round(actual_close_price - (stop_loss_in_pips * pip_size), 5)
         elif side[index] == -1:
             # Para una señal de venta
-            upper_barrier_level = round(actual_close_price + (stop_loss_in_pips * pip_size), 4)
-            lower_barrier_level = round(actual_close_price - (take_profit_in_pips * pip_size), 4)
+            upper_barrier_level = round(actual_close_price + (stop_loss_in_pips * pip_size), 5)
+            lower_barrier_level = round(actual_close_price - (take_profit_in_pips * pip_size), 5)
 
         else:
             # Si no hay señal, saltar al siguiente índice

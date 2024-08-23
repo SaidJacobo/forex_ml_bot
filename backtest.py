@@ -89,7 +89,8 @@ def initialize_backtesting():
 
     random.shuffle(parameter_combinations)
 
-    first_time = True
+    first_time = False
+
 
     for combination in parameter_combinations:
         (

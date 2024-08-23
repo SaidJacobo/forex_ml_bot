@@ -1,12 +1,10 @@
 mode: train
-date_from: '2024-01-01 00:00:00'
-date_to: '2024-05-01 00:00:00'
+date_from: '2023-01-01 00:00:00'
+date_to: '2024-01-01 00:00:00'
 limit_date_train: '2025-01-01 00:00:00'
 # tickers: [EURUSD, GBPUSD, USDJPY, USDCAD, AUDUSD, USDCHF]
 ticker: USDCAD
 trade_with: USDCAD
-# tickers: [XAUUSD, XAGUSD, XPTUSD, XPDUSD]
-# trade_with: [XAUUSD, XAGUSD, XPTUSD, XPDUSD]
 allowed_sessions: [NY, London, 'Sidney', 'Tokio']
 start_money: 1000
 threshold: 0.5

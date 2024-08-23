@@ -49,7 +49,7 @@ class Botardo():
     utc_from = datetime.strptime(date_from, self.date_format).replace(tzinfo=timezone)
     utc_to = datetime.strptime(date_to, self.date_format).replace(tzinfo=timezone)
 
-    rates = mt5.copy_rates_range(ticker, mt5.TIMEFRAME_M5, utc_from, utc_to)
+    rates = mt5.copy_rates_range(ticker, mt5.TIMEFRAME_M1, utc_from, utc_to)
 
     # shut down connection to the MetaTrader 5 terminal
     mt5.shutdown()
@@ -163,16 +163,15 @@ class Botardo():
       instrument = self.instruments[ticker].copy()
       instrument = self.trader.calculate_operation_sides(instrument=instrument)
 
-      instrument['target'] = 0 # ADVERTENCIA cambiar
+      instrument['target'] = 0
+
       # instrument['target'] = apply_triple_barrier(
       #   market_data=instrument,
-      #   stop_loss_strategy=self.trader.stop_loss_strategy,
-      #   stop_loss_in_pips=self.trader.stop_loss_in_pips,
-      #   risk_reward=self.trader.risk_reward,
-      #   take_profit_strategy=self.trader.take_profit_strategy,
+      #   stop_loss_in_pips=30,
+      #   take_profit_in_pips=15,
       #   side=instrument.side,
-      #   max_holding_period=self.trader.allowed_days_in_position, 
-      #   pip_size=self.trader.pips_per_value[ticker]
+      #   max_holding_period=48, 
+      #   pip_size=0.0001
       # )
 
       self.instruments[ticker].loc[instrument.index, 'side'] = instrument.side

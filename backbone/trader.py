@@ -128,135 +128,138 @@ class ABCTrader(ABC):
     """
     df.sort_values(by='Date', ascending=True, inplace=True)
 
-    df['sma_5'] = talib.SMA(df['Close'], timeperiod=5)
-    df['sma_9'] = talib.SMA(df['Close'], timeperiod=9)
-    df['sma_12'] = talib.SMA(df['Close'], timeperiod=12)
-    df['sma_26'] = talib.SMA(df['Close'], timeperiod=26)
-    df['sma_50'] = talib.SMA(df['Close'], timeperiod=50)
-    df['sma_200'] = talib.SMA(df['Close'], timeperiod=200)
+    # df['sma_5'] = talib.SMA(df['Close'], timeperiod=5)
+    # df['sma_9'] = talib.SMA(df['Close'], timeperiod=9)
+    # df['sma_12'] = talib.SMA(df['Close'], timeperiod=12)
+    # df['sma_26'] = talib.SMA(df['Close'], timeperiod=26)
+    # df['sma_50'] = talib.SMA(df['Close'], timeperiod=50)
+    # df['sma_200'] = talib.SMA(df['Close'], timeperiod=200)
+
+    # df['highest_120'] = df['High'].rolling(window=120).max()
+    # df['lowest_120'] = df['Low'].rolling(window=120).min()
     
-    value_pip = self.trading_strategy.pip_value
+    # value_pip = self.trading_strategy.pip_value
 
-    df['diff_pips_sma_200_26'] = df.apply(
-        lambda row: diff_pips(row['sma_200'], row['sma_26'], pip_value=value_pip), 
-        axis=1
-    )
+    # df['diff_pips_sma_200_26'] = df.apply(
+    #     lambda row: diff_pips(row['sma_200'], row['sma_26'], pip_value=value_pip), 
+    #     axis=1
+    # )
 
-    macd, macdsignal, macdhist = talib.MACD(df['Close'], fastperiod=12, slowperiod=26, signalperiod=9)
-    df['macd'] = macd
-    df['macdsignal'] = macdsignal
-    df['macdhist'] = macdhist
+    # macd, macdsignal, macdhist = talib.MACD(df['Close'], fastperiod=12, slowperiod=26, signalperiod=9)
+    # df['macd'] = macd
+    # df['macdsignal'] = macdsignal
+    # df['macdhist'] = macdhist
 
-    df['bband_filter_signal'] = bollinger_bands_filter(df)
+    # df['bband_filter_signal'] = bollinger_bands_filter(df)
 
-    df['atr'] = talib.ATR(df['High'], df['Low'], df['Close'], timeperiod=14)
+    # df['atr'] = talib.ATR(df['High'], df['Low'], df['Close'], timeperiod=14)
 
-    rmi_trend_sniper = RMITrendSniper()
-    df['rmi_signal'] = rmi_trend_sniper.apply(df)
+    # rmi_trend_sniper = RMITrendSniper()
+    # df['rmi_signal'] = rmi_trend_sniper.apply(df)
 
-    # Definir el tamaño de la ventana
-    window = 3
+    # # Definir el tamaño de la ventana
+    # window = 3
 
-    # Detectar máximos y mínimos locales
-    df['max'] = df['sma_5'].rolling(window=window, center=True).apply(lambda x: x.argmax() == (window // 2), raw=True)
-    df['min'] = df['sma_5'].rolling(window=window, center=True).apply(lambda x: x.argmin() == (window // 2), raw=True)
+    # # Detectar máximos y mínimos locales
+    # df['max'] = df['sma_5'].rolling(window=window, center=True).apply(lambda x: x.argmax() == (window // 2), raw=True)
+    # df['min'] = df['sma_5'].rolling(window=window, center=True).apply(lambda x: x.argmin() == (window // 2), raw=True)
 
-    # Marcar los máximos y mínimos
-    df['max'] = df['max'].astype(bool) * df['Close']
-    df['min'] = df['min'].astype(bool) * df['Close']
+    # # Marcar los máximos y mínimos
+    # df['max'] = df['max'].astype(bool) * df['Close']
+    # df['min'] = df['min'].astype(bool) * df['Close']
 
-    # Eliminar ceros para mejor visualización
-    df['max'].replace(0, np.nan, inplace=True)
-    df['min'].replace(0, np.nan, inplace=True)
+    # # Eliminar ceros para mejor visualización
+    # df['max'].replace(0, np.nan, inplace=True)
+    # df['min'].replace(0, np.nan, inplace=True)
 
-    # Crear la columna 'max_min'
-    df['max_min'] = 0
-    df.loc[df['max'].notna(), 'max_min'] = 1
-    df.loc[df['min'].notna(), 'max_min'] = -1
+    # # Crear la columna 'max_min'
+    # df['max_min'] = 0
+    # df.loc[df['max'].notna(), 'max_min'] = 1
+    # df.loc[df['min'].notna(), 'max_min'] = -1
 
-    df['max_min'] = df['max_min'].shift(1)
-
-
-    del df['max']
-    del df['min']
-
-    df['rsi'] = talib.RSI(df['Close'])
-
-    upper_band, middle_band, lower_band = talib.BBANDS(df['Close'], timeperiod=50)
-    df['upper_bband'] = upper_band
-    df['middle_bband'] = middle_band
-    df['lower_bband'] = lower_band
+    # df['max_min'] = df['max_min'].shift(1)
 
 
-    df['distance_between_bbands'] = (df['upper_bband'] - df['lower_bband']) / value_pip
-    df['distance_between_bbands_shift_1'] = df['distance_between_bbands'].shift(1)
-    df['distance_between_bbands_shift_2'] = df['distance_between_bbands'].shift(2)
-    df['distance_between_bbands_shift_3'] = df['distance_between_bbands'].shift(3)
-    df['distance_between_bbands_shift_4'] = df['distance_between_bbands'].shift(4)
-    df['distance_between_bbands_shift_5'] = df['distance_between_bbands'].shift(5)
+    # del df['max']
+    # del df['min']
 
-    df['diff_pips_ch'] = (df['Close'] - df['High']) / value_pip
-    df['diff_pips_co'] = (df['Close'] - df['Open']) / value_pip
-    df['diff_pips_cl'] = (df['Close'] - df['Low']) / value_pip
-    df['diff_pips_hl'] = (df['High'] - df['Low']) / value_pip
+    # df['rsi'] = talib.RSI(df['Close'])
 
-    df['diff_pips_1_day'] = (df['Close'] - df['Close'].shift(1)) / value_pip
-    df['diff_pips_2_day'] = (df['Close'].shift(1) - df['Close'].shift(2)) / value_pip
-    df['diff_pips_3_day'] = (df['Close'].shift(2) - df['Close'].shift(3)) / value_pip
+    # upper_band, middle_band, lower_band = talib.BBANDS(df['Close'], timeperiod=50)
+    # df['upper_bband'] = upper_band
+    # df['middle_bband'] = middle_band
+    # df['lower_bband'] = lower_band
+
+
+    # df['distance_between_bbands'] = (df['upper_bband'] - df['lower_bband']) / value_pip
+    # df['distance_between_bbands_shift_1'] = df['distance_between_bbands'].shift(1)
+    # df['distance_between_bbands_shift_2'] = df['distance_between_bbands'].shift(2)
+    # df['distance_between_bbands_shift_3'] = df['distance_between_bbands'].shift(3)
+    # df['distance_between_bbands_shift_4'] = df['distance_between_bbands'].shift(4)
+    # df['distance_between_bbands_shift_5'] = df['distance_between_bbands'].shift(5)
+
+    # df['diff_pips_ch'] = (df['Close'] - df['High']) / value_pip
+    # df['diff_pips_co'] = (df['Close'] - df['Open']) / value_pip
+    # df['diff_pips_cl'] = (df['Close'] - df['Low']) / value_pip
+    # df['diff_pips_hl'] = (df['High'] - df['Low']) / value_pip
+
+    # df['diff_pips_1_day'] = (df['Close'] - df['Close'].shift(1)) / value_pip
+    # df['diff_pips_2_day'] = (df['Close'].shift(1) - df['Close'].shift(2)) / value_pip
+    # df['diff_pips_3_day'] = (df['Close'].shift(2) - df['Close'].shift(3)) / value_pip
     
-    df['diff_pips_h'] = (df['High'] - df['High'].shift(1)) / value_pip
-    df['diff_pips_h_shift_1'] = (df['High'].shift(1) - df['High'].shift(2)) / value_pip
-    df['diff_pips_h_shift_2'] = (df['High'].shift(2) - df['High'].shift(3)) / value_pip
+    # df['diff_pips_h'] = (df['High'] - df['High'].shift(1)) / value_pip
+    # df['diff_pips_h_shift_1'] = (df['High'].shift(1) - df['High'].shift(2)) / value_pip
+    # df['diff_pips_h_shift_2'] = (df['High'].shift(2) - df['High'].shift(3)) / value_pip
     
-    df['diff_pips_o'] = (df['Open'] - df['Open'].shift(1)) / value_pip
-    df['diff_pips_o_shift_1'] = (df['Open'].shift(1) - df['Open'].shift(2)) / value_pip
-    df['diff_pips_o_shift_2'] = (df['Open'].shift(2) - df['Open'].shift(3)) / value_pip
+    # df['diff_pips_o'] = (df['Open'] - df['Open'].shift(1)) / value_pip
+    # df['diff_pips_o_shift_1'] = (df['Open'].shift(1) - df['Open'].shift(2)) / value_pip
+    # df['diff_pips_o_shift_2'] = (df['Open'].shift(2) - df['Open'].shift(3)) / value_pip
     
-    df['diff_pips_l'] = (df['Low'] - df['Low'].shift(1)) / value_pip
-    df['diff_pips_l_shift_1'] = (df['Low'].shift(1) - df['Low'].shift(2)) / value_pip
-    df['diff_pips_l_shift_2'] = (df['Low'].shift(2) - df['Low'].shift(3)) / value_pip
+    # df['diff_pips_l'] = (df['Low'] - df['Low'].shift(1)) / value_pip
+    # df['diff_pips_l_shift_1'] = (df['Low'].shift(1) - df['Low'].shift(2)) / value_pip
+    # df['diff_pips_l_shift_2'] = (df['Low'].shift(2) - df['Low'].shift(3)) / value_pip
 
-    df['hour'] = df.Date.dt.hour 
-    df['day'] = df.Date.dt.day 
+    # df['hour'] = df.Date.dt.hour 
+    # df['day'] = df.Date.dt.day 
 
-    sti = ta.supertrend(df['High'], df['Low'], df['Close'], length=10, multiplier=6)
+    # sti = ta.supertrend(df['High'], df['Low'], df['Close'], length=10, multiplier=6)
+    # # df['adx'] = talib.ADX(df['High'], df['Low'], df['Close'], timeperiod=14)
+
+    # df['supertrend'] = sti['SUPERTd_10_6.0']
+    # df['SUPERT_10_6.0'] = sti['SUPERT_10_6.0']
+    # df['aroon'] = talib.AROONOSC(df['High'], df['High'], timeperiod=10)
+
+    # df['three_stars'] = talib.CDL3STARSINSOUTH(df.Open, df.High, df.Low, df.Close)
+    # df['closing_marubozu'] = talib.CDLCLOSINGMARUBOZU(df.Open, df.High, df.Low, df.Close)
+    # df['doji'] = talib.CDLDOJI(df.Open, df.High, df.Low, df.Close)
+    # df['doji_star'] = talib.CDLDOJISTAR(df.Open, df.High, df.Low, df.Close)
+    # df['dragon_fly'] = talib.CDLDRAGONFLYDOJI(df.Open, df.High, df.Low, df.Close)
+    # df['engulfing'] = talib.CDLENGULFING(df.Open, df.High, df.Low, df.Close)
+    # df['evening_doji_star'] = talib.CDLEVENINGDOJISTAR(df.Open, df.High, df.Low, df.Close)
+    # df['hammer'] = talib.CDLHAMMER(df.Open, df.High, df.Low, df.Close)
+    # df['hanging_man'] = talib.CDLHANGINGMAN(df.Open, df.High, df.Low, df.Close)
+    # df['marubozu'] = talib.CDLMARUBOZU(df.Open, df.High, df.Low, df.Close)
+    # df['morning_star'] = talib.CDLMORNINGSTAR(df.Open, df.High, df.Low, df.Close)
+    # df['shooting_star'] = talib.CDLSHOOTINGSTAR(df.Open, df.High, df.Low, df.Close)
+    # df['inverted_hammer'] = talib.CDLINVERTEDHAMMER(df.Open, df.High, df.Low, df.Close)
+
+    # df['morning_star'] = talib.CDLMORNINGSTAR(df.Open, df.High, df.Low, df.Close)
+    # df['evening_star'] = talib.CDLEVENINGSTAR(df.Open, df.High, df.Low, df.Close)
+
+    # df['three_black_crows'] = talib.CDL3BLACKCROWS(df.Open, df.High, df.Low, df.Close)
+    # df['three_white_soldiers'] = talib.CDL3WHITESOLDIERS(df.Open, df.High, df.Low, df.Close)
+
+    # # Calcular niveles de resistencia y soporte
+    # df['r1'] = df['High'].rolling(window=8).max().shift(1)
+    # df['s1'] = df['Low'].rolling(window=8).min().shift(1)
+
+    # df['r2'] = df['High'].rolling(window=24).max().shift(1)
+    # df['s2'] = df['Low'].rolling(window=24).min().shift(1)
+
+    # df['r3'] = df['High'].rolling(window=48).max().shift(1)
+    # df['s3'] = df['Low'].rolling(window=48).min().shift(1)
+
     # df['adx'] = talib.ADX(df['High'], df['Low'], df['Close'], timeperiod=14)
-
-    df['supertrend'] = sti['SUPERTd_10_6.0']
-    df['SUPERT_10_6.0'] = sti['SUPERT_10_6.0']
-    df['aroon'] = talib.AROONOSC(df['High'], df['High'], timeperiod=10)
-
-    df['three_stars'] = talib.CDL3STARSINSOUTH(df.Open, df.High, df.Low, df.Close)
-    df['closing_marubozu'] = talib.CDLCLOSINGMARUBOZU(df.Open, df.High, df.Low, df.Close)
-    df['doji'] = talib.CDLDOJI(df.Open, df.High, df.Low, df.Close)
-    df['doji_star'] = talib.CDLDOJISTAR(df.Open, df.High, df.Low, df.Close)
-    df['dragon_fly'] = talib.CDLDRAGONFLYDOJI(df.Open, df.High, df.Low, df.Close)
-    df['engulfing'] = talib.CDLENGULFING(df.Open, df.High, df.Low, df.Close)
-    df['evening_doji_star'] = talib.CDLEVENINGDOJISTAR(df.Open, df.High, df.Low, df.Close)
-    df['hammer'] = talib.CDLHAMMER(df.Open, df.High, df.Low, df.Close)
-    df['hanging_man'] = talib.CDLHANGINGMAN(df.Open, df.High, df.Low, df.Close)
-    df['marubozu'] = talib.CDLMARUBOZU(df.Open, df.High, df.Low, df.Close)
-    df['morning_star'] = talib.CDLMORNINGSTAR(df.Open, df.High, df.Low, df.Close)
-    df['shooting_star'] = talib.CDLSHOOTINGSTAR(df.Open, df.High, df.Low, df.Close)
-    df['inverted_hammer'] = talib.CDLINVERTEDHAMMER(df.Open, df.High, df.Low, df.Close)
-
-    df['morning_star'] = talib.CDLMORNINGSTAR(df.Open, df.High, df.Low, df.Close)
-    df['evening_star'] = talib.CDLEVENINGSTAR(df.Open, df.High, df.Low, df.Close)
-
-    df['three_black_crows'] = talib.CDL3BLACKCROWS(df.Open, df.High, df.Low, df.Close)
-    df['three_white_soldiers'] = talib.CDL3WHITESOLDIERS(df.Open, df.High, df.Low, df.Close)
-
-    # Calcular niveles de resistencia y soporte
-    df['r1'] = df['High'].rolling(window=8).max().shift(1)
-    df['s1'] = df['Low'].rolling(window=8).min().shift(1)
-
-    df['r2'] = df['High'].rolling(window=24).max().shift(1)
-    df['s2'] = df['Low'].rolling(window=24).min().shift(1)
-
-    df['r3'] = df['High'].rolling(window=48).max().shift(1)
-    df['s3'] = df['Low'].rolling(window=48).min().shift(1)
-
-    df['adx'] = talib.ADX(df['High'], df['Low'], df['Close'], timeperiod=14)
 
     # Daily ADX
     # df['daily_date'] = df['Date'].dt.floor('D')
@@ -289,31 +292,31 @@ class ABCTrader(ABC):
     # df['daily_adx'] = df['daily_adx'].shift(24)
     # df['daily_sma_26'] = df['daily_sma_26'].shift(24)
 
-    smi = ta.squeeze(df['High'], df['Low'], df['Close'], LazyBear=True)
-    df['SQZ'] = smi['SQZ_20_2.0_20_1.5']
-    df['SQZ_ON'] = smi['SQZ_ON']
-    df['SQZ_OFF'] = smi['SQZ_OFF']
-    df['SQZ_NO'] = smi['SQZ_NO']
+    # smi = ta.squeeze(df['High'], df['Low'], df['Close'], LazyBear=True)
+    # df['SQZ'] = smi['SQZ_20_2.0_20_1.5']
+    # df['SQZ_ON'] = smi['SQZ_ON']
+    # df['SQZ_OFF'] = smi['SQZ_OFF']
+    # df['SQZ_NO'] = smi['SQZ_NO']
 
-    df['engulfing'] = 0
+    # df['engulfing'] = 0
 
-    df['engulfing'] = np.where(
-        (df['Close'] > df['Open']) # Vela alcista
-        & (df['Close'].shift(1) < df['Open'].shift(1)) # Vela bajista
-        & (df['Close'] >= df['Open'].shift(1)) # Cierre de la vela alcista por encima del high de la vela bajista anterior
-        , 1, df['engulfing']
-    )
+    # df['engulfing'] = np.where(
+    #     (df['Close'] > df['Open']) # Vela alcista
+    #     & (df['Close'].shift(1) < df['Open'].shift(1)) # Vela bajista
+    #     & (df['Close'] >= df['Open'].shift(1)) # Cierre de la vela alcista por encima del high de la vela bajista anterior
+    #     , 1, df['engulfing']
+    # )
 
-    df['engulfing'] = np.where(
-        (df['Close'] < df['Open']) # Vela bajista
-        & (df['Close'].shift(1) > df['Open'].shift(1)) # Vela alcista
-        & (df['Close'] <= df['Open'].shift(1)) # Cierre de la vela bajista por debajo del low de la vela alcista anterior
-        , -1
-        , df['engulfing']
-    )
+    # df['engulfing'] = np.where(
+    #     (df['Close'] < df['Open']) # Vela bajista
+    #     & (df['Close'].shift(1) > df['Open'].shift(1)) # Vela alcista
+    #     & (df['Close'] <= df['Open'].shift(1)) # Cierre de la vela bajista por debajo del low de la vela alcista anterior
+    #     , -1
+    #     , df['engulfing']
+    # )
 
     df['direction'] = df['Close'] > df['Open']
-    df['direction'] = df['direction'].map({True: 'Bullish', False: 'Bearish'})
+    df['direction'] = df['direction'].map({True: 1, False: -1})
 
     df['Group'] = (df['direction'] != df['direction'].shift()).cumsum()
     df['consecutive_candles'] = df.groupby('Group').cumcount() + 1
