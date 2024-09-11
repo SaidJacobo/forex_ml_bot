@@ -1,7 +1,7 @@
 import joblib
 import yaml
 from backbone.machine_learning_agent import MachineLearningAgent
-from backbone.realtime_trader import RealtimeTrader
+from backbone.realtime_trader_old import RealtimeTrader
 from datetime import datetime
 from backbone.utils.general_purpose import load_function
 from backbone.botardo import Botardo
