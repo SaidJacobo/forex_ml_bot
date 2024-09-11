@@ -1,7 +1,10 @@
+from abc import ABC, abstractmethod
+from datetime import datetime, time, timedelta
+import winsound
 import pandas as pd
 import MetaTrader5 as mt5
+import pytz
 import talib
-
 
 time_frames = {
     'M1': mt5.TIMEFRAME_M1,
@@ -37,7 +40,7 @@ opposite_order_tpyes = {
     mt5.ORDER_TYPE_SELL: mt5.ORDER_TYPE_BUY,
 }
 
-class RealtimeTrader():
+class TraderBot(ABC):
     
     def __init__(self):
         if not mt5.initialize():
@@ -64,14 +67,9 @@ class RealtimeTrader():
         return df
 
 
+    @abstractmethod
     def calculate_indicators(self, df, drop_nulls=False):
-        df['rsi'] = talib.RSI(df['Close'], timeperiod=2)
-        df['sma_200'] = talib.SMA(df['Close'], timeperiod=200)
-
-        if drop_nulls:
-            df = df.dropna()
-
-        return df
+        pass
 
 
     def get_open_positions(self, ticker):
@@ -93,14 +91,12 @@ class RealtimeTrader():
                 print("symbol_select({}}) failed, exit", ticker)
  
         mt5_type = order_tpyes[type_]
+
+        action = None
+        action = self.mt5.TRADE_ACTION_PENDING if mt5_type in [self.mt5.ORDER_TYPE_BUY_LIMIT, self.mt5.ORDER_TYPE_SELL_LIMIT] else self.mt5.TRADE_ACTION_DEAL
         
-        info_tick = self.mt5.symbol_info_tick(ticker)
-
-        if not price:
-            price = info_tick.ask if mt5_type in [self.mt5.ORDER_TYPE_BUY, self.mt5.ORDER_TYPE_BUY_LIMIT] else info_tick.bid
-
         request = {
-            "action": self.mt5.TRADE_ACTION_DEAL,
+            "action": action,
             "symbol": ticker,
             "volume": lot,
             "type": mt5_type,
@@ -112,7 +108,7 @@ class RealtimeTrader():
         }
         
         result = self.mt5.order_send(request)
-        print("1. order_send(): by {} {} lots at {}".format(ticker, lot, price));
+        print("1. order_send(): by {} {} lots at {}".format(ticker, lot, price))
 
         if result.retcode != self.mt5.TRADE_RETCODE_DONE:
             print("2. order_send failed, retcode={}, comment {}".format(result.retcode, result.comment))
@@ -121,57 +117,44 @@ class RealtimeTrader():
             print("2. order_send done, ", result.retcode)
 
         
+    def close_order(self, position):
+        close_position_type = opposite_order_tpyes[position.type]
 
-    def close_order(self, open_positions):
+        if close_position_type == order_tpyes['buy'] or order_tpyes['buy_limit']:
+            price = self.mt5.symbol_info_tick(position.symbol).ask
 
-        for position in open_positions:
-
-            close_position_type = opposite_order_tpyes[position.type]
-
-            if close_position_type == order_tpyes['buy'] or order_tpyes['buy_limit']:
-                price = self.mt5.symbol_info_tick(position.symbol).ask
-
-            else:
-                price = self.mt5.symbol_info_tick(position.symbol).bid
-
-
+        else:
             price = self.mt5.symbol_info_tick(position.symbol).bid
 
-            deviation=20
-            
-            request={
-                "action": self.mt5.TRADE_ACTION_DEAL,
-                "symbol": position.symbol,
-                "volume": position.volume,
-                "type": close_position_type,
-                "position": position.ticket,
-                "price": price,
-                "deviation": deviation,
-                "magic": 234000,
-                "comment": "python script close",
-                "type_time": self.mt5.ORDER_TIME_GTC,
-                "type_filling": self.mt5.ORDER_FILLING_FOK,
-            }
-            # send a trading request
-            result = self.mt5.order_send(request)
-            # check the execution result
-            print("3. close position #{}: sell {} {} lots at {} with deviation={} points".format(position.ticket,position.symbol,position.volume, price, deviation))
-            if result.retcode != self.mt5.TRADE_RETCODE_DONE:
-                print("4. order_send failed, retcode={}".format(result.retcode))
-                print("   result",result)
-            else:
-                print("4. position #{} closed, {}".format(position.ticket,result))
-                # request the result as a dictionary and display it element by element
-                result_dict=result._asdict()
-                for field in result_dict.keys():
-                    print("   {}={}".format(field,result_dict[field]))
-                    # if this is a trading request structure, display it element by element as well
-                    if field=="request":
-                        traderequest_dict=result_dict[field]._asdict()
-                        for tradereq_filed in traderequest_dict:
-                            print("       traderequest: {}={}".format(tradereq_filed,traderequest_dict[tradereq_filed]))
+        
+        request={
+            "action": self.mt5.TRADE_ACTION_DEAL,
+            "symbol": position.symbol,
+            "volume": position.volume,
+            "type": close_position_type,
+            "position": position.ticket,
+            "price": price,
+            "magic": 234000,
+            "comment": "python script close",
+            "type_time": self.mt5.ORDER_TIME_GTC,
+            "type_filling": self.mt5.ORDER_FILLING_FOK,
+        }
+
+        result = self.mt5.order_send(request)
+        print("3. close position #{}: sell {} {} lots at {}".format(position.ticket,position.symbol,position.volume, price))
+
+        if result.retcode != self.mt5.TRADE_RETCODE_DONE:
+            print("4. order_send failed, retcode={}".format(result.retcode))
+            print("   result",result)
+        else:
+            print("4. position #{} closed, {}".format(position.ticket,result))
 
 
-
-    def modify_order(self):
+    @abstractmethod
+    def strategy(self, df, ticker, actual_date):
         pass
+
+    @abstractmethod
+    def run(self, tickers, timeframe, interval_minutes, noisy=False):
+        pass
+            
