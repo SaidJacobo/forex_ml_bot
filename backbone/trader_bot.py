@@ -1,10 +1,7 @@
 from abc import ABC, abstractmethod
-from datetime import datetime, time, timedelta
-import winsound
 import pandas as pd
 import MetaTrader5 as mt5
-import pytz
-import talib
+import telebot
 
 time_frames = {
     'M1': mt5.TIMEFRAME_M1,
@@ -42,12 +39,26 @@ opposite_order_tpyes = {
 
 class TraderBot(ABC):
     
-    def __init__(self):
+    def __init__(self, server, account, pw, bot_token, chat_id):
         if not mt5.initialize():
             print("initialize() failed, error code =", mt5.last_error())
             quit()
 
         self.mt5 = mt5
+
+        self.bot = telebot.TeleBot(bot_token)
+        self.chat_id = chat_id
+
+
+        authorized = self.mt5.login(server=server, login=account, password=pw)
+
+        if authorized:
+            account_info_dict = self.mt5.account_info()._asdict()
+            for prop in account_info_dict:
+                print("  {}={}".format(prop, account_info_dict[prop]))
+        else:
+            print("failed to connect at account #{}, error code: {}".format(account, mt5.last_error()))
+        
 
     def get_data(self, ticker, timeframe, date_from, date_to):
         rates = self.mt5.copy_rates_range(ticker, time_frames[timeframe], date_from, date_to)
@@ -102,19 +113,22 @@ class TraderBot(ABC):
             "type": mt5_type,
             "price": price,
             "magic": 234000,
-            "comment": "python script open",
+            "comment": self.name,
             "type_time": self.mt5.ORDER_TIME_GTC,
             "type_filling": self.mt5.ORDER_FILLING_FOK,
         }
         
         result = self.mt5.order_send(request)
-        print("1. order_send(): by {} {} lots at {}".format(ticker, lot, price))
 
         if result.retcode != self.mt5.TRADE_RETCODE_DONE:
-            print("2. order_send failed, retcode={}, comment {}".format(result.retcode, result.comment))
+            message = f"fallo al abrir orden en {ticker}, retcode={result.retcode}, comment {result.comment}"
+            print(message)
+            self.bot.send_message(chat_id=self.chat_id, text=message)
 
         else:
-            print("2. order_send done, ", result.retcode)
+            message = f"Se abrio una nueva orden en {ticker}, lot: {lot}, price: {price}. Codigo: {result.retcode}"
+            print(message)
+            self.bot.send_message(chat_id=self.chat_id, text=message)
 
         
     def close_order(self, position):
@@ -141,13 +155,16 @@ class TraderBot(ABC):
         }
 
         result = self.mt5.order_send(request)
-        print("3. close position #{}: sell {} {} lots at {}".format(position.ticket,position.symbol,position.volume, price))
 
         if result.retcode != self.mt5.TRADE_RETCODE_DONE:
-            print("4. order_send failed, retcode={}".format(result.retcode))
-            print("   result",result)
+            message = f"fallo al cerrar orden en {position.symbol}, retcode: {result.retcode}"
+            print(message)
+            self.bot.send_message(chat_id=self.chat_id, text=message)
+
         else:
-            print("4. position #{} closed, {}".format(position.ticket,result))
+            message = f"Orden cerrada en {position.symbol} closed, {result}"
+            print(message)
+            self.bot.send_message(chat_id=self.chat_id, text=message)
 
 
     @abstractmethod
