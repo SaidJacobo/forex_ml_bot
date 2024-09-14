@@ -20,13 +20,17 @@ if __name__ == '__main__':
     
         bot = load_function(bot_name)(**strategy_params)
 
+        args = None
+        if bot_params:
+            args = bot_params.values()
+
         scheduler.add_job(
             bot.run, 
             'cron', 
             day_of_week=cron['day'], 
             hour=cron['hour'], 
             minute=cron['minute'], 
-            args=(bot_params.values())
+            args=(args)
         )
     
     scheduler.start()

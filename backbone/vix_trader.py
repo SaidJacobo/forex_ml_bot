@@ -82,6 +82,9 @@ class VixTrader(TraderBot):
         timezone = pytz.timezone("Etc/UTC")
 
         now = datetime.now(tz=timezone)
+
+        print(f'excecuting run {self.name} at {now}')
+        
         date_from = now - timedelta(days=bars_to_trade) - timedelta(days=warm_up_bars) 
         
         vix = yf.Ticker("^VIX").history(period="max", interval='1h')
@@ -115,4 +118,5 @@ class VixTrader(TraderBot):
 
         if noisy:
             winsound.Beep(2000, 250)
+
             
