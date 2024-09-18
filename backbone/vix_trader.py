@@ -87,7 +87,7 @@ class VixTrader(TraderBot):
         
         date_from = now - timedelta(days=bars_to_trade) - timedelta(days=warm_up_bars) 
         
-        vix = yf.Ticker("^VIX").history(period="max", interval='1h')
+        vix = yf.Ticker("^VIX").history(interval='1h')
         vix.rename(
             columns={'Close':'VixClose'}, inplace=True
         )

@@ -1,40 +1,40 @@
-# backbone.eom_trader.EndOfMonthTrader:
-#   bot_params:
-#     tickers: [NVDAm, AVGOm, METAm, AMDm, TSLAm, MSFTm, GOOGLm,  NKEm,  ETHUSDm,  LTCUSDm, BTCUSDm]
-#     timeframe: D1
+backbone.eom_trader.EndOfMonthTrader:
+  bot_params:
+    tickers: [NVDAm, AVGOm, METAm, AMDm, TSLAm, MSFTm, GOOGLm,  NKEm,  ETHUSDm,  LTCUSDm, BTCUSDm]
+    timeframe: D1
   
-#   strategy_params: 
-#     lot_size: 0.01
-#     day_of_month: 25
-#     days_to_hold: 5
-#     server: Exness-MT5Trial11
-#     account: 82847194
-#     pw: MringPape1r!
-#     telegram_bot_token: 7169280958:AAGzEP6lpNZMC7w_KEntUAQTEUdX2dnYe98
-#     telegram_chat_id : '-4201375396'
-#   cron:
-#     day: mon-fri
-#     hour: 11
-#     minute: 0
+  strategy_params: 
+    lot_size: 0.01
+    day_of_month: 25
+    days_to_hold: 5
+    server: Exness-MT5Trial11
+    account: 82847194
+    pw: MringPape1r!
+    telegram_bot_token: 7169280958:AAGzEP6lpNZMC7w_KEntUAQTEUdX2dnYe98
+    telegram_chat_id : '-4201375396'
+  cron:
+    day: mon-fri
+    hour: 11
+    minute: 0
 
-# backbone.vix_trader.VixTrader:
-#   bot_params:
-#     tickers: [USTECm, US500m]
-#     timeframe: H1
+backbone.vix_trader.VixTrader:
+  bot_params:
+    tickers: [USTECm, US500m]
+    timeframe: H1
   
-#   strategy_params: 
-#     lot_size: 0.04
-#     llow_hhigh_window: 5
-#     server: Exness-MT5Trial11
-#     account: 82847194
-#     pw: MringPape1r!
-#     telegram_bot_token: 7169280958:AAGzEP6lpNZMC7w_KEntUAQTEUdX2dnYe98
-#     telegram_chat_id : '-4201375396'
+  strategy_params: 
+    lot_size: 0.03
+    llow_hhigh_window: 5
+    server: Exness-MT5Trial11
+    account: 82847194
+    pw: MringPape1r!
+    telegram_bot_token: 7169280958:AAGzEP6lpNZMC7w_KEntUAQTEUdX2dnYe98
+    telegram_chat_id : '-4201375396'
 
-#   cron:
-#     day: mon-fri
-#     hour: 11-21
-#     minute: 0
+  cron:
+    day: mon-fri
+    hour: 11-21
+    minute: 0
 
 
 backbone.screener.Screener:
@@ -46,6 +46,6 @@ backbone.screener.Screener:
     telegram_chat_id : '-4201375396'
 
   cron:
-    day: '1'
+    day: mon-fri
     hour: '10'
     minute: '0'
