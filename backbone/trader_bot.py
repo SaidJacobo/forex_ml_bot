@@ -93,6 +93,8 @@ class TraderBot(ABC):
     def get_open_positions(self, ticker):
         positions = self.mt5.positions_get(symbol=ticker)
 
+        positions = [position for position in positions if position.comment == self.name]
+
         return positions
 
 
@@ -120,7 +122,7 @@ class TraderBot(ABC):
             "type": mt5_type,
             "price": price,
             "magic": 234000,
-            "comment": self.name,
+            "comment": f'{self.name}',
             "type_time": self.mt5.ORDER_TIME_GTC,
             "type_filling": self.mt5.ORDER_FILLING_FOK,
         }
@@ -128,12 +130,12 @@ class TraderBot(ABC):
         result = self.mt5.order_send(request)
 
         if result.retcode != self.mt5.TRADE_RETCODE_DONE:
-            message = f"fallo al abrir orden en {ticker}, retcode={result.retcode}, comment {result.comment}"
+            message = f"fallo al abrir orden en {self.name}, retcode={result.retcode}, comment {result.comment}"
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
 
         else:
-            message = f"Se abrio una nueva orden en {ticker}, lot: {lot}, price: {price}. Codigo: {result.retcode}"
+            message = f"Se abrio una nueva orden: {self.name}, lot: {lot}, price: {price}. Codigo: {result.retcode}"
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
 
@@ -155,7 +157,7 @@ class TraderBot(ABC):
             "position": position.ticket,
             "price": price,
             "magic": 234000,
-            "comment": "python script close",
+            "comment": f"{self.name} close",
             "type_time": self.mt5.ORDER_TIME_GTC,
             "type_filling": self.mt5.ORDER_FILLING_FOK,
         }
@@ -163,12 +165,12 @@ class TraderBot(ABC):
         result = self.mt5.order_send(request)
 
         if result.retcode != self.mt5.TRADE_RETCODE_DONE:
-            message = f"fallo al cerrar orden en {position.symbol}, retcode: {result.retcode}"
+            message = f"fallo al cerrar orden en {self.name}, retcode: {result.retcode}"
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
 
         else:
-            message = f"Orden cerrada en {position.symbol} closed, {result}"
+            message = f"Orden cerrada: {self.name} closed, {result}"
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
 

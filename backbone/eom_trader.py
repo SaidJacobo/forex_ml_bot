@@ -13,7 +13,7 @@ class EndOfMonthTrader(TraderBot):
         self.ticker = ticker
         self.lot_size = lot_size
         self.timeframe = timeframe
-        self.name = 'EndOfMonthTrader'
+        self.name = f'EndOfMonthTrader_{self.ticker}_{self.timeframe}'
 
 
     def calculate_indicators(self, df, drop_nulls=False, indicator_params:dict=None):
@@ -67,7 +67,7 @@ class EndOfMonthTrader(TraderBot):
 
         now = datetime.now(tz=timezone)
         
-        print(f'excecuting run {self.name} at {now}')
+        print(f'excecuting run {self.name} on {self.ticker} {self.timeframe} at {now}')
 
 
         date_from = now - timedelta(days=bars_to_trade) - timedelta(days=warm_up_bars) 
@@ -80,6 +80,6 @@ class EndOfMonthTrader(TraderBot):
 
         df = self.calculate_indicators(df, indicator_params=indicator_params)
         
-        self.strategy(df, ticker=self.ticker, actual_date=now, strategy_params=strategy_params)
+        self.strategy(df, actual_date=now, strategy_params=strategy_params)
 
     

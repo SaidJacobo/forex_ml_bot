@@ -15,7 +15,7 @@ class VixTrader(TraderBot):
         self.ticker = ticker
         self.lot_size = lot_size
         self.timeframe = timeframe
-        self.name = 'VixTrader'
+        self.name = f'VixTrader_{self.ticker}_{self.timeframe}'
 
     def _ll_hh_indicator(self, close, window=None):
         if type(close) != pd.Series:
@@ -83,7 +83,7 @@ class VixTrader(TraderBot):
 
         now = datetime.now(tz=timezone)
 
-        print(f'excecuting run {self.name} at {now}')
+        print(f'excecuting run {self.name} on {self.ticker} {self.timeframe} at {now}')
         
         date_from = now - timedelta(days=bars_to_trade) - timedelta(days=warm_up_bars) 
         

@@ -87,7 +87,6 @@ backbone.eom_trader.EndOfMonthTrader:
         hour: 14
         minute: 0
 
-
 ##################################################### VixTrader #####################################################
 backbone.vix_trader.VixTrader:
   strategy_params: 
@@ -137,7 +136,7 @@ backbone.bbands_trader.BbandsTrader:
         minute: '*/15'
 
     BMYm:
-      lot_size: 0.02
+      lot_size: 0.01
       timeframe: H1
       cron:
         day: mon-fri
@@ -145,15 +144,15 @@ backbone.bbands_trader.BbandsTrader:
         minute: 0
 
     HDm:
-      lot_size: 0.02
+      lot_size: 0.01
       timeframe: H2
       cron:
         day: mon-fri
-        hour: 13-20
-        minute: '*/120'
+        hour: '13-20/2'
+        minute: 0
 
     RLXm:
-      lot_size: 0.02
+      lot_size: 0.01
       timeframe: M30
       cron:
         day: mon-fri
@@ -161,28 +160,118 @@ backbone.bbands_trader.BbandsTrader:
         minute: '*/30'
 
     CMEm:
-      lot_size: 0.02
+      lot_size: 0.01
       timeframe: H2
       cron:
         day: mon-fri
-        hour: 13-20
-        minute: '*/120'
+        hour: '13-20/2'
+        minute: 0
 
     JPMm:
-      lot_size: 0.02
+      lot_size: 0.01
       timeframe: H4
       cron:
         day: mon-fri
-        hour: 13-20
-        minute: '*/240'
+        hour: '13-20/4'
+        minute: 0
 
     LIm:
-      lot_size: 0.02
+      lot_size: 0.01
       timeframe: M30
       cron:
         day: mon-fri
         hour: 13-20
         minute: '*/30'
+
+##################################################### InverseMacdTrader #####################################################
+backbone.inverse_macd_trader.InverseMacdTrader:
+  strategy_params: 
+    rsi_lower_threshold: 45
+    rsi_upper_threshold: 65
+
+  indicator_params:
+    macd_fast_period: 12
+    macd_slow_period: 26
+    macd_signal_period: 9
+    sma_period: 200
+    rsi_period: 2
+
+  instruments_info:
+    PLNDKKm:
+      timeframe: H1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*'
+        minute: 0
+    USDPLNm:
+      timeframe: H1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*'
+        minute: 0
+    EURSEKm:
+      timeframe: H1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*'
+        minute: 0
+    CHFPLNm:
+      timeframe: H1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*'
+        minute: 0
+    AUDNOKm:
+      timeframe: H1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*'
+        minute: 0
+    EURNOKm:
+      timeframe: H1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*'
+        minute: 0
+    AUDSEKm:
+      timeframe: H1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*'
+        minute: 0
+    CZKPLNm:
+      timeframe: H1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*'
+        minute: 0
+    SEKPLNm:
+      timeframe: H1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*'
+        minute: 0
+    GBPPLNm:
+      timeframe: H1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*'
+        minute: 0
+
+
+
+
+
 
 ##################################################### Screener #####################################################
 # backbone.screener.Screener:

@@ -35,7 +35,9 @@ if __name__ == '__main__':
                 day_of_week=cron['day'], 
                 hour=cron['hour'], 
                 minute=cron['minute'], 
-                args=(indicator_params, strategy_params)
+                args=(indicator_params, strategy_params), 
+                misfire_grace_time=10, 
+                coalesce=True
             )
         
     scheduler.start()

@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 import pytz
 import talib
 from backbone.trader_bot import TraderBot
+from backtesting.lib import crossover
 
-
-class BbandsTrader(TraderBot):
+class InverseMacdTrader(TraderBot):
     
     def __init__(self, ticker, lot_size, timeframe, creds):
 
@@ -14,16 +14,25 @@ class BbandsTrader(TraderBot):
         self.lot_size = lot_size
         self.timeframe = timeframe
 
-        self.name = f'BbandsTrader_{self.ticker}_{self.timeframe}'
+        self.name = f'InverseMacdTrader_{self.ticker}_{self.timeframe}'
 
 
     def calculate_indicators(self, df, drop_nulls=False, indicator_params:dict=None):
-        upper_band, middle_band, lower_band = talib.BBANDS(df['Close'], timeperiod=indicator_params['bbands_timeperiod'])
-        df['upper_bband'] = upper_band
-        df['middle_bband'] = middle_band
-        df['lower_bband'] = lower_band
+        macd_fast_period = indicator_params['macd_fast_period']
+        macd_slow_period = indicator_params['macd_slow_period']
+        macd_signal_period = indicator_params['macd_signal_period']
+        rsi_period = indicator_params['rsi_period']
+        sma_period = indicator_params['sma_period']
+        df['macd'], df['macdsignal'], _ = talib.MACD(
+            df['Close'], 
+            fastperiod=macd_fast_period, 
+            slowperiod=macd_slow_period, 
+            signalperiod=macd_signal_period
+        )
 
-        df['sma'] = talib.SMA(df['Close'], timeperiod=indicator_params['sma_timeperiod'])
+        df['sma'] = talib.SMA(df['Close'], timeperiod=sma_period)
+
+        df['rsi'] = talib.RSI(df['Close'], timeperiod=rsi_period)
 
         if drop_nulls:
             df = df.dropna()
@@ -36,22 +45,30 @@ class BbandsTrader(TraderBot):
 
         close = df.iloc[-1].Close
         sma = df.iloc[-1].sma
-        upper_bband = df.iloc[-1].upper_bband
-        middle_bband = df.iloc[-1].middle_bband
-        lower_bband = df.iloc[-1].lower_bband
+        macd = df.macd
+        macdsignal = df.macdsignal
+        rsi = df.iloc[-1].rsi
+        previous_rsi = df.iloc[-2].rsi
+
+        lower_threshold = strategy_params['rsi_lower_threshold']
+        upper_threshold = strategy_params['rsi_upper_threshold']
 
         if open_positions:  # Si hay una posición abierta
 
             for position in open_positions:
-                if position.type == self.mt5.ORDER_TYPE_BUY and close >= middle_bband:
-                    self.close_order(position)
+                if position.type == self.mt5.ORDER_TYPE_BUY:
+                    if crossover(self.macd, self.macdsignal):
+                        self.close_order(position)
                 
-                elif position.type == self.mt5.ORDER_TYPE_SELL and close <= middle_bband:
-                    self.close_order(position)
+                elif position.type == self.mt5.ORDER_TYPE_SELL:
+                    if crossover(self.macdsignal, self.macd):
+                        self.close_order(position)
 
         elif not open_orders:
 
-            if close > sma and close < lower_bband:
+            cum_rsi = rsi + previous_rsi
+
+            if crossover(macdsignal, macd) and cum_rsi < lower_threshold and close > sma:
                 info_tick = self.mt5.symbol_info_tick(self.ticker)
                 price = info_tick.ask
 
@@ -61,7 +78,7 @@ class BbandsTrader(TraderBot):
                     type_='buy',
                     price=price
                 )
-            elif close < sma and close > upper_bband:
+            elif crossover(macd, macdsignal) and cum_rsi > upper_threshold and close < sma:
                 info_tick = self.mt5.symbol_info_tick(self.ticker)
                 price = info_tick.bid
 
