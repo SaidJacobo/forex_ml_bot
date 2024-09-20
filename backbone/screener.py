@@ -3,7 +3,9 @@ import pandas as pd
 from backbone.utils.general_purpose import screener_columns
 import yfinance as yf
 import telebot
-
+import pandas as pd
+import pytz
+from datetime import datetime
 
 class Screener():
     
@@ -35,6 +37,11 @@ class Screener():
 
 
     def run(self):
+        
+        timezone = pytz.timezone("Etc/UTC")
+        now = datetime.now(tz=timezone)
+        print(f'excecuting run {self.name} at {now}')
+
         interest_tickers = self.get_undervalued_stocks()
 
         # Diccionario para almacenar la información fundamental de cada ticker
@@ -59,8 +66,6 @@ class Screener():
             metrics = pd.concat([metrics, stock_metrics])  
 
         metrics = metrics.set_index('symbol')
-
-        print(metrics)
 
         doc = open('./overview.csv', 'rb')
         self.bot.send_message(chat_id=self.chat_id, text='Aqui te envio posibles oportunidades de inversion :)')

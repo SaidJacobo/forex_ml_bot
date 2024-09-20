@@ -11,6 +11,7 @@ time_frames = {
     'M5': mt5.TIMEFRAME_M5,
     'M10': mt5.TIMEFRAME_M10,
     'M12': mt5.TIMEFRAME_M12,
+    'M15': mt5.TIMEFRAME_M15,
     'M20': mt5.TIMEFRAME_M20,
     'M30': mt5.TIMEFRAME_M30,
     'H1': mt5.TIMEFRAME_H1,
@@ -39,10 +40,16 @@ opposite_order_tpyes = {
 
 class TraderBot(ABC):
     
-    def __init__(self, server, account, pw, bot_token, chat_id):
+    def __init__(self, creds:dict):
         if not mt5.initialize():
             print("initialize() failed, error code =", mt5.last_error())
             quit()
+
+        bot_token = creds['telegram_bot_token']
+        chat_id = creds['telegram_chat_id']
+        server = creds['server']
+        account = creds['account']
+        pw = creds['pw']
 
         self.mt5 = mt5
 
@@ -140,7 +147,6 @@ class TraderBot(ABC):
         else:
             price = self.mt5.symbol_info_tick(position.symbol).bid
 
-        
         request={
             "action": self.mt5.TRADE_ACTION_DEAL,
             "symbol": position.symbol,

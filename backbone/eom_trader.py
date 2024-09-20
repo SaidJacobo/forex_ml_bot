@@ -5,58 +5,60 @@ import pytz
 import talib
 from backbone.trader_bot import TraderBot
 
-
-
 class EndOfMonthTrader(TraderBot):
     
-    def __init__(self, lot_size, day_of_month, days_to_hold, server, account, pw, telegram_bot_token, telegram_chat_id):
-        super().__init__(server, account, pw, telegram_bot_token, telegram_chat_id)
+    def __init__(self, ticker, lot_size, timeframe, creds):
+        super().__init__(creds)
 
+        self.ticker = ticker
         self.lot_size = lot_size
-        self.day_of_month = day_of_month
-        self.days_to_hold = days_to_hold
+        self.timeframe = timeframe
         self.name = 'EndOfMonthTrader'
 
 
-    def calculate_indicators(self, df, drop_nulls=False):
-        df['rsi'] = talib.RSI(df['Close'], timeperiod=2)
-        df['sma_200'] = talib.SMA(df['Close'], timeperiod=200)
+    def calculate_indicators(self, df, drop_nulls=False, indicator_params:dict=None):
+        df['rsi'] = talib.RSI(df['Close'], timeperiod=indicator_params['rsi_time_period'])
 
         if drop_nulls:
             df = df.dropna()
 
         return df
 
-    def strategy(self, df, ticker, actual_date):
-
-        open_positions = self.get_open_positions(ticker)
-        open_orders = self.mt5.orders_get(symbol=ticker)
-
+    def strategy(self, df, actual_date, strategy_params:dict=None):
+        open_positions = self.get_open_positions(self.ticker)
+        open_orders = self.mt5.orders_get(symbol=self.ticker)
 
         if open_positions:  # Si hay una posición abierta
-
+            rsi = df.iloc[-1].rsi
+            
             for position in open_positions:
-
-                position_date = datetime.fromtimestamp(position.time, tz=pytz.timezone("Etc/UTC"))
-
-                time_in_position = (actual_date - position_date).days
-
-                if time_in_position >= self.days_to_hold:
+                if rsi >= strategy_params['rsi_threshold']:
                     self.close_order(position)
 
-        elif not open_orders and actual_date.day == self.day_of_month:  
+        elif not open_orders:
+            actual_close = df.iloc[-1].Close
+            yesterday_close = df.iloc[-2].Close
 
-            info_tick = self.mt5.symbol_info_tick(ticker)
-            price = info_tick.ask
+            actual_open = df.iloc[-1].Open
+            yesterday_open = df.iloc[-2].Open
 
-            self.open_order(
-                ticker=ticker, 
-                lot=self.lot_size, 
-                type_='buy',
-                price=price
-            )
+            two_days_bearish = actual_close < actual_open and yesterday_close < yesterday_open
 
-    def run(self, tickers, timeframe, noisy=False):
+            start_day = strategy_params['start_day']
+            end_day = strategy_params['end_day']
+
+            if actual_date.day >= start_day and actual_date.day <= end_day and two_days_bearish:  
+                info_tick = self.mt5.symbol_info_tick(self.ticker)
+                price = info_tick.ask
+
+                self.open_order(
+                    ticker=self.ticker, 
+                    lot=self.lot_size, 
+                    type_='buy',
+                    price=price
+                )
+
+    def run(self, indicator_params:dict=None, strategy_params:dict=None):
 
         warm_up_bars = 500
         bars_to_trade = 10
@@ -64,21 +66,20 @@ class EndOfMonthTrader(TraderBot):
         timezone = pytz.timezone("Etc/UTC")
 
         now = datetime.now(tz=timezone)
+        
+        print(f'excecuting run {self.name} at {now}')
 
-        for ticker in tickers:
 
-            date_from = now - timedelta(days=bars_to_trade) - timedelta(days=warm_up_bars) 
-            df = self.get_data(
-                ticker,
-                timeframe=timeframe, 
-                date_from=date_from, 
-                date_to=now,
-            )
+        date_from = now - timedelta(days=bars_to_trade) - timedelta(days=warm_up_bars) 
+        df = self.get_data(
+            self.ticker,
+            timeframe=self.timeframe, 
+            date_from=date_from, 
+            date_to=now,
+        )
 
-            df = self.calculate_indicators(df)
-            
-            self.strategy(df, ticker=ticker, actual_date=now)
+        df = self.calculate_indicators(df, indicator_params=indicator_params)
+        
+        self.strategy(df, ticker=self.ticker, actual_date=now, strategy_params=strategy_params)
 
-        if noisy:
-            winsound.Beep(2000, 250)
-            
+    

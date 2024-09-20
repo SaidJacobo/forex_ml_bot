@@ -11,28 +11,33 @@ if __name__ == '__main__':
     with open('configs/live_trading.yml', 'r') as file:
         strategies = yaml.safe_load(file)
 
+    with open('configs/test_creds.yml', 'r') as file:
+        creds = yaml.safe_load(file)
+
     scheduler = BlockingScheduler(timezone=utc)
 
     for bot_name, configs in strategies.items():
-        bot_params = configs['bot_params']
+        instruments_info = configs['instruments_info']
+        indicator_params = configs['indicator_params']
         strategy_params = configs['strategy_params']
-        cron = configs['cron']
-    
-        bot = load_function(bot_name)(**strategy_params)
 
-        args = None
-        if bot_params:
-            args = bot_params.values()
+        for ticker, info in instruments_info.items():
 
-        scheduler.add_job(
-            bot.run, 
-            'cron', 
-            day_of_week=cron['day'], 
-            hour=cron['hour'], 
-            minute=cron['minute'], 
-            args=(args)
-        )
-    
+            cron = info['cron']
+            lot_size = info['lot_size']
+            timeframe = info['timeframe']
+        
+            bot = load_function(bot_name)(ticker, lot_size, timeframe, creds)
+
+            scheduler.add_job(
+                bot.run, 
+                'cron', 
+                day_of_week=cron['day'], 
+                hour=cron['hour'], 
+                minute=cron['minute'], 
+                args=(indicator_params, strategy_params)
+            )
+        
     scheduler.start()
 
 

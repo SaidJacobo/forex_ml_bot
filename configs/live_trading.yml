@@ -1,51 +1,199 @@
+##################################################### EndOfMonthTrader #####################################################
 backbone.eom_trader.EndOfMonthTrader:
-  bot_params:
-    tickers: [NVDAm, AVGOm, METAm, AMDm, TSLAm, MSFTm, GOOGLm,  NKEm,  ETHUSDm,  LTCUSDm, BTCUSDm]
-    timeframe: D1
-  
   strategy_params: 
-    lot_size: 0.01
-    day_of_month: 25
-    days_to_hold: 5
-    server: Exness-MT5Trial11
-    account: 82847194
-    pw: MringPape1r!
-    telegram_bot_token: 7169280958:AAGzEP6lpNZMC7w_KEntUAQTEUdX2dnYe98
-    telegram_chat_id : '-4201375396'
-  cron:
-    day: mon-fri
-    hour: 11
-    minute: 0
+    start_day: 20
+    end_day: 25
+    rsi_threshold: 90
 
+  indicator_params:
+    rsi_time_period: 2  
+
+  instruments_info:
+    AMZNm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    AVGOm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    BIDUm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    COSTm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    CSCOm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    INTUm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    METAm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    MSFTm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    NVDAm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    PYPLm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    VRTXm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+
+
+##################################################### VixTrader #####################################################
 backbone.vix_trader.VixTrader:
-  bot_params:
-    tickers: [USTECm, US500m]
-    timeframe: H1
-  
   strategy_params: 
-    lot_size: 0.03
+    percent_above_sma: 0.05
+    cum_rsi_threshold: 50
+
+  indicator_params:
     llow_hhigh_window: 5
-    server: Exness-MT5Trial11
-    account: 82847194
-    pw: MringPape1r!
-    telegram_bot_token: 7169280958:AAGzEP6lpNZMC7w_KEntUAQTEUdX2dnYe98
-    telegram_chat_id : '-4201375396'
+    rsi_timeperiod: 2
+    cum_rsi_window: 2
+    sma_timeperiod: 200
+    vix_sma_timeperiod: 10
 
-  cron:
-    day: mon-fri
-    hour: 11-21
-    minute: 0
+  instruments_info:
+    USTECm:
+      timeframe: H1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14-21
+        minute: 0
 
+    US500m:
+      timeframe: H1
+      lot_size: 0.02
+      cron:
+        day: mon-fri
+        hour: 14-21
+        minute: 0
 
-backbone.screener.Screener:
-  bot_params:
+##################################################### BBandsTrader #####################################################
+backbone.bbands_trader.BbandsTrader:
+  strategy_params:
     null
+  
+  indicator_params:
+    bbands_timeperiod: 50
+    sma_timeperiod: 200
 
-  strategy_params: 
-    telegram_bot_token: 7169280958:AAGzEP6lpNZMC7w_KEntUAQTEUdX2dnYe98
-    telegram_chat_id : '-4201375396'
+  instruments_info: 
+    NTESm:
+      lot_size: 0.02
+      timeframe: M15
+      cron:
+        day: mon-fri
+        hour: 13-20
+        minute: '*/15'
 
-  cron:
-    day: mon-fri
-    hour: '10'
-    minute: '0'
+    BMYm:
+      lot_size: 0.02
+      timeframe: H1
+      cron:
+        day: mon-fri
+        hour: 13-20
+        minute: 0
+
+    HDm:
+      lot_size: 0.02
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: 13-20
+        minute: '*/120'
+
+    RLXm:
+      lot_size: 0.02
+      timeframe: M30
+      cron:
+        day: mon-fri
+        hour: 13-20
+        minute: '*/30'
+
+    CMEm:
+      lot_size: 0.02
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: 13-20
+        minute: '*/120'
+
+    JPMm:
+      lot_size: 0.02
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: 13-20
+        minute: '*/240'
+
+    LIm:
+      lot_size: 0.02
+      timeframe: M30
+      cron:
+        day: mon-fri
+        hour: 13-20
+        minute: '*/30'
+
+##################################################### Screener #####################################################
+# backbone.screener.Screener:
+#   strategy_params:
+#     null
+
+#   strategy_params: 
+#     telegram_bot_token: 7169280958:AAGzEP6lpNZMC7w_KEntUAQTEUdX2dnYe98
+#     telegram_chat_id : '-4201375396'
+
+#   cron:
+#     day: mon-fri
+#     hour: '13'
+#     minute: '0'
