@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     scheduler = BlockingScheduler(timezone=utc)
 
-    bot_name = 'backbone.eom_trader.EndOfMonthTrader'
+    bot_name = 'backbone.bbands_trader.BbandsTrader'
     configs = strategies[bot_name]
 
     instruments_info = configs['instruments_info']

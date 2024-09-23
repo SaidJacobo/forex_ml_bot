@@ -14,7 +14,7 @@ class InverseMacdTrader(TraderBot):
         self.lot_size = lot_size
         self.timeframe = timeframe
 
-        self.name = f'InverseMacdTrader_{self.ticker}_{self.timeframe}'
+        self.name = f'IMacd_{self.ticker}_{self.timeframe}'
 
 
     def calculate_indicators(self, df, drop_nulls=False, indicator_params:dict=None):

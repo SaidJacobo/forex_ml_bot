@@ -15,7 +15,7 @@ class VixTrader(TraderBot):
         self.ticker = ticker
         self.lot_size = lot_size
         self.timeframe = timeframe
-        self.name = f'VixTrader_{self.ticker}_{self.timeframe}'
+        self.name = f'Vix_{self.ticker}_{self.timeframe}'
 
     def _ll_hh_indicator(self, close, window=None):
         if type(close) != pd.Series:
