@@ -1,104 +1,101 @@
-##################################################### EndOfMonthTrader #####################################################
-backbone.eom_trader.EndOfMonthTrader:
-  strategy_params: 
-    start_day: 20
-    end_day: 25
-    rsi_threshold: 90
+# ##################################################### EndOfMonthTrader #####################################################
+# backbone.eom_trader.EndOfMonthTrader:
+#   strategy_params: 
+#     start_day: 20
+#     end_day: 25
+#     rsi_threshold: 90
 
-  indicator_params:
-    rsi_time_period: 2  
+#   indicator_params:
+#     rsi_time_period: 2  
 
-  instruments_info:
-    AMZNm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    AVGOm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    BIDUm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    COSTm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    CSCOm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    INTUm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    METAm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    MSFTm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    NVDAm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    PYPLm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    VRTXm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
+#   instruments_info:
+#     AMZNm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     AVGOm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     BIDUm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     COSTm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     CSCOm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     INTUm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     METAm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     MSFTm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     NVDAm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     PYPLm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     VRTXm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
 
 ##################################################### VixTrader #####################################################
 backbone.vix_trader.VixTrader:
-  strategy_params: 
-    percent_above_sma: 0.05
-    cum_rsi_threshold: 50
+  opt_params: 
+    ll_hh_window: [5, 7, 10]
+    vix_percentage_above_sma: [0.01, 0.02, 0.03, 0.04, 0.05]
 
-  indicator_params:
-    llow_hhigh_window: 5
-    rsi_timeperiod: 2
-    cum_rsi_window: 2
-    sma_timeperiod: 200
-    vix_sma_timeperiod: 10
+  wfo_params:
+    look_back_bars: 480
+    warmup_bars: 300
 
   instruments_info:
     USTECm:
@@ -117,157 +114,95 @@ backbone.vix_trader.VixTrader:
         hour: 14-21
         minute: 0
 
-##################################################### BBandsTrader #####################################################
-backbone.bbands_trader.BbandsTrader:
-  strategy_params:
-    null
+# ##################################################### BBandsTrader #####################################################
+# backbone.bbands_trader.BbandsTrader:
+#   strategy_params:
+#     null
   
-  indicator_params:
-    bbands_timeperiod: 50
-    sma_timeperiod: 200
+#   indicator_params:
+#     bbands_timeperiod: 50
+#     sma_timeperiod: 200
 
-  instruments_info: 
-    NTESm:
-      lot_size: 0.02
-      timeframe: M15
-      cron:
-        day: mon-fri
-        hour: 13-20
-        minute: '*/15'
+#   instruments_info: 
+#     NTESm:
+#       lot_size: 0.02
+#       timeframe: M15
+#       cron:
+#         day: mon-fri
+#         hour: 13-20
+#         minute: '*/15'
 
-    BMYm:
-      lot_size: 0.01
-      timeframe: H1
-      cron:
-        day: mon-fri
-        hour: 13-20
-        minute: 0
+#     BMYm:
+#       lot_size: 0.01
+#       timeframe: H1
+#       cron:
+#         day: mon-fri
+#         hour: 13-20
+#         minute: 0
 
-    HDm:
-      lot_size: 0.01
-      timeframe: H2
-      cron:
-        day: mon-fri
-        hour: '13-20/2'
-        minute: 0
+#     HDm:
+#       lot_size: 0.01
+#       timeframe: H2
+#       cron:
+#         day: mon-fri
+#         hour: '13-20/2'
+#         minute: 0
 
-    RLXm:
-      lot_size: 0.01
-      timeframe: M30
-      cron:
-        day: mon-fri
-        hour: 13-20
-        minute: '*/30'
+#     RLXm:
+#       lot_size: 0.01
+#       timeframe: M30
+#       cron:
+#         day: mon-fri
+#         hour: 13-20
+#         minute: '*/30'
 
-    CMEm:
-      lot_size: 0.01
-      timeframe: H2
-      cron:
-        day: mon-fri
-        hour: '13-20/2'
-        minute: 0
+#     CMEm:
+#       lot_size: 0.01
+#       timeframe: H2
+#       cron:
+#         day: mon-fri
+#         hour: '13-20/2'
+#         minute: 0
 
-    JPMm:
-      lot_size: 0.01
-      timeframe: H4
-      cron:
-        day: mon-fri
-        hour: '13-20/4'
-        minute: 0
+#     JPMm:
+#       lot_size: 0.01
+#       timeframe: H4
+#       cron:
+#         day: mon-fri
+#         hour: '13-20/4'
+#         minute: 0
 
-    LIm:
-      lot_size: 0.01
-      timeframe: M30
-      cron:
-        day: mon-fri
-        hour: 13-20
-        minute: '*/30'
+#     LIm:
+#       lot_size: 0.01
+#       timeframe: M30
+#       cron:
+#         day: mon-fri
+#         hour: 13-20
+#         minute: '*/30'
+
+
+
+
 
 ##################################################### InverseMacdTrader #####################################################
-backbone.inverse_macd_trader.InverseMacdTrader:
-  strategy_params: 
-    rsi_lower_threshold: 45
-    rsi_upper_threshold: 65
+backbone.mean_reversion_bot.MeanRevBot:
+  opt_params: 
+    sma_period: [12, 26, 50]
+    deviation_threshold: [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
 
-  indicator_params:
-    macd_fast_period: 12
-    macd_slow_period: 26
-    macd_signal_period: 9
-    sma_period: 200
-    rsi_period: 2
+  wfo_params:
+    look_back_bars: 1920
+    warmup_bars: 80
 
   instruments_info:
-    PLNDKKm:
+    AUDUSDm:
       timeframe: H1
       lot_size: 0.01
       cron:
         day: mon-fri
         hour: '*'
         minute: 0
-    USDPLNm:
-      timeframe: H1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: '*'
-        minute: 0
-    EURSEKm:
-      timeframe: H1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: '*'
-        minute: 0
-    CHFPLNm:
-      timeframe: H1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: '*'
-        minute: 0
-    AUDNOKm:
-      timeframe: H1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: '*'
-        minute: 0
-    EURNOKm:
-      timeframe: H1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: '*'
-        minute: 0
-    AUDSEKm:
-      timeframe: H1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: '*'
-        minute: 0
-    CZKPLNm:
-      timeframe: H1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: '*'
-        minute: 0
-    SEKPLNm:
-      timeframe: H1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: '*'
-        minute: 0
-    GBPPLNm:
-      timeframe: H1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: '*'
-        minute: 0
-
+ 
 
 
 

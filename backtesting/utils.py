@@ -39,7 +39,8 @@ def walk_forward(
         params=None,
         cash=15_000, 
         commission=0.0002,
-        margin=1/30
+        margin=1/30,
+        verbose=False
 
 ):
 
@@ -51,7 +52,8 @@ def walk_forward(
         # To do anchored walk-forward, just set the first slice here to 0
         train_data = data_full.iloc[i-lookback_bars: i]
 
-        print(f'train from {train_data.index[0]} to {train_data.index[-1]}')
+        if verbose:
+            print(f'train from {train_data.index[0]} to {train_data.index[-1]}')
 
         bt_training = Backtest(
             train_data, 
@@ -67,7 +69,8 @@ def walk_forward(
         
         validation_data = data_full.iloc[i-warmup_bars:i+validation_bars]
 
-        print(f'validate from {validation_data.index[0]} to {validation_data.index[-1]}')
+        if verbose:
+            print(f'validate from {validation_data.index[0]} to {validation_data.index[-1]}')
 
         bt_validation = Backtest(
             validation_data, 

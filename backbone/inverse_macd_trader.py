@@ -67,7 +67,6 @@ class InverseMacdTrader(TraderBot):
         elif not open_orders:
 
             cum_rsi = rsi + previous_rsi
-
             if crossover(macdsignal, macd) and cum_rsi < lower_threshold and close > sma:
                 info_tick = self.mt5.symbol_info_tick(self.ticker)
                 price = info_tick.ask

@@ -6,6 +6,7 @@ __pycache__/
 
 # Entorno virtual
 mtvenv/
+mtvenv2/
 env/
 
 # Archivo de configuración para el entorno de desarrollo
