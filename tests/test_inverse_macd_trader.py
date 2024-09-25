@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from backbone.inverse_macd_trader import InverseMacdTrader
+from backbone.macd_trader import InverseMacdTrader
 from unittest.mock import MagicMock
 
 # Fixture para crear un DataFrame de prueba con precios

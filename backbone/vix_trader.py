@@ -1,72 +1,85 @@
 from datetime import datetime, timedelta
-import winsound
 import pandas as pd
 import pytz
-import talib
-from backbone.trader_bot import TraderBot
+import talib as ta
 import yfinance as yf
+import MetaTrader5 as mt5
+from backbone.trader_bot import TraderBot
+from backtesting import Backtest, Strategy
+import numpy as np
 
 
-class VixTrader(TraderBot):
+def  optim_func(series):
+    return (series['Return [%]'] /  (1 + (-1*series['Max. Drawdown [%]']))) * np.log(1 + series['# Trades'])
+
+def ll_hh_indicator(close, window=None):
+    if type(close) != pd.Series:
+        close = close.s
+
+    rolling_min = close.rolling(window=window, min_periods=1).min()
+    is_lower_low = close == rolling_min
+
+    rolling_max = close.rolling(window=window, min_periods=1).max()
+    is_higher_high = close == rolling_max
+
+    return is_lower_low, is_higher_high
+
+class VixRsi(Strategy):
+    vix_percentage_above_sma = 0.05
+    ll_hh_window = 5
+    rsi_threshold = 50
+    sma_period = 200
+    vix_sma_period = 10
+    rsi_period = 2
     
-    def __init__(self, ticker, lot_size, timeframe, creds):
-        super().__init__(creds)
+    def init(self):
+        self.rsi = self.I(ta.RSI, self.data.Close, timeperiod=self.rsi_period)
+        self.sma = self.I(ta.SMA, self.data.Close, timeperiod=self.sma_period)
+        self.vix_sma = self.I(ta.SMA, self.data.VixClose, timeperiod=self.vix_sma_period)
+        self.lower_low, self.higher_high = self.I(ll_hh_indicator, self.data.Close, window=self.ll_hh_window)
 
-        self.ticker = ticker
-        self.lot_size = lot_size
-        self.timeframe = timeframe
-        self.name = f'Vix_{self.ticker}_{self.timeframe}'
+    def next(self):
+        actual_close = self.data.Close[-1]
 
-    def _ll_hh_indicator(self, close, window=None):
-        if type(close) != pd.Series:
-            close = close.s
+        if self.position:
+            first_trade = self.trades[0]
+            today = self.data.index[-1].tz_convert('UTC')
+            time_in_position = (today - first_trade.entry_time.tz_convert('UTC'))
+            time_in_position = time_in_position.days
 
-        rolling_min = close.rolling(window=window, min_periods=1).min()
-        is_lower_low = close == rolling_min
+            if self.position.is_long:
+                if self.higher_high:
+                    self.position.close()
 
-        rolling_max = close.rolling(window=window, min_periods=1).max()
-        is_higher_high = close == rolling_max
+        else:
+            cum_rsi = self.rsi[-1] + self.rsi[-2]
+            vix_sma_value = self.vix_sma[-1]
+            vix_close = self.data.VixClose[-1]
+            vix_above_sma = vix_close > (vix_sma_value * (1 + self.vix_percentage_above_sma))
 
-        return is_lower_low, is_higher_high
+            if vix_above_sma and cum_rsi <= self.rsi_threshold and actual_close > self.sma[-1]:
+                self.buy(size=1)
+                
+    def next_live(self, trader:TraderBot):
+        actual_close = self.data.Close[-1]
 
-    def calculate_indicators(self, df, drop_nulls=False, indicator_params:dict=None):
-        df['rsi'] = talib.RSI(df['Close'], timeperiod=indicator_params['rsi_timeperiod'])
-        df['cumrsi'] = df['rsi'].rolling(window=indicator_params['cum_rsi_window']).sum()
-        df['sma'] = talib.SMA(df['Close'], timeperiod=indicator_params['sma_timeperiod'])
-        df['vix_sma'] = talib.SMA(df['VixClose'], timeperiod=indicator_params['vix_sma_timeperiod'])
-        df['lower_low'], df['higher_high'] = self._ll_hh_indicator(df.Close, window=indicator_params['llow_hhigh_window'])
+        positions = trader.get_open_positions()
+        if positions and positions[-1].type == mt5.ORDER_TYPE_BUY:
+            if self.higher_high:
+                trader.close_order(positions[-1])
 
-        if drop_nulls:
-            df = df.dropna()
+        else:
+            cum_rsi = self.rsi[-1] + self.rsi[-2]
 
-        return df
+            vix_sma_value = self.vix_sma[-1]
+            vix_close = self.data.VixClose[-1]
+            vix_above_sma = vix_close > (vix_sma_value * (1 + self.vix_percentage_above_sma))
 
-    def strategy(self, df, actual_date, strategy_params:dict=None):
-
-        open_positions = self.get_open_positions(self.ticker)
-        open_orders = self.mt5.orders_get(symbol=self.ticker)
-
-        close = df.iloc[-1].Close
-        sma = df.iloc[-1].sma
-        vix_close = df.iloc[-1].VixClose
-        vix_sma = df.iloc[-1].vix_sma
-        higher_high = df.iloc[-1].higher_high
-        cumrsi = df.iloc[-1].cumrsi
-        vix_above_sma = vix_close > (vix_sma * (1 + strategy_params['percent_above_sma']))
-
-        if open_positions:  # Si hay una posición abierta
-
-            for position in open_positions:
-                if higher_high:
-                    self.close_order(position)
-
-        elif not open_orders:
-
-            if vix_above_sma and cumrsi <= strategy_params['cum_rsi_threshold'] and close > sma:
-                info_tick = self.mt5.symbol_info_tick(self.ticker)
+            if vix_above_sma and cum_rsi <= self.rsi_threshold and actual_close > self.sma[-1]:
+                info_tick = trader.get_info_tick()
                 price = info_tick.ask
-
-                self.open_order(
+                
+                trader.open_order(
                     ticker=self.ticker, 
                     lot=self.lot_size, 
                     type_='buy',
@@ -74,30 +87,41 @@ class VixTrader(TraderBot):
                 )
 
 
-    def run(self, indicator_params:dict=None, strategy_params:dict=None):
-
-        warm_up_bars = 500
-        bars_to_trade = 10
+class VixTrader(TraderBot):
+    
+    def __init__(self, ticker, timeframe, creds, opt_params, wfo_params):
+        
+        name = f'Vix_{ticker}_{timeframe}'
+        self.trader = TraderBot(
+            name=name,
+            ticker=ticker, 
+            timeframe=timeframe, 
+            creds=creds
+        )
+        
+        self.opt_params = opt_params
+        self.wfo_params = wfo_params
+        self.opt_params['maximize'] = optim_func
+    
+    
+    def run(self):
+        warmup_bars = self.wfo_params['warmup_bars']
+        look_back_bars = self.wfo_params['look_back_bars']
 
         timezone = pytz.timezone("Etc/UTC")
-
         now = datetime.now(tz=timezone)
-
-        print(f'excecuting run {self.name} on {self.ticker} {self.timeframe} at {now}')
+        date_from = now - timedelta(hours=look_back_bars) - timedelta(hours=warmup_bars) 
         
-        date_from = now - timedelta(days=bars_to_trade) - timedelta(days=warm_up_bars) 
+        print(f'excecuting run {self.trader.name} at {now}')
         
-        vix = yf.Ticker("^VIX").history(interval='1h')
+        vix = yf.Ticker("^VIX").history(interval='1h', period='1y')
         vix.rename(
             columns={'Close':'VixClose'}, inplace=True
         )
 
         vix.index = vix.index.tz_convert('UTC')
 
-
-        df = self.get_data(
-            self.ticker,
-            timeframe=self.timeframe, 
+        df = self.trader.get_data(
             date_from=date_from, 
             date_to=now,
         )
@@ -111,12 +135,31 @@ class VixTrader(TraderBot):
             right_index=True
         )
 
-        full_df = self.calculate_indicators(
+        bt_train = Backtest(
             full_df, 
-            drop_nulls=True, 
-            indicator_params=indicator_params
+            VixRsi,
+            commission=7e-4,
+            cash=15_000, 
+            margin=1/30
         )
         
-        self.strategy(full_df, actual_date=now, strategy_params=strategy_params)
+        stats_training = bt_train.optimize(
+            **self.opt_params
+        )
+        
+        bt = Backtest(
+            full_df, 
+            VixRsi,
+            commission=7e-4,
+            cash=15_000, 
+            margin=1/30
+        )
+        
+        opt_params = {param: getattr(stats_training._strategy, param) for param in self.opt_params.keys() if param != 'maximize'}
 
-            
+        stats = bt.run(
+            **opt_params
+        )
+
+        bt_train._results._strategy.next_live(trader=self.trader)         
+
