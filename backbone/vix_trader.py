@@ -151,7 +151,7 @@ class VixTrader(TraderBot):
             full_df, 
             VixRsi,
             commission=7e-4,
-            cash=15_000, 
+            cash=100_000, 
             margin=1/30
         )
         
