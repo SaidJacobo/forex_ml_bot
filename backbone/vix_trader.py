@@ -114,7 +114,7 @@ class VixTrader(TraderBot):
         
         print(f'excecuting run {self.trader.name} at {now}')
         
-        vix = yf.Ticker("^VIX").history(interval='1h', period='max')
+        vix = yf.Ticker("^VIX").history(interval='1h', period='1y')
         vix.rename(
             columns={'Close':'VixClose'}, inplace=True
         )
