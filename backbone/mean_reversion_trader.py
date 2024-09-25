@@ -9,7 +9,6 @@ import numpy as np
 def  optim_func(series):
     return (series['Return [%]'] /  (1 + (-1*series['Max. Drawdown [%]']))) * np.log(1 + series['# Trades'])
 
-
 class MeanReversion(Strategy):
     sma_period = 50
     deviation_threshold = 0.01
@@ -89,16 +88,21 @@ class MeanReversion(Strategy):
                     price=price
                 )
 
-
 class MeanRevTrader():
     
     def __init__(self, ticker, timeframe, creds, opt_params, wfo_params):
-        self.trader = TraderBot(ticker=ticker, timeframe=timeframe, creds=creds)
+        
+        name = f'MeanRev_{ticker}_{timeframe}'
+        self.trader = TraderBot(
+            name=name,
+            ticker=ticker,
+            timeframe=timeframe,
+            creds=creds
+        )
+        
         self.opt_params = opt_params
         self.wfo_params = wfo_params
         self.opt_params['maximize'] = optim_func
-        self.name = f'MeanRev_{self.trader.ticker}_{self.trader.timeframe}'
-
 
     def run(self):
         warmup_bars = self.wfo_params['warmup_bars']
@@ -108,7 +112,7 @@ class MeanRevTrader():
         now = datetime.now(tz=timezone)
         date_from = now - timedelta(hours=look_back_bars) - timedelta(hours=warmup_bars) 
         
-        print(f'excecuting run {self.name} at {now}')
+        print(f'excecuting run {self.trader.name} at {now}')
         
         df = self.trader.get_data(
             date_from=date_from, 

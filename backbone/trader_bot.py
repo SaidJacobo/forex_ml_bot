@@ -39,11 +39,12 @@ opposite_order_tpyes = {
 
 class TraderBot():
     
-    def __init__(self, ticker, timeframe, creds:dict):
+    def __init__(self, name, ticker, timeframe, creds:dict):
         if not mt5.initialize():
             print("initialize() failed, error code =", mt5.last_error())
             quit()
 
+        self.name = name
         bot_token = creds['telegram_bot_token']
         chat_id = creds['telegram_chat_id']
         server = creds['server']

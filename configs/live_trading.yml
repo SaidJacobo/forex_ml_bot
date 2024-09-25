@@ -1,91 +1,92 @@
 # ##################################################### EndOfMonthTrader #####################################################
-# backbone.eom_trader.EndOfMonthTrader:
-#   strategy_params: 
-#     start_day: 20
-#     end_day: 25
-#     rsi_threshold: 90
+backbone.eom_trader.EndOfMonthTrader:
+  opt_params:
+    null
 
-#   indicator_params:
-#     rsi_time_period: 2  
+  wfo_params:
+    null
 
-#   instruments_info:
-#     AMZNm:
-#       timeframe: D1
-#       lot_size: 0.01
-#       cron:
-#         day: mon-fri
-#         hour: 14
-#         minute: 0
-#     AVGOm:
-#       timeframe: D1
-#       lot_size: 0.01
-#       cron:
-#         day: mon-fri
-#         hour: 14
-#         minute: 0
-#     BIDUm:
-#       timeframe: D1
-#       lot_size: 0.01
-#       cron:
-#         day: mon-fri
-#         hour: 14
-#         minute: 0
-#     COSTm:
-#       timeframe: D1
-#       lot_size: 0.01
-#       cron:
-#         day: mon-fri
-#         hour: 14
-#         minute: 0
-#     CSCOm:
-#       timeframe: D1
-#       lot_size: 0.01
-#       cron:
-#         day: mon-fri
-#         hour: 14
-#         minute: 0
-#     INTUm:
-#       timeframe: D1
-#       lot_size: 0.01
-#       cron:
-#         day: mon-fri
-#         hour: 14
-#         minute: 0
-#     METAm:
-#       timeframe: D1
-#       lot_size: 0.01
-#       cron:
-#         day: mon-fri
-#         hour: 14
-#         minute: 0
-#     MSFTm:
-#       timeframe: D1
-#       lot_size: 0.01
-#       cron:
-#         day: mon-fri
-#         hour: 14
-#         minute: 0
-#     NVDAm:
-#       timeframe: D1
-#       lot_size: 0.01
-#       cron:
-#         day: mon-fri
-#         hour: 14
-#         minute: 0
-#     PYPLm:
-#       timeframe: D1
-#       lot_size: 0.01
-#       cron:
-#         day: mon-fri
-#         hour: 14
-#         minute: 0
-#     VRTXm:
-#       timeframe: D1
-#       lot_size: 0.01
-#       cron:
-#         day: mon-fri
-#         hour: 14
-#         minute: 0
+  indicator_params:
+    rsi_time_period: 2  
+
+  instruments_info:
+    AMZNm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    AVGOm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    BIDUm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    COSTm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    CSCOm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    INTUm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    METAm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    MSFTm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    NVDAm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    PYPLm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
+    VRTXm:
+      timeframe: D1
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: 14
+        minute: 0
 
 ##################################################### VixTrader #####################################################
 backbone.vix_trader.VixTrader:
@@ -150,12 +151,28 @@ backbone.bbands_trader.BbandsTrader:
         hour: 13-20
         minute: '*/30'
 
+##################################################### MacdTrader #####################################################
+
+backbone.macd_trader.MacdTrader:
+  opt_params: 
+    cum_rsi_open_threshold : [55, 65, 75, 85, 90]
+    cum_rsi_close_threshold : [55, 65, 75, 85, 90]
+
+  wfo_params:
+    look_back_bars: 1000
+    warmup_bars: 400
+
+  instruments_info: 
+    XPEVm:
+      lot_size: 0.01
+      timeframe: M15
+      cron:
+        day: mon-fri
+        hour: 13-20
+        minute: '*/15'
 
 
-
-
-
-##################################################### InverseMacdTrader #####################################################
+##################################################### MeanRevTrader #####################################################
 backbone.mean_reversion_trader.MeanRevTrader:
   opt_params: 
     sma_period: [12, 26, 50]
@@ -174,10 +191,6 @@ backbone.mean_reversion_trader.MeanRevTrader:
         hour: '*'
         minute: 0
  
-
-
-
-
 
 ##################################################### Screener #####################################################
 # backbone.screener.Screener:

@@ -1,85 +1,104 @@
 from datetime import datetime, timedelta
-import time
-import winsound
 import pytz
-import talib
+import talib as ta
 from backbone.trader_bot import TraderBot
+from backtesting import Strategy, Backtest
+import numpy as np
+import MetaTrader5 as mt5
 
-class EndOfMonthTrader(TraderBot):
+class EndOfMonth(Strategy):
+    risk=1
+    n=10
+    day_to_buy = 25
     
-    def __init__(self, ticker, lot_size, timeframe, creds):
-        super().__init__(creds)
+    def init(self):
+        self.daily_sma_200 = self.I(
+            ta.SMA, self.data.Close, timeperiod=200
+        )
 
-        self.ticker = ticker
-        self.lot_size = lot_size
-        self.timeframe = timeframe
-        self.name = f'EOM_{self.ticker}_{self.timeframe}'
+        self.rsi_2 = self.I(
+            ta.RSI, self.data.Close, 2
+        )
+        
+    def next(self):
+        today = self.data.index[-1]
 
+        if self.position:
+            first_trade = self.trades[0]
+            time_in_position = (today - first_trade.entry_time)
+            time_in_position = time_in_position.days
 
-    def calculate_indicators(self, df, drop_nulls=False, indicator_params:dict=None):
-        df['rsi'] = talib.RSI(df['Close'], timeperiod=indicator_params['rsi_time_period'])
+            if self.position.is_long:
+                if self.rsi_2 > 90:
+                    self.position.close()
 
-        if drop_nulls:
-            df = df.dropna()
+        else:
+            today_bearish = self.data.Close[-1] < self.data.Open[-1]
+            yesterday_bearish = self.data.Close[-2] < self.data.Open[-2
+                                                                 ]
+            if today.day >= 25 and today.day <= 31 and today_bearish and yesterday_bearish:
+                self.buy(size=self.risk/100)
+                
+    def next_live(self, trader:TraderBot):
+        today = self.data.index[-1]
+        open_positions = trader.get_open_positions()
 
-        return df
+        if open_positions:
+            if open_positions[-1].type == mt5.ORDER_TYPE_BUY:
+                if self.rsi_2 > 90:
+                    trader.close_order(open_positions[-1])
 
-    def strategy(self, df, actual_date, strategy_params:dict=None):
-        open_positions = self.get_open_positions(self.ticker)
-        open_orders = self.mt5.orders_get(symbol=self.ticker)
-
-        if open_positions:  # Si hay una posición abierta
-            rsi = df.iloc[-1].rsi
-            
-            for position in open_positions:
-                if rsi >= strategy_params['rsi_threshold']:
-                    self.close_order(position)
-
-        elif not open_orders:
-            actual_close = df.iloc[-1].Close
-            yesterday_close = df.iloc[-2].Close
-
-            actual_open = df.iloc[-1].Open
-            yesterday_open = df.iloc[-2].Open
-
-            two_days_bearish = actual_close < actual_open and yesterday_close < yesterday_open
-
-            start_day = strategy_params['start_day']
-            end_day = strategy_params['end_day']
-
-            if actual_date.day >= start_day and actual_date.day <= end_day and two_days_bearish:  
-                info_tick = self.mt5.symbol_info_tick(self.ticker)
+        else:
+            today_bearish = self.data.Close[-1] < self.data.Open[-1]
+            yesterday_bearish = self.data.Close[-2] < self.data.Open[-2
+                                                                 ]
+            if today.day >= 25 and today.day <= 31 and today_bearish and yesterday_bearish:
+                info_tick = trader.get_info_tick()
                 price = info_tick.ask
-
-                self.open_order(
+                
+                trader.open_order(
                     ticker=self.ticker, 
                     lot=self.lot_size, 
                     type_='buy',
                     price=price
-                )
+                )  
 
-    def run(self, indicator_params:dict=None, strategy_params:dict=None):
-
-        warm_up_bars = 500
-        bars_to_trade = 10
-
-        timezone = pytz.timezone("Etc/UTC")
-
-        now = datetime.now(tz=timezone)
+class EndOfMonthTrader(TraderBot):
+    
+    def __init__(self, ticker, timeframe, creds, opt_params, wfo_params):
+        name = f'EOM_{ticker}_{timeframe}'
         
-        print(f'excecuting run {self.name} on {self.ticker} {self.timeframe} at {now}')
-
-
-        date_from = now - timedelta(days=bars_to_trade) - timedelta(days=warm_up_bars) 
-        df = self.get_data(
-            self.ticker,
-            timeframe=self.timeframe, 
-            date_from=date_from, 
-            date_to=now,
+        self.trader = TraderBot(
+            name=name,
+            ticker=ticker, 
+            timeframe=timeframe, 
+            creds=creds
         )
 
-        df = self.calculate_indicators(df, indicator_params=indicator_params)
-        
-        self.strategy(df, actual_date=now, strategy_params=strategy_params)
+    def run(self):
 
-    
+            timezone = pytz.timezone("Etc/UTC")
+            now = datetime.now(tz=timezone)
+            date_from = now - timedelta(days=30) 
+            
+            print(f'excecuting run {self.trader.name} at {now}')
+            
+            df = self.trader.get_data(
+                date_from=date_from, 
+                date_to=now,
+            )
+
+            df.index = df.index.tz_localize('UTC').tz_convert('UTC')
+
+            bt = Backtest(
+                df, 
+                EndOfMonth,
+                commission=7e-4,
+                cash=15_000, 
+                margin=1/30
+            )
+
+            stats = bt.run()
+
+            bt._results._strategy.next_live(trader=self.trader)   
+

@@ -88,7 +88,8 @@ def walk_forward(
         )
         
         equity_final = stats_validation['Equity Final [$]']
-        print(f'equity final: {equity_final}')
+        if verbose:
+            print(f'equity final: {equity_final}')
 
         stats_master.append(stats_validation)
 

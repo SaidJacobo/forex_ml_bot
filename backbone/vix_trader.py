@@ -90,11 +90,18 @@ class VixRsi(Strategy):
 class VixTrader(TraderBot):
     
     def __init__(self, ticker, timeframe, creds, opt_params, wfo_params):
-        self.trader = TraderBot(ticker=ticker, timeframe=timeframe, creds=creds)
+        
+        name = f'Vix_{ticker}_{timeframe}'
+        self.trader = TraderBot(
+            name=name,
+            ticker=ticker, 
+            timeframe=timeframe, 
+            creds=creds
+        )
+        
         self.opt_params = opt_params
         self.wfo_params = wfo_params
         self.opt_params['maximize'] = optim_func
-        self.name = f'Vix_{self.trader.ticker}_{self.trader.timeframe}'
     
     
     def run(self):
@@ -105,7 +112,7 @@ class VixTrader(TraderBot):
         now = datetime.now(tz=timezone)
         date_from = now - timedelta(hours=look_back_bars) - timedelta(hours=warmup_bars) 
         
-        print(f'excecuting run {self.name} at {now}')
+        print(f'excecuting run {self.trader.name} at {now}')
         
         vix = yf.Ticker("^VIX").history(interval='1h', period='max')
         vix.rename(

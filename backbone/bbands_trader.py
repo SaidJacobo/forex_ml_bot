@@ -9,7 +9,6 @@ import MetaTrader5 as mt5
 def  optim_func(series):
     return (series['Return [%]'] /  (1 + (-1*series['Max. Drawdown [%]']))) * np.log(1 + series['# Trades'])
 
-
 class Bbands(Strategy):
     risk=3
     bbands_timeperiod = 50
@@ -91,15 +90,21 @@ class Bbands(Strategy):
                     price=price
                 )
 
-
 class BbandsTrader(TraderBot):
     
     def __init__(self, ticker, timeframe, creds, opt_params, wfo_params):
-        self.trader = TraderBot(ticker=ticker, timeframe=timeframe, creds=creds)
+       
+        name = f'BBands_{ticker}_{timeframe}'
+        self.trader = TraderBot(
+            name=name, 
+            ticker=ticker, 
+            timeframe=timeframe, 
+            creds=creds
+        )
+        
         self.opt_params = opt_params
         self.wfo_params = wfo_params
         self.opt_params['maximize'] = optim_func
-        self.name = f'BBands_{self.trader.ticker}_{self.trader.timeframe}'
 
     def run(self):
         warmup_bars = self.wfo_params['warmup_bars']
@@ -109,7 +114,7 @@ class BbandsTrader(TraderBot):
         now = datetime.now(tz=timezone)
         date_from = now - timedelta(hours=look_back_bars) - timedelta(hours=warmup_bars) 
         
-        print(f'excecuting run {self.name} at {now}')
+        print(f'excecuting run {self.trader.name} at {now}')
         
         df = self.trader.get_data(
             date_from=date_from, 
