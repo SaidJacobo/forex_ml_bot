@@ -1,6 +1,7 @@
 from backtesting import Backtest
 import pandas as pd
 import plotly.express as px
+from backtesting._stats import compute_stats
 
 
 def plot_stats(data, stats, strategy, plot=False):
@@ -92,3 +93,28 @@ def walk_forward(
         stats_master.append(stats_validation)
 
     return stats_master
+
+
+def get_wfo_stats(stats, warmup_bars, ohcl_data):
+    trades = pd.DataFrame()
+    for stat in stats:
+        trades = pd.concat([trades, stat._trades])
+    
+    trades.EntryBar = trades.EntryBar.astype(int)
+    trades.ExitBar = trades.ExitBar.astype(int)
+
+    equity_curves = pd.DataFrame()
+    for stat in stats:
+        equity_curves = pd.concat([equity_curves, stat["_equity_curve"].iloc[warmup_bars:]])
+        
+            
+    wfo_stats = compute_stats(
+        trades=trades,  # broker.closed_trades,
+        equity=equity_curves.Equity,
+        ohlc_data=ohcl_data,
+        risk_free_rate=0.0,
+        strategy_instance=None  # strategy,
+    )
+    
+    wfo_stats = {k: v for k, v in wfo_stats.items() if not str(k).startswith('_')}
+    return wfo_stats

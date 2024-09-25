@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
-from backtesting import Strategy
+from backtesting import Strategy, Backtest
 import pytz
 import talib as ta
-from backbone.trader_bot_2 import TraderBot
+from backbone.trader_bot import TraderBot
 import MetaTrader5 as mt5
-from backtesting import Backtest
 import numpy as np
 
 def  optim_func(series):
@@ -91,7 +90,7 @@ class MeanReversion(Strategy):
                 )
 
 
-class MeanRevBot():
+class MeanRevTrader():
     
     def __init__(self, ticker, timeframe, creds, opt_params, wfo_params):
         self.trader = TraderBot(ticker=ticker, timeframe=timeframe, creds=creds)
@@ -99,7 +98,8 @@ class MeanRevBot():
         self.wfo_params = wfo_params
         self.opt_params['maximize'] = optim_func
         self.name = f'MeanRev_{self.trader.ticker}_{self.trader.timeframe}'
-    
+
+
     def run(self):
         warmup_bars = self.wfo_params['warmup_bars']
         look_back_bars = self.wfo_params['look_back_bars']

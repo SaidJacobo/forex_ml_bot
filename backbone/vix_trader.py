@@ -4,7 +4,7 @@ import pytz
 import talib as ta
 import yfinance as yf
 import MetaTrader5 as mt5
-from backbone.trader_bot_2 import TraderBot
+from backbone.trader_bot import TraderBot
 from backtesting import Backtest, Strategy
 import numpy as np
 

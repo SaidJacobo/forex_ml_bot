@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 import pandas as pd
 import MetaTrader5 as mt5
 import telebot
@@ -38,9 +37,9 @@ opposite_order_tpyes = {
     mt5.ORDER_TYPE_SELL: mt5.ORDER_TYPE_BUY,
 }
 
-class TraderBot(ABC):
+class TraderBot():
     
-    def __init__(self, creds:dict):
+    def __init__(self, ticker, timeframe, creds:dict):
         if not mt5.initialize():
             print("initialize() failed, error code =", mt5.last_error())
             quit()
@@ -52,10 +51,10 @@ class TraderBot(ABC):
         pw = creds['pw']
 
         self.mt5 = mt5
-
         self.bot = telebot.TeleBot(bot_token)
         self.chat_id = chat_id
-
+        self.ticker = ticker
+        self.timeframe = timeframe
 
         authorized = self.mt5.login(server=server, login=account, password=pw)
 
@@ -67,8 +66,8 @@ class TraderBot(ABC):
             print("failed to connect at account #{}, error code: {}".format(account, mt5.last_error()))
         
 
-    def get_data(self, ticker, timeframe, date_from, date_to):
-        rates = self.mt5.copy_rates_range(ticker, time_frames[timeframe], date_from, date_to)
+    def get_data(self, date_from, date_to):
+        rates = self.mt5.copy_rates_range(self.ticker, time_frames[self.timeframe], date_from, date_to)
             
         df = pd.DataFrame(rates)
         df['time'] = pd.to_datetime(df['time'], unit='s')
@@ -84,31 +83,24 @@ class TraderBot(ABC):
 
         return df
 
-
-    @abstractmethod
-    def calculate_indicators(self, df, drop_nulls=False):
-        pass
-
-
-    def get_open_positions(self, ticker):
-        positions = self.mt5.positions_get(symbol=ticker)
+    def get_open_positions(self):
+        positions = self.mt5.positions_get(symbol=self.ticker)
 
         positions = [position for position in positions if position.comment == self.name]
 
         return positions
 
-
-    def open_order(self, ticker, type_, lot, price=None):
-        symbol_info = mt5.symbol_info(ticker)
+    def open_order(self, type_, lot, price=None):
+        symbol_info = mt5.symbol_info(self.ticker)
         if symbol_info is None:
-            print(ticker, "not found, can not call order_check()")
+            print(self.ticker, "not found, can not call order_check()")
             
         
         # if the symbol is unavailable in MarketWatch, add it
         if not symbol_info.visible:
-            print(ticker, "is not visible, trying to switch on")
-            if not self.mt5.symbol_select(ticker, True):
-                print("symbol_select({}}) failed, exit", ticker)
+            print(self.ticker, "is not visible, trying to switch on")
+            if not self.mt5.symbol_select(self.ticker, True):
+                print("symbol_select({}}) failed, exit", self.ticker)
  
         mt5_type = order_tpyes[type_]
 
@@ -117,7 +109,7 @@ class TraderBot(ABC):
         
         request = {
             "action": action,
-            "symbol": ticker,
+            "symbol": self.ticker,
             "volume": lot,
             "type": mt5_type,
             "price": price,
@@ -139,7 +131,6 @@ class TraderBot(ABC):
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
 
-        
     def close_order(self, position):
         close_position_type = opposite_order_tpyes[position.type]
 
@@ -174,12 +165,7 @@ class TraderBot(ABC):
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
 
-
-    @abstractmethod
-    def strategy(self, df, ticker, actual_date):
-        pass
-
-    @abstractmethod
-    def run(self, tickers, timeframe, interval_minutes, noisy=False):
-        pass
-            
+    def get_info_tick(self):
+        info_tick = self.mt5.symbol_info_tick(self.ticker)
+        return info_tick
+        

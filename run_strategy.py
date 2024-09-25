@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     scheduler = BlockingScheduler(timezone=utc)
 
-    bot_name = 'backbone.vix_trader.VixTrader'
+    bot_name = 'backbone.bbands_trader.BbandsTrader'
     configs = strategies[bot_name]
 
     instruments_info = configs['instruments_info']

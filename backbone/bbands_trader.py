@@ -1,102 +1,147 @@
 from datetime import datetime, timedelta
 import pytz
-import talib
+import talib as ta
 from backbone.trader_bot import TraderBot
+from backtesting import Strategy, Backtest
+import numpy as np
+import MetaTrader5 as mt5
+
+def  optim_func(series):
+    return (series['Return [%]'] /  (1 + (-1*series['Max. Drawdown [%]']))) * np.log(1 + series['# Trades'])
 
 
-class BbandsTrader(TraderBot):
-    
-    def __init__(self, ticker, lot_size, timeframe, creds):
+class Bbands(Strategy):
+    risk=3
+    bbands_timeperiod = 50
+    bband_std = 1.5
+    sma_period = 200
+    b_open_threshold = 0.95
+    b_close_threshold = 0.5
 
-        super().__init__(creds)
+    def init(self):
+        
+        self.sma = self.I(
+            ta.SMA, self.data.Close, timeperiod=self.sma_period
+        )
 
-        self.ticker = ticker
-        self.lot_size = lot_size
-        self.timeframe = timeframe
+        self.upper_band, self.middle_band, self.lower_band = self.I(
+            ta.BBANDS, self.data.Close, 
+            timeperiod=self.bbands_timeperiod, 
+            nbdevup=self.bband_std, 
+            nbdevdn=self.bband_std
+        )
 
-        self.name = f'Bbands_{self.ticker}_{self.timeframe}'
+    def next(self):
+        actual_close = self.data.Close[-1]
+        b_percent = (actual_close - self.lower_band[-1]) / (self.upper_band[-1] - self.lower_band[-1])
+        
+        if self.position:
+            if self.position.is_long:
+                if b_percent >= self.b_close_threshold:
+                    self.position.close()
 
+            if self.position.is_short:
+                if b_percent <= 1 - self.b_close_threshold:
+                    self.position.close()
 
-    def calculate_indicators(self, df, drop_nulls=False, indicator_params:dict=None):
-        upper_band, middle_band, lower_band = talib.BBANDS(df['Close'], timeperiod=indicator_params['bbands_timeperiod'])
-        df['upper_bband'] = upper_band
-        df['middle_bband'] = middle_band
-        df['lower_bband'] = lower_band
+        else:
 
-        df['sma'] = talib.SMA(df['Close'], timeperiod=indicator_params['sma_timeperiod'])
-
-        if drop_nulls:
-            df = df.dropna()
-
-        return df
-
-    def strategy(self, df, actual_date, strategy_params:dict=None):
-        open_positions = self.get_open_positions(self.ticker)
-        open_orders = self.mt5.orders_get(symbol=self.ticker)
-
-        close = df.iloc[-1].Close
-        sma = df.iloc[-1].sma
-        upper_bband = df.iloc[-1].upper_bband
-        middle_bband = df.iloc[-1].middle_bband
-        lower_bband = df.iloc[-1].lower_bband
-
-        if open_positions:  # Si hay una posición abierta
-
-            for position in open_positions:
-                if position.type == self.mt5.ORDER_TYPE_BUY and close >= middle_bband:
-                    self.close_order(position)
+            if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma:
+                self.buy(size=self.risk / 100)
                 
-                elif position.type == self.mt5.ORDER_TYPE_SELL and close <= middle_bband:
-                    self.close_order(position)
+            if b_percent >= self.b_open_threshold and actual_close < self.sma:
+                self.sell(size=self.risk / 100)
+                            
+    def next_live(self, trader:TraderBot):
+        actual_close = self.data.Close[-1]
+        b_percent = (actual_close - self.lower_band[-1]) / (self.upper_band[-1] - self.lower_band[-1])
+        
+        open_positions = trader.get_open_positions()
+        
+        if open_positions:
+            if open_positions[-1].type == mt5.ORDER_TYPE_BUY:
+                if b_percent >= self.b_close_threshold:
+                    trader.close_order(open_positions[-1])
 
-        elif not open_orders:
+            if open_positions[-1].type == mt5.ORDER_TYPE_SELL:
+                if b_percent <= 1 - self.b_close_threshold:
+                    trader.close_order(open_positions[-1])
 
-            if close > sma and close < lower_bband:
-                info_tick = self.mt5.symbol_info_tick(self.ticker)
+        else:
+
+            if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma:
+                info_tick = trader.get_info_tick()
                 price = info_tick.ask
-
-                self.open_order(
+                
+                trader.open_order(
                     ticker=self.ticker, 
                     lot=self.lot_size, 
                     type_='buy',
                     price=price
-                )
-            elif close < sma and close > upper_bband:
-                info_tick = self.mt5.symbol_info_tick(self.ticker)
+                )             
+                   
+            if b_percent >= self.b_open_threshold and actual_close < self.sma:
+                info_tick = trader.get_info_tick()
                 price = info_tick.bid
-
-                self.open_order(
+                
+                trader.open_order(
                     ticker=self.ticker, 
                     lot=self.lot_size, 
                     type_='sell',
                     price=price
                 )
 
-    def run(self, indicator_params:dict=None, strategy_params:dict=None):
 
-        warm_up_bars = 500
-        bars_to_trade = 10
+class BbandsTrader(TraderBot):
+    
+    def __init__(self, ticker, timeframe, creds, opt_params, wfo_params):
+        self.trader = TraderBot(ticker=ticker, timeframe=timeframe, creds=creds)
+        self.opt_params = opt_params
+        self.wfo_params = wfo_params
+        self.opt_params['maximize'] = optim_func
+        self.name = f'BBands_{self.trader.ticker}_{self.trader.timeframe}'
+
+    def run(self):
+        warmup_bars = self.wfo_params['warmup_bars']
+        look_back_bars = self.wfo_params['look_back_bars']
 
         timezone = pytz.timezone("Etc/UTC")
-
         now = datetime.now(tz=timezone)
-
-        print(f'excecuting run {self.name} on {self.ticker} {self.timeframe} at {now}')
+        date_from = now - timedelta(hours=look_back_bars) - timedelta(hours=warmup_bars) 
         
-        date_from = now - timedelta(days=bars_to_trade) - timedelta(days=warm_up_bars) 
-
-        df = self.get_data(
-            self.ticker,
-            timeframe=self.timeframe, 
+        print(f'excecuting run {self.name} at {now}')
+        
+        df = self.trader.get_data(
             date_from=date_from, 
             date_to=now,
         )
 
         df.index = df.index.tz_localize('UTC').tz_convert('UTC')
-        
-        df = self.calculate_indicators(df, drop_nulls=True, indicator_params=indicator_params)
-        
-        self.strategy(df, actual_date=now, strategy_params=strategy_params)
 
+        bt_train = Backtest(
+            df, 
+            Bbands,
+            commission=7e-4,
+            cash=15_000, 
+            margin=1/30
+        )
+        
+        stats_training = bt_train.optimize(
+            **self.opt_params
+        )
+        
+        bt = Backtest(
+            df, 
+            Bbands,
+            commission=7e-4,
+            cash=15_000, 
+            margin=1/30
+        )
+        
+        opt_params = {param: getattr(stats_training._strategy, param) for param in self.opt_params.keys() if param != 'maximize'}
 
-            
+        stats = bt.run(
+            **opt_params
+        )
+
+        bt_train._results._strategy.next_live(trader=self.trader)   
