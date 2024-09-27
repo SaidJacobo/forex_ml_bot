@@ -29,7 +29,7 @@ if __name__ == '__main__':
             lot_size = info['lot_size']
             timeframe = info['timeframe']
         
-            bot = load_function(bot_name)(ticker, timeframe, creds, opt_params, wfo_params)
+            bot = load_function(bot_name)(ticker, lot_size, timeframe, creds, opt_params, wfo_params)
 
             scheduler.add_job(
                 bot.run, 
