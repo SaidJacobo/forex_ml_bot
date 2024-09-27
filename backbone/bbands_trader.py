@@ -90,14 +90,16 @@ class Bbands(Strategy):
                     price=price
                 )
 
+
 class BbandsTrader(TraderBot):
     
-    def __init__(self, ticker, timeframe, creds, opt_params, wfo_params):
-       
+    def __init__(self, ticker, lot, timeframe, creds, opt_params, wfo_params):
         name = f'BBands_{ticker}_{timeframe}'
+        
         self.trader = TraderBot(
-            name=name, 
+            name=name,
             ticker=ticker, 
+            lot=lot,
             timeframe=timeframe, 
             creds=creds
         )

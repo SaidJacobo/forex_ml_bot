@@ -102,13 +102,13 @@ class Macd(Strategy):
                 
 class MacdTrader:
     
-    def __init__(self, ticker, timeframe, creds, opt_params, wfo_params):
-        
+    def __init__(self, ticker, lot, timeframe, creds, opt_params, wfo_params):
         name = f'Macd_{ticker}_{timeframe}'
         
         self.trader = TraderBot(
             name=name,
             ticker=ticker, 
+            lot=lot,
             timeframe=timeframe, 
             creds=creds
         )

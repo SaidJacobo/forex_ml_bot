@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     scheduler = BlockingScheduler(timezone=utc)
 
-    bot_name = 'backbone.eom_trader.EndOfMonthTrader'
+    bot_name = 'backbone.vix_trader.VixTrader'
     configs = strategies[bot_name]
 
     instruments_info = configs['instruments_info']
@@ -32,7 +32,7 @@ if __name__ == '__main__':
         lot_size = info['lot_size']
         timeframe = info['timeframe']
 
-        bot = load_function(bot_name)(ticker, timeframe, creds, opt_params, wfo_params)
+        bot = load_function(bot_name)(ticker, lot_size, timeframe, creds, opt_params, wfo_params)
         
         cron = info['cron']
         lot_size = info['lot_size']
