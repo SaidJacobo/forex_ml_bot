@@ -5,6 +5,10 @@ from backbone.trader_bot import TraderBot
 from backtesting import Strategy, Backtest
 import numpy as np
 import MetaTrader5 as mt5
+import numpy as np
+
+np.seterr(divide='ignore')
+
 
 class EndOfMonth(Strategy):
     risk=1
@@ -57,8 +61,6 @@ class EndOfMonth(Strategy):
                 price = info_tick.ask
                 
                 trader.open_order(
-                    ticker=self.ticker, 
-                    lot=self.lot_size, 
                     type_='buy',
                     price=price
                 )  

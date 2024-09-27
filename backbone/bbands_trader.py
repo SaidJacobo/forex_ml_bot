@@ -5,6 +5,9 @@ from backbone.trader_bot import TraderBot
 from backtesting import Strategy, Backtest
 import numpy as np
 import MetaTrader5 as mt5
+import numpy as np
+
+np.seterr(divide='ignore')
 
 def  optim_func(series):
     return (series['Return [%]'] /  (1 + (-1*series['Max. Drawdown [%]']))) * np.log(1 + series['# Trades'])
@@ -73,7 +76,6 @@ class Bbands(Strategy):
                 price = info_tick.ask
                 
                 trader.open_order(
-                    ticker=self.ticker, 
                     lot=self.lot_size, 
                     type_='buy',
                     price=price
@@ -84,8 +86,6 @@ class Bbands(Strategy):
                 price = info_tick.bid
                 
                 trader.open_order(
-                    ticker=self.ticker, 
-                    lot=self.lot_size, 
                     type_='sell',
                     price=price
                 )

@@ -7,7 +7,9 @@ import MetaTrader5 as mt5
 from backbone.trader_bot import TraderBot
 from backtesting import Backtest, Strategy
 import numpy as np
+import numpy as np
 
+np.seterr(divide='ignore')
 
 def  optim_func(series):
     return (series['Return [%]'] /  (1 + (-1*series['Max. Drawdown [%]']))) * np.log(1 + series['# Trades'])
@@ -80,8 +82,6 @@ class VixRsi(Strategy):
                 price = info_tick.ask
                 
                 trader.open_order(
-                    ticker=self.ticker, 
-                    lot=self.lot_size, 
                     type_='buy',
                     price=price
                 )
@@ -147,9 +147,6 @@ class VixTrader(TraderBot):
             **self.opt_params
         )
         
-        print(stats_training)
-        
-        
         bt = Backtest(
             full_df, 
             VixRsi,
@@ -164,7 +161,5 @@ class VixTrader(TraderBot):
             **opt_params
         )
         
-        print(stats)
-
         bt_train._results._strategy.next_live(trader=self.trader)         
 

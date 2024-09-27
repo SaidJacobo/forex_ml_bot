@@ -1,4 +1,3 @@
-import multiprocessing
 import yaml
 from backbone.utils.general_purpose import load_function
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -6,7 +5,6 @@ from pytz import utc
 import numpy as np
 
 np.seterr(divide='ignore')
-
 
 if __name__ == '__main__':
 

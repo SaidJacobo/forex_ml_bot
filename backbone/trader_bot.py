@@ -39,7 +39,7 @@ opposite_order_tpyes = {
 
 class TraderBot():
     
-    def __init__(self, name, ticker, timeframe, creds:dict):
+    def __init__(self, name, ticker, lot, timeframe, creds:dict):
         if not mt5.initialize():
             print("initialize() failed, error code =", mt5.last_error())
             quit()
@@ -55,6 +55,7 @@ class TraderBot():
         self.bot = telebot.TeleBot(bot_token)
         self.chat_id = chat_id
         self.ticker = ticker
+        self.lot = lot
         self.timeframe = timeframe
 
         authorized = self.mt5.login(server=server, login=account, password=pw)
@@ -91,7 +92,7 @@ class TraderBot():
 
         return positions
 
-    def open_order(self, type_, lot, price=None):
+    def open_order(self, type_, price=None):
         symbol_info = mt5.symbol_info(self.ticker)
         if symbol_info is None:
             print(self.ticker, "not found, can not call order_check()")
@@ -111,7 +112,7 @@ class TraderBot():
         request = {
             "action": action,
             "symbol": self.ticker,
-            "volume": lot,
+            "volume": self.lot,
             "type": mt5_type,
             "price": price,
             "magic": 234000,
@@ -128,7 +129,7 @@ class TraderBot():
             self.bot.send_message(chat_id=self.chat_id, text=message)
 
         else:
-            message = f"Se abrio una nueva orden: {self.name}, lot: {lot}, price: {price}. Codigo: {result.retcode}"
+            message = f"Se abrio una nueva orden: {self.name}, lot: {self.lot}, price: {price}. Codigo: {result.retcode}"
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
 
