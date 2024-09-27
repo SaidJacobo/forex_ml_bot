@@ -109,7 +109,7 @@ backbone.vix_trader.VixTrader:
 
     US500m:
       timeframe: H1
-      lot_size: 0.02
+      lot_size: 0.03
       cron:
         day: mon-fri
         hour: 14-21
