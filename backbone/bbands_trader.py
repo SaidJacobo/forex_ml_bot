@@ -76,7 +76,6 @@ class Bbands(Strategy):
                 price = info_tick.ask
                 
                 trader.open_order(
-                    lot=self.lot_size, 
                     type_='buy',
                     price=price
                 )             
