@@ -139,13 +139,16 @@ class VixTrader(TraderBot):
             full_df, 
             VixRsi,
             commission=7e-4,
-            cash=15_000, 
+            cash=100_000, 
             margin=1/30
         )
         
         stats_training = bt_train.optimize(
             **self.opt_params
         )
+        
+        print(stats_training)
+        
         
         bt = Backtest(
             full_df, 
@@ -160,6 +163,8 @@ class VixTrader(TraderBot):
         stats = bt.run(
             **opt_params
         )
+        
+        print(stats)
 
         bt_train._results._strategy.next_live(trader=self.trader)         
 

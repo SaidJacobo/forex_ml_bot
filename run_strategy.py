@@ -2,6 +2,9 @@ import yaml
 from backbone.utils.general_purpose import load_function
 from apscheduler.schedulers.blocking import BlockingScheduler
 from pytz import utc
+import numpy as np
+
+np.seterr(divide='ignore')
 
 if __name__ == '__main__':
 
@@ -15,7 +18,7 @@ if __name__ == '__main__':
 
     scheduler = BlockingScheduler(timezone=utc)
 
-    bot_name = 'backbone.vix_trader.VixTrader'
+    bot_name = 'backbone.mean_reversion_trader.MeanRevTrader'
     configs = strategies[bot_name]
 
     instruments_info = configs['instruments_info']
