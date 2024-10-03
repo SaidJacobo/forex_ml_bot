@@ -3,6 +3,9 @@ import pandas as pd
 import plotly.express as px
 from backtesting._stats import compute_stats
 
+import numpy as np
+
+np.seterr(divide='ignore')
 
 def plot_stats(data, stats, strategy, plot=False):
     equity_curve = stats._equity_curve
@@ -13,20 +16,13 @@ def plot_stats(data, stats, strategy, plot=False):
         bt.plot(results=stats, resample=False)
 
 
-def plot_full_equity_curve(data, stats_list, warmup_bars, lookback_bars, overlay_price=True):
-    equity_curves = [x["_equity_curve"].iloc[warmup_bars:] for x in stats_list]
-
-    combined = pd.Series(dtype=float)
-    for curve in equity_curves:
-        # normalized_curve = curve["Equity"] / curve["Equity"].iloc[0]  # Normaliza la curva a su valor inicial
-        if combined.empty:
-            combined = curve["Equity"]
-        else:
-            # Alinea la nueva curva con la última de la serie combinada
-            # normalized_curve = normalized_curve * combined.iloc[-1]
-            combined = pd.concat([combined, curve["Equity"]])
-
-    fig = px.line(x=combined.index, y=combined)
+def plot_full_equity_curve(df_equity):
+ 
+    fig = px.line(x=df_equity.index, y=df_equity.Equity)
+    fig.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Equity"
+    )
     fig.update_traces(textposition="bottom right")
     fig.show()
 
@@ -42,20 +38,20 @@ def walk_forward(
         commission=0.0002,
         margin=1/30,
         verbose=False
-
 ):
 
     stats_master = []
     equity_final = None
 
-    for i in range(lookback_bars, len(data_full)-validation_bars, validation_bars):
-
-        # To do anchored walk-forward, just set the first slice here to 0
-        train_data = data_full.iloc[i-lookback_bars: i]
-
+    i = lookback_bars + warmup_bars  # El índice inicial es el final del primer lookback
+    while i < len(data_full) - validation_bars:
+        
+        # Definimos los periodos de entrenamiento correctamente
+        train_data = data_full.iloc[i - lookback_bars - warmup_bars: i]
+        
         if verbose:
             print(f'train from {train_data.index[0]} to {train_data.index[-1]}')
-
+        
         bt_training = Backtest(
             train_data, 
             strategy, 
@@ -63,26 +59,30 @@ def walk_forward(
             commission=commission, 
             margin=margin
         )
-
+        
         stats_training = bt_training.optimize(
             **params
         )
         
-        validation_data = data_full.iloc[i-warmup_bars:i+validation_bars]
+        # El período de validación debe empezar justo al final del entrenamiento
+        validation_data = data_full.iloc[i-warmup_bars: i+validation_bars]
 
         if verbose:
-            print(f'validate from {validation_data.index[0]} to {validation_data.index[-1]}')
-
+            print(f'validate from {validation_data.index[warmup_bars]} to {validation_data.index[-1]}')
+        
         bt_validation = Backtest(
             validation_data, 
             strategy, 
-            cash=cash if equity_final == None else equity_final, 
+            cash=cash if equity_final is None else equity_final, 
             commission=commission, 
             margin=margin
         )
-
+        
         validation_params = {param: getattr(stats_training._strategy, param) for param in params.keys() if param != 'maximize'}
-
+        
+        if verbose:
+            print(validation_params)
+        
         stats_validation = bt_validation.run(
             **validation_params
         )
@@ -90,10 +90,16 @@ def walk_forward(
         equity_final = stats_validation['Equity Final [$]']
         if verbose:
             print(f'equity final: {equity_final}')
+            print('=' * 32)
 
         stats_master.append(stats_validation)
 
-    return stats_master
+        # Mover el índice `i` al final del período de validación actual
+        i += validation_bars
+    
+    wfo_stats = get_wfo_stats(stats_master, warmup_bars, data_full)
+    
+    return wfo_stats
 
 
 def get_wfo_stats(stats, warmup_bars, ohcl_data):
@@ -108,7 +114,6 @@ def get_wfo_stats(stats, warmup_bars, ohcl_data):
     for stat in stats:
         equity_curves = pd.concat([equity_curves, stat["_equity_curve"].iloc[warmup_bars:]])
         
-            
     wfo_stats = compute_stats(
         trades=trades,  # broker.closed_trades,
         equity=equity_curves.Equity,
@@ -117,5 +122,7 @@ def get_wfo_stats(stats, warmup_bars, ohcl_data):
         strategy_instance=None  # strategy,
     )
     
-    wfo_stats = {k: v for k, v in wfo_stats.items() if not str(k).startswith('_')}
+    wfo_stats['_equity'] = equity_curves
+    wfo_stats['_trades'] = trades
+    
     return wfo_stats
