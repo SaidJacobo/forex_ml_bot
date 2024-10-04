@@ -2,7 +2,6 @@ from backtesting import Backtest
 import pandas as pd
 import plotly.express as px
 from backtesting._stats import compute_stats
-
 import numpy as np
 
 np.seterr(divide='ignore')
@@ -126,3 +125,94 @@ def get_wfo_stats(stats, warmup_bars, ohcl_data):
     wfo_stats['_trades'] = trades
     
     return wfo_stats
+
+def max_drawdown(serie):
+    max_valor_acumulado = serie[0]
+    max_dd = 0
+
+    for valor_actual in serie[1:]:
+        if valor_actual > max_valor_acumulado:
+            max_valor_acumulado = valor_actual
+        else:
+            dd = (max_valor_acumulado - valor_actual) / max_valor_acumulado
+            if dd > max_dd:
+                max_dd = dd
+
+    return max_dd
+
+def montecarlo_simulation(trade_history, n_simulations, initial_equity, threshold_ruin):
+    montecarlo_equity_curves = []
+
+    ruin_count = 0  # Contador de simulaciones que alcanzan la ruina
+    ruin_threshold = initial_equity * threshold_ruin  # Umbral de ruina en términos de equidad
+    
+    trade_history['Equity'] = initial_equity * (1 + trade_history['ReturnPct']).cumprod()
+
+
+    for _ in range(0, n_simulations):
+        shuffled_trades = trade_history['ReturnPct'].sample(frac=1).reset_index(drop=True)
+        another_equity_curve = initial_equity * (1 + shuffled_trades).cumprod()
+        montecarlo_equity_curves.append(another_equity_curve)   
+        
+
+    drawdowns = []
+
+    for eq_curve in montecarlo_equity_curves:
+        dd = max_drawdown(eq_curve)
+        drawdowns.append(dd)
+        
+        if np.any(eq_curve <= ruin_threshold):
+            ruin_count += 1
+        
+
+    print(f"Max Drawdown: {min(drawdowns):.2%}")
+    print(f"Mean Drawdown: {np.mean(drawdowns):.2%}")
+    print(f"median Drawdown: {np.median(drawdowns):.2%}")
+    print(f"STD Drawdown: {np.std(drawdowns):.2%}")
+    
+    risk_of_ruin = ruin_count / n_simulations
+    print(f"Risk of Ruin: {risk_of_ruin}")
+    
+    
+def montecarlo_statistics_simulation(trade_history, n_simulations, initial_equity, threshold_ruin=0.95):
+    # Parámetros iniciales
+    n_steps = len(trade_history)
+
+    mean_return = trade_history['ReturnPct'].mean()
+    std_return = trade_history['ReturnPct'].std()
+
+    drawdowns = []
+    ruin_count = 0  # Contador de simulaciones que alcanzan la ruina
+    ruin_threshold = initial_equity * threshold_ruin  # Umbral de ruina en términos de equidad
+
+    # Función para calcular el drawdown máximo
+    def max_drawdown(equity_curve):
+        running_max = np.maximum.accumulate(equity_curve)
+        drawdown = (equity_curve - running_max) / running_max
+        return np.min(drawdown)
+
+    # Simulaciones de Montecarlo
+    for _ in range(n_simulations):
+        # Generar retornos aleatorios con media y desviación estándar de los históricos
+        random_returns = np.random.normal(loc=mean_return, scale=std_return, size=n_steps)
+
+        # Calcular la curva de equidad acumulada
+        equity_curve = initial_equity * np.cumprod(1 + random_returns)
+
+        # Calcular drawdown
+        dd = max_drawdown(equity_curve)
+        drawdowns.append(dd)
+
+        # Verificar si la equidad cae por debajo del umbral de ruina en algún punto
+        if np.any(equity_curve <= ruin_threshold):
+            ruin_count += 1
+
+    # Calcular estadísticas de drawdowns
+    print(f"Max Drawdown: {min(drawdowns):.2%}")
+    print(f"Mean Drawdown: {np.mean(drawdowns):.2%}")
+    print(f"Median Drawdown: {np.median(drawdowns):.2%}")
+    print(f"STD Drawdown: {np.std(drawdowns):.2%}")
+
+    # Calcular y mostrar el Risk of Ruin
+    risk_of_ruin = ruin_count / n_simulations
+    print(f"Risk of Ruin: {risk_of_ruin:.2%}")

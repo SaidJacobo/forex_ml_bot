@@ -48,10 +48,10 @@ class Bbands(Strategy):
 
         else:
 
-            if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma:
+            if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma[-1]:
                 self.buy(size=self.risk / 100)
                 
-            if b_percent >= self.b_open_threshold and actual_close < self.sma:
+            if b_percent >= self.b_open_threshold and actual_close < self.sma[-1]:
                 self.sell(size=self.risk / 100)
                             
     def next_live(self, trader:TraderBot):
@@ -71,7 +71,7 @@ class Bbands(Strategy):
 
         else:
 
-            if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma:
+            if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma[-1]:
                 info_tick = trader.get_info_tick()
                 price = info_tick.ask
                 
@@ -80,7 +80,7 @@ class Bbands(Strategy):
                     price=price
                 )             
                    
-            if b_percent >= self.b_open_threshold and actual_close < self.sma:
+            if b_percent >= self.b_open_threshold and actual_close < self.sma[-1]:
                 info_tick = trader.get_info_tick()
                 price = info_tick.bid
                 

@@ -57,10 +57,10 @@ class Macd(Strategy):
 
         else:
 
-            if crossover(self.macdsignal, self.macd) and cum_rsi <= 100-self.cum_rsi_open_threshold and actual_close > self.sma:
+            if crossover(self.macdsignal, self.macd) and cum_rsi <= 100-self.cum_rsi_open_threshold and actual_close > self.sma[-1]:
                 self.buy(size=self.risk / 100)
                 
-            if crossover(self.macd, self.macdsignal) and cum_rsi >= self.cum_rsi_open_threshold and actual_close < self.sma:
+            if crossover(self.macd, self.macdsignal) and cum_rsi >= self.cum_rsi_open_threshold and actual_close < self.sma[-1]:
                 self.sell(size=self.risk / 100)
                 
                 
@@ -82,7 +82,7 @@ class Macd(Strategy):
 
         else:
 
-            if crossover(self.macdsignal, self.macd) and cum_rsi <= 100-self.cum_rsi_open_threshold and actual_close > self.sma:
+            if crossover(self.macdsignal, self.macd) and cum_rsi <= 100-self.cum_rsi_open_threshold and actual_close > self.sma[-1]:
                 info_tick = trader.get_info_tick()
                 price = info_tick.ask
                 
@@ -91,7 +91,7 @@ class Macd(Strategy):
                     price=price
                 )  
                 
-            if crossover(self.macd, self.macdsignal) and cum_rsi >= self.cum_rsi_open_threshold and actual_close < self.sma:
+            if crossover(self.macd, self.macdsignal) and cum_rsi >= self.cum_rsi_open_threshold and actual_close < self.sma[-1]:
                 info_tick = trader.get_info_tick()
                 price = info_tick.bid
                 

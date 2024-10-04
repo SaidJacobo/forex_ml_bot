@@ -54,8 +54,7 @@ class EndOfMonth(Strategy):
 
         else:
             today_bearish = self.data.Close[-1] < self.data.Open[-1]
-            yesterday_bearish = self.data.Close[-2] < self.data.Open[-2
-                                                                 ]
+            yesterday_bearish = self.data.Close[-2] < self.data.Open[-2]
             if today.day >= 25 and today.day <= 31 and today_bearish and yesterday_bearish:
                 info_tick = trader.get_info_tick()
                 price = info_tick.ask
