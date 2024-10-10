@@ -3,6 +3,7 @@ import pytz
 import talib as ta
 from backbone.trader_bot import TraderBot
 from backtesting import Strategy, Backtest
+from backtesting.lib import crossover
 import numpy as np
 import MetaTrader5 as mt5
 import numpy as np
@@ -12,13 +13,11 @@ np.seterr(divide='ignore')
 def  optim_func(series):
     return (series['Return [%]'] /  (1 + (-1*series['Max. Drawdown [%]']))) * np.log(1 + series['# Trades'])
 
-class Bbands(Strategy):
-    risk=3
+class BbandsCross(Strategy):
+    risk=10
     bbands_timeperiod = 50
     bband_std = 1.5
     sma_period = 200
-    b_open_threshold = 0.95
-    b_close_threshold = 0.5
 
     def init(self):
         
@@ -35,43 +34,41 @@ class Bbands(Strategy):
 
     def next(self):
         actual_close = self.data.Close[-1]
-        b_percent = (actual_close - self.lower_band[-1]) / (self.upper_band[-1] - self.lower_band[-1])
         
         if self.position:
             if self.position.is_long:
-                if b_percent >= self.b_close_threshold:
+                if crossover(self.data.Close, self.middle_band) or actual_close <= self.sma[-1]:
                     self.position.close()
 
             if self.position.is_short:
-                if b_percent <= 1 - self.b_close_threshold:
+                if crossover(self.middle_band, self.data.Close) or actual_close >= self.sma[-1]:
                     self.position.close()
 
         else:
 
-            if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma[-1]:
+            if crossover(self.data.Close, self.lower_band) and actual_close > self.sma[-1]:
                 self.buy(size=self.risk / 100)
                 
-            if b_percent >= self.b_open_threshold and actual_close < self.sma[-1]:
+            if crossover(self.upper_band, self.data.Close) and actual_close < self.sma[-1]:
                 self.sell(size=self.risk / 100)
                             
     def next_live(self, trader:TraderBot):
         actual_close = self.data.Close[-1]
-        b_percent = (actual_close - self.lower_band[-1]) / (self.upper_band[-1] - self.lower_band[-1])
         
         open_positions = trader.get_open_positions()
         
         if open_positions:
             if open_positions[-1].type == mt5.ORDER_TYPE_BUY:
-                if b_percent >= self.b_close_threshold:
+                if crossover(self.data.Close, self.middle_band) or actual_close <= self.sma[-1]:
                     trader.close_order(open_positions[-1])
 
             if open_positions[-1].type == mt5.ORDER_TYPE_SELL:
-                if b_percent <= 1 - self.b_close_threshold:
+                if crossover(self.middle_band, self.data.Close) or actual_close >= self.sma[-1]:
                     trader.close_order(open_positions[-1])
 
         else:
 
-            if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma[-1]:
+            if crossover(self.data.Close, self.lower_band) and actual_close > self.sma[-1]:
                 info_tick = trader.get_info_tick()
                 price = info_tick.ask
                 
@@ -80,7 +77,7 @@ class Bbands(Strategy):
                     price=price
                 )             
                    
-            if b_percent >= self.b_open_threshold and actual_close < self.sma[-1]:
+            if crossover(self.upper_band, self.data.Close) and actual_close < self.sma[-1]:
                 info_tick = trader.get_info_tick()
                 price = info_tick.bid
                 
@@ -90,10 +87,10 @@ class Bbands(Strategy):
                 )
 
 
-class BbandsTrader(TraderBot):
+class BbandsCrossTrader(TraderBot):
     
     def __init__(self, ticker, lot, timeframe, creds, opt_params, wfo_params):
-        name = f'BBands_{ticker}_{timeframe}'
+        name = f'BBandsCross_{ticker}_{timeframe}'
         
         self.trader = TraderBot(
             name=name,
@@ -126,9 +123,9 @@ class BbandsTrader(TraderBot):
 
         bt_train = Backtest(
             df, 
-            Bbands,
+            BbandsCross,
             commission=7e-4,
-            cash=15_000, 
+            cash=100_000, 
             margin=1/30
         )
         
@@ -138,9 +135,9 @@ class BbandsTrader(TraderBot):
         
         bt = Backtest(
             df, 
-            Bbands,
+            BbandsCross,
             commission=7e-4,
-            cash=15_000, 
+            cash=100_000, 
             margin=1/30
         )
         

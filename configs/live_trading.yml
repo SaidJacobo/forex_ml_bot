@@ -116,7 +116,7 @@ backbone.vix_trader.VixTrader:
         minute: 0
 
 ##################################################### BBandsTrader #####################################################
-backbone.bbands_trader.BbandsTrader:
+backbone.b_percent_trader.BPercentTrader:
   opt_params: 
     b_open_threshold : [0.9, 0.95, 0.99]
     b_close_threshold : [0.5, 0.6, 0.8, 0.9]
@@ -206,7 +206,7 @@ backbone.day_per_week_trader.DayPerWeekTrader:
       lot_size: 0.01
       cron:
         day: mon-fri
-        hour: '*/4'
+        hour: '13-20/4'
         minute: 0
 
     TSMm:
@@ -214,8 +214,51 @@ backbone.day_per_week_trader.DayPerWeekTrader:
       lot_size: 0.01
       cron:
         day: mon-fri
-        hour: '*/4'
+        hour: '13-20/4'
         minute: 0
+
+backbone.bbands_cross_trader.BbandsCrossTrader:
+  opt_params: 
+    bband_std: [1, 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3]
+
+  wfo_params:
+    look_back_bars: 1000
+    warmup_bars: 200
+
+  instruments_info:
+    US30m:
+      timeframe: H4
+      lot_size: 0.02
+      cron:
+        day: mon-fri
+        hour: '13-20/4'
+        minute: 0
+
+    USTECm:
+      timeframe: H2
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '13-20/2'
+        minute: 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ##################################################### Screener #####################################################
 # backbone.screener.Screener:

@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     scheduler = BlockingScheduler(timezone=utc)
 
-    bot_name = 'backbone.day_per_week_trader.DayPerWeekTrader'
+    bot_name = 'backbone.bbands_cross_trader.BbandsCrossTrader'
     configs = strategies[bot_name]
 
     instruments_info = configs['instruments_info']
