@@ -171,7 +171,6 @@ backbone.macd_trader.MacdTrader:
         hour: 13-20
         minute: '*/15'
 
-
 ##################################################### MeanRevTrader #####################################################
 backbone.mean_reversion_trader.MeanRevTrader:
   opt_params: 
@@ -191,6 +190,32 @@ backbone.mean_reversion_trader.MeanRevTrader:
         hour: '*'
         minute: 0
  
+# ##################################################### EndOfMonthTrader #####################################################
+backbone.day_per_week_trader.DayPerWeekTrader:
+  opt_params: 
+    day_to_buy: [0, 1, 2, 3, 4]
+    percentage_price_sl: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+  wfo_params:
+    look_back_bars: 1000
+    warmup_bars: 200
+
+  instruments_info:
+    AMZNm:
+      timeframe: H4
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*/4'
+        minute: 0
+
+    TSMm:
+      timeframe: H4
+      lot_size: 0.01
+      cron:
+        day: mon-fri
+        hour: '*/4'
+        minute: 0
 
 ##################################################### Screener #####################################################
 # backbone.screener.Screener:

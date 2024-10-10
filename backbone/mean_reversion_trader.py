@@ -61,10 +61,10 @@ class MeanReversion(Strategy):
         open_positions = trader.get_open_positions()
         
         if open_positions:
-            if open_positions[-1].type == mt5.ORDER_TYPE_BUY and actual_close >= self.sma:
+            if open_positions[-1].type == mt5.ORDER_TYPE_BUY and actual_close >= self.sma[-1]:
                 trader.close_order(open_positions[-1])
 
-            if open_positions[-1].type == mt5.ORDER_TYPE_SELL and actual_close <= self.sma:
+            if open_positions[-1].type == mt5.ORDER_TYPE_SELL and actual_close <= self.sma[-1]:
                 trader.close_order(open_positions[-1])
         
         else:

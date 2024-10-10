@@ -92,7 +92,7 @@ class TraderBot():
 
         return positions
 
-    def open_order(self, type_, price=None):
+    def open_order(self, type_, price=None, sl=None, tp=None):
         symbol_info = mt5.symbol_info(self.ticker)
         if symbol_info is None:
             print(self.ticker, "not found, can not call order_check()")
@@ -115,6 +115,8 @@ class TraderBot():
             "volume": self.lot,
             "type": mt5_type,
             "price": price,
+            "sl":sl,
+            "tp":tp,
             "magic": 234000,
             "comment": f'{self.name}',
             "type_time": self.mt5.ORDER_TIME_GTC,
