@@ -39,7 +39,7 @@ opposite_order_tpyes = {
 
 class TraderBot():
     
-    def __init__(self, name, ticker, lot, timeframe, creds:dict):
+    def __init__(self, name, ticker, timeframe, contract_volume, creds:dict):
         if not mt5.initialize():
             print("initialize() failed, error code =", mt5.last_error())
             quit()
@@ -55,8 +55,8 @@ class TraderBot():
         self.bot = telebot.TeleBot(bot_token)
         self.chat_id = chat_id
         self.ticker = ticker
-        self.lot = lot
         self.timeframe = timeframe
+        self.contract_volume = contract_volume
 
         authorized = self.mt5.login(server=server, login=account, password=pw)
 
@@ -66,6 +66,8 @@ class TraderBot():
                 print("  {}={}".format(prop, account_info_dict[prop]))
         else:
             print("failed to connect at account #{}, error code: {}".format(account, mt5.last_error()))
+            
+        self.equity = account_info_dict['equity']
         
 
     def get_data(self, date_from, date_to):
@@ -92,7 +94,7 @@ class TraderBot():
 
         return positions
 
-    def open_order(self, type_, price=None, sl=None, tp=None):
+    def open_order(self, type_, price=None, sl=None, tp=None, size=None):
         symbol_info = mt5.symbol_info(self.ticker)
         if symbol_info is None:
             print(self.ticker, "not found, can not call order_check()")
@@ -112,7 +114,7 @@ class TraderBot():
         request = {
             "action": action,
             "symbol": self.ticker,
-            "volume": self.lot,
+            "volume": size,
             "type": mt5_type,
             "price": price,
             "sl":sl,

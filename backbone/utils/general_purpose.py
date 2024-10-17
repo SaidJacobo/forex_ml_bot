@@ -37,3 +37,19 @@ screener_columns = [
     'numberOfAnalystOpinions',
     'symbol',
 ]
+
+
+def calculate_units_size(account_size, risk_percentage, stop_loss_pips, pip_value):
+    account_currency_risk = account_size * (risk_percentage / 100)
+    units = round(account_currency_risk / (pip_value * stop_loss_pips))
+    
+    return units
+
+def diff_pips(price1, price2, pip_value, absolute=True):
+    if absolute:
+        difference = abs(price1 - price2)
+    else:
+        difference = price1 - price2
+    pips = difference / pip_value
+    
+    return pips

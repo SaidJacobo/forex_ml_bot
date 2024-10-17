@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     scheduler = BlockingScheduler(timezone=utc)
 
-    bot_name = 'backbone.bbands_cross_trader.BbandsCrossTrader'
+    bot_name = 'backbone.day_per_week_trader.DayPerWeekTrader'
     configs = strategies[bot_name]
 
     instruments_info = configs['instruments_info']
@@ -29,13 +29,9 @@ if __name__ == '__main__':
     for ticker, info in instruments_info.items():
 
         cron = info['cron']
-        lot_size = info['lot_size']
         timeframe = info['timeframe']
+        contract_volume = info['contract_volume']
 
-        bot = load_function(bot_name)(ticker, lot_size, timeframe, creds, opt_params, wfo_params)
+        bot = load_function(bot_name)(ticker, timeframe, contract_volume, creds, opt_params, wfo_params)
         
-        cron = info['cron']
-        lot_size = info['lot_size']
-        timeframe = info['timeframe']
-
         bot.run()

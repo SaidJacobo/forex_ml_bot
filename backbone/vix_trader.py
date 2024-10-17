@@ -33,6 +33,7 @@ class VixRsi(Strategy):
     sma_period = 200
     vix_sma_period = 10
     rsi_period = 2
+    risk=1
     
     def init(self):
         self.rsi = self.I(ta.RSI, self.data.Close, timeperiod=self.rsi_period)
@@ -60,7 +61,16 @@ class VixRsi(Strategy):
             vix_above_sma = vix_close > (vix_sma_value * (1 + self.vix_percentage_above_sma))
 
             if vix_above_sma and cum_rsi <= self.rsi_threshold and actual_close > self.sma[-1]:
-                self.buy(size=1)
+                
+                capital_to_risk = self.equity * self.risk / 100
+                units = int(capital_to_risk / actual_close)
+                
+                if units == 0:
+                    units = 1
+                
+                print(capital_to_risk, actual_close)
+                
+                self.buy(size=units)
                 
     def next_live(self, trader:TraderBot):
         actual_close = self.data.Close[-1]
@@ -81,29 +91,60 @@ class VixRsi(Strategy):
                 info_tick = trader.get_info_tick()
                 price = info_tick.ask
                 
+                capital_to_risk = trader.equity * self.risk / 100
+                units = capital_to_risk / price
+                
+                lots = round(units / trader.contract_volume, 2)
+                
                 trader.open_order(
                     type_='buy',
-                    price=price
+                    price=price,
+                    size=lots
                 )
 
 
 class VixTrader(TraderBot):
     
-    def __init__(self, ticker, lot, timeframe, creds, opt_params, wfo_params):
-        name = f'Vix_{ticker}_{timeframe}'
+    def __init__(self, ticker, timeframe, contract_volume, creds, opt_params, wfo_params):
+        name = f'VixTrader_{ticker}_{timeframe}'
         
         self.trader = TraderBot(
             name=name,
             ticker=ticker, 
-            lot=lot,
             timeframe=timeframe, 
-            creds=creds
+            creds=creds,
+            contract_volume=contract_volume
         )
         
         self.opt_params = opt_params
         self.wfo_params = wfo_params
         self.opt_params['maximize'] = optim_func
+        self.strategy = VixRsi
     
+    
+    def get_full_data(self, date_from, date_to):
+        vix = yf.Ticker("^VIX").history(interval='1h', period='1y')
+        vix.rename(
+            columns={'Close':'VixClose'}, inplace=True
+        )
+
+        vix.index = vix.index.tz_convert('UTC')
+
+        df = self.trader.get_data(
+            date_from=date_from, 
+            date_to=date_to,
+        )
+
+        df.index = df.index.tz_localize('UTC').tz_convert('UTC')
+
+        full_df = pd.merge(
+            df, 
+            vix[['VixClose']], 
+            left_index=True, 
+            right_index=True
+        )
+        
+        return full_df
     
     def run(self):
         warmup_bars = self.wfo_params['warmup_bars']
@@ -115,30 +156,12 @@ class VixTrader(TraderBot):
         
         print(f'excecuting run {self.trader.name} at {now}')
         
-        vix = yf.Ticker("^VIX").history(interval='1h', period='1y')
-        vix.rename(
-            columns={'Close':'VixClose'}, inplace=True
-        )
-
-        vix.index = vix.index.tz_convert('UTC')
-
-        df = self.trader.get_data(
-            date_from=date_from, 
-            date_to=now,
-        )
-
-        df.index = df.index.tz_localize('UTC').tz_convert('UTC')
-
-        full_df = pd.merge(
-            df, 
-            vix[['VixClose']], 
-            left_index=True, 
-            right_index=True
-        )
+        full_df = self.get_full_data(date_from, now)
+        full_df = full_df  * 0.01
 
         bt_train = Backtest(
             full_df, 
-            VixRsi,
+            self.strategy,
             commission=7e-4,
             cash=100_000, 
             margin=1/30
@@ -150,7 +173,7 @@ class VixTrader(TraderBot):
         
         bt = Backtest(
             full_df, 
-            VixRsi,
+            self.strategy,
             commission=7e-4,
             cash=100_000, 
             margin=1/30

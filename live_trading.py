@@ -28,8 +28,9 @@ if __name__ == '__main__':
             cron = info['cron']
             lot_size = info['lot_size']
             timeframe = info['timeframe']
-        
-            bot = load_function(bot_name)(ticker, lot_size, timeframe, creds, opt_params, wfo_params)
+            contract_volume = info['contract_volume']
+
+            bot = load_function(bot_name)(ticker, lot_size, timeframe, contract_volume, creds, opt_params, wfo_params)
 
             scheduler.add_job(
                 bot.run, 

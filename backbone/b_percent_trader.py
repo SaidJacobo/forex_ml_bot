@@ -13,7 +13,7 @@ def  optim_func(series):
     return (series['Return [%]'] /  (1 + (-1*series['Max. Drawdown [%]']))) * np.log(1 + series['# Trades'])
 
 class BPercent(Strategy):
-    risk=3
+    risk= 1
     bbands_timeperiod = 50
     bband_std = 1.5
     sma_period = 200
@@ -49,11 +49,20 @@ class BPercent(Strategy):
         else:
 
             if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma[-1]:
-                self.buy(size=self.risk / 100)
+                
+                capital_to_risk = self.equity * self.risk / 100
+                units = int(capital_to_risk / actual_close)
+                
+                self.buy(size=units)
                 
             if b_percent >= self.b_open_threshold and actual_close < self.sma[-1]:
-                self.sell(size=self.risk / 100)
-                            
+                
+                capital_to_risk = self.equity * self.risk / 100
+                units = int(capital_to_risk / actual_close)
+                
+                self.sell(size=units)
+
+
     def next_live(self, trader:TraderBot):
         actual_close = self.data.Close[-1]
         b_percent = (actual_close - self.lower_band[-1]) / (self.upper_band[-1] - self.lower_band[-1])
@@ -72,41 +81,56 @@ class BPercent(Strategy):
         else:
 
             if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma[-1]:
+                
                 info_tick = trader.get_info_tick()
                 price = info_tick.ask
                 
+                capital_to_risk = trader.equity * self.risk / 100
+                units = capital_to_risk / price
+                
+                lots = round(units / trader.contract_volume, 2)
+
                 trader.open_order(
                     type_='buy',
-                    price=price
+                    price=price,
+                    size=lots
                 )             
                    
             if b_percent >= self.b_open_threshold and actual_close < self.sma[-1]:
                 info_tick = trader.get_info_tick()
                 price = info_tick.bid
                 
+                capital_to_risk = trader.equity * self.risk / 100
+                units = capital_to_risk / price
+                
+                lots = round(units / trader.contract_volume, 2)
+                
                 trader.open_order(
                     type_='sell',
-                    price=price
+                    price=price,
+                    size=lots
                 )
 
 
 class BPercentTrader(TraderBot):
     
-    def __init__(self, ticker, lot, timeframe, creds, opt_params, wfo_params):
+    def __init__(self, ticker, timeframe, contract_volume, creds, opt_params, wfo_params):
         name = f'BPercent_{ticker}_{timeframe}'
         
         self.trader = TraderBot(
             name=name,
             ticker=ticker, 
-            lot=lot,
             timeframe=timeframe, 
-            creds=creds
+            creds=creds,
+            contract_volume=contract_volume
         )
         
         self.opt_params = opt_params
         self.wfo_params = wfo_params
         self.opt_params['maximize'] = optim_func
-
+        self.strategy = BPercent
+        
+        
     def run(self):
         warmup_bars = self.wfo_params['warmup_bars']
         look_back_bars = self.wfo_params['look_back_bars']
@@ -126,7 +150,7 @@ class BPercentTrader(TraderBot):
 
         bt_train = Backtest(
             df, 
-            BPercent,
+            self.strategy,
             commission=7e-4,
             cash=15_000, 
             margin=1/30
@@ -138,7 +162,7 @@ class BPercentTrader(TraderBot):
         
         bt = Backtest(
             df, 
-            BPercent,
+            self.strategy,
             commission=7e-4,
             cash=15_000, 
             margin=1/30

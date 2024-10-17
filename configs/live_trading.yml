@@ -93,23 +93,23 @@ backbone.vix_trader.VixTrader:
   opt_params: 
     ll_hh_window: [5, 7, 10]
     vix_percentage_above_sma: [0.01, 0.02, 0.03, 0.04, 0.05]
-
+    risk: [1, 2, 3, 4, 5]
   wfo_params:
     look_back_bars: 480
     warmup_bars: 300
 
   instruments_info:
     USTECm:
+      contract_volume: 1
       timeframe: H1
-      lot_size: 0.01
       cron:
         day: mon-fri
         hour: 14-21
         minute: 0
 
     US500m:
+      contract_volume: 1
       timeframe: H1
-      lot_size: 0.03
       cron:
         day: mon-fri
         hour: 14-21
@@ -120,6 +120,7 @@ backbone.b_percent_trader.BPercentTrader:
   opt_params: 
     b_open_threshold : [0.9, 0.95, 0.99]
     b_close_threshold : [0.5, 0.6, 0.8, 0.9]
+    risk: [1, 2, 3, 4, 5]
 
   wfo_params:
     look_back_bars: 1920
@@ -128,23 +129,23 @@ backbone.b_percent_trader.BPercentTrader:
   instruments_info: 
 
     RLXm:
-      lot_size: 0.01
+      contract_volume: 100
       timeframe: M30
       cron:
         day: mon-fri
         hour: 13-20
         minute: '*/30'
 
-    LIm:
-      lot_size: 0.01
-      timeframe: H1
-      cron:
-        day: mon-fri
-        hour: 13-20
-        minute: 0
+    # LIm:
+    #   lot_size: 0.01
+    #   timeframe: H1
+    #   cron:
+    #     day: mon-fri
+    #     hour: 13-20
+    #     minute: 0
 
     TMEm:
-      lot_size: 0.01
+      contract_volume: 100
       timeframe: M30
       cron:
         day: mon-fri
@@ -157,14 +158,15 @@ backbone.macd_trader.MacdTrader:
   opt_params: 
     cum_rsi_open_threshold : [55, 65, 75, 85, 90]
     cum_rsi_close_threshold : [55, 65, 75, 85, 90]
+    risk: [1]
 
   wfo_params:
     look_back_bars: 1000
-    warmup_bars: 400
+    warmup_bars: 200
 
   instruments_info: 
     XPEVm:
-      lot_size: 0.01
+      contract_volume: 100
       timeframe: M15
       cron:
         day: mon-fri
@@ -172,10 +174,12 @@ backbone.macd_trader.MacdTrader:
         minute: '*/15'
 
 ##################################################### MeanRevTrader #####################################################
+
 backbone.mean_reversion_trader.MeanRevTrader:
   opt_params: 
     sma_period: [12, 26, 50]
     deviation_threshold: [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
+    risk: [1, 2, 3, 4, 5]
 
   wfo_params:
     look_back_bars: 1920
@@ -184,17 +188,19 @@ backbone.mean_reversion_trader.MeanRevTrader:
   instruments_info:
     AUDUSDm:
       timeframe: H1
-      lot_size: 0.01
+      contract_volume: 100000
       cron:
         day: mon-fri
         hour: '*'
         minute: 0
  
-# ##################################################### EndOfMonthTrader #####################################################
+# ##################################################### DayPerWeekTrader #####################################################
+
 backbone.day_per_week_trader.DayPerWeekTrader:
   opt_params: 
     day_to_buy: [0, 1, 2, 3, 4]
     percentage_price_sl: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    risk: [1]
 
   wfo_params:
     look_back_bars: 1000
@@ -203,7 +209,7 @@ backbone.day_per_week_trader.DayPerWeekTrader:
   instruments_info:
     AMZNm:
       timeframe: H4
-      lot_size: 0.01
+      contract_volume: 100
       cron:
         day: mon-fri
         hour: '13-20/4'
@@ -211,7 +217,7 @@ backbone.day_per_week_trader.DayPerWeekTrader:
 
     TSMm:
       timeframe: H4
-      lot_size: 0.01
+      contract_volume: 100
       cron:
         day: mon-fri
         hour: '13-20/4'
@@ -220,6 +226,7 @@ backbone.day_per_week_trader.DayPerWeekTrader:
 backbone.bbands_cross_trader.BbandsCrossTrader:
   opt_params: 
     bband_std: [1, 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3]
+    risk: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
   wfo_params:
     look_back_bars: 1000
@@ -228,7 +235,7 @@ backbone.bbands_cross_trader.BbandsCrossTrader:
   instruments_info:
     US30m:
       timeframe: H4
-      lot_size: 0.02
+      contract_volume: 1
       cron:
         day: mon-fri
         hour: '13-20/4'
@@ -236,7 +243,7 @@ backbone.bbands_cross_trader.BbandsCrossTrader:
 
     USTECm:
       timeframe: H2
-      lot_size: 0.01
+      contract_volume: 1
       cron:
         day: mon-fri
         hour: '13-20/2'

@@ -44,11 +44,19 @@ class MeanReversion(Strategy):
         else:
             # Condiciones para comprar (precio por debajo de la SMA más del umbral de desviación)
             if deviation <= -self.deviation_threshold and cum_rsi <= self.cum_rsi_down_threshold:
-                self.buy(size=self.risk / 100)
+
+                capital_to_risk = self.equity * self.risk / 100
+                units = int(capital_to_risk / actual_close)
+                
+                self.buy(size=units)
 
             # Condiciones para vender (precio por encima de la SMA más del umbral de desviación)
             elif deviation >= self.deviation_threshold and cum_rsi >= self.cum_rsi_up_threshold:
-                self.sell(size=self.risk / 100)
+                
+                capital_to_risk = self.equity * self.risk / 100
+                units = int(capital_to_risk / actual_close)
+                
+                self.sell(size=units)
     
     def next_live(self, trader:TraderBot):
         actual_close = self.data.Close[-1]
@@ -73,10 +81,16 @@ class MeanReversion(Strategy):
                 info_tick = trader.get_info_tick()
                 price = info_tick.ask
                 
+                capital_to_risk = trader.equity * self.risk / 100
+                units = capital_to_risk / price
+                
+                lots = round(units / trader.contract_volume, 2)
+                
                 trader.open_order(
                     lot=self.lot_size, 
                     type_='buy',
-                    price=price
+                    price=price,
+                    size=lots
                 )
 
             # Condiciones para vender (precio por encima de la SMA más del umbral de desviación)
@@ -84,27 +98,34 @@ class MeanReversion(Strategy):
                 info_tick = trader.get_info_tick()
                 price = info_tick.bid
                 
+                capital_to_risk = trader.equity * self.risk / 100
+                units = capital_to_risk / price
+                
+                lots = round(units / trader.contract_volume, 2)
+                
                 trader.open_order(
                     type_='sell',
-                    price=price
+                    price=price,
+                    size=lots
                 )
 
 class MeanRevTrader():
     
-    def __init__(self, ticker, lot, timeframe, creds, opt_params, wfo_params):
-        name = f'MeanRev_{ticker}_{timeframe}'
+    def __init__(self, ticker, timeframe, contract_volume, creds, opt_params, wfo_params):
+        name = f'MeanRevTrader_{ticker}_{timeframe}'
         
         self.trader = TraderBot(
             name=name,
             ticker=ticker, 
-            lot=lot,
             timeframe=timeframe, 
-            creds=creds
+            creds=creds,
+            contract_volume=contract_volume
         )
         
         self.opt_params = opt_params
         self.wfo_params = wfo_params
         self.opt_params['maximize'] = optim_func
+        self.strategy = MeanReversion
 
     def run(self):
         warmup_bars = self.wfo_params['warmup_bars']
@@ -125,7 +146,7 @@ class MeanRevTrader():
 
         bt_train = Backtest(
             df, 
-            MeanReversion,
+            self.strategy,
             commission=7e-4,
             cash=15_000, 
             margin=1/30
@@ -137,7 +158,7 @@ class MeanRevTrader():
         
         bt = Backtest(
             df, 
-            MeanReversion,
+            self.strategy,
             commission=7e-4,
             cash=15_000, 
             margin=1/30
