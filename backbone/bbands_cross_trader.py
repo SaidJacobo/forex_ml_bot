@@ -8,6 +8,8 @@ import numpy as np
 import MetaTrader5 as mt5
 import numpy as np
 
+from backbone.utils.general_purpose import calculate_units_size, diff_pips
+
 np.seterr(divide='ignore')
 
 def  optim_func(series):
@@ -18,6 +20,9 @@ class BbandsCross(Strategy):
     bbands_timeperiod = 50
     bband_std = 1.5
     sma_period = 200
+
+    atr_multiplier = 1.5
+    pip_value = 0.1
 
     def init(self):
         
@@ -31,6 +36,9 @@ class BbandsCross(Strategy):
             nbdevup=self.bband_std, 
             nbdevdn=self.bband_std
         )
+
+        self.atr = self.I(ta.ATR, self.data.High, self.data.Low, self.data.Close)
+
 
     def next(self):
         actual_close = self.data.Close[-1]
@@ -47,24 +55,46 @@ class BbandsCross(Strategy):
         else:
 
             if crossover(self.data.Close, self.lower_band) and actual_close > self.sma[-1]:
+                sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
                 
-                capital_to_risk = self.equity * self.risk / 100
-                units = int(capital_to_risk / actual_close)
+                pip_distance = diff_pips(
+                    self.data.Close[-1], 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
                 
-                if units == 0:
-                    units = 1
+                units = calculate_units_size(
+                    account_size=self.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value
+                )
                 
-                self.buy(size=units)
+                self.buy(
+                    size=units,
+                    sl=sl_price
+                )
                 
             if crossover(self.upper_band, self.data.Close) and actual_close < self.sma[-1]:
+                sl_price = self.data.Close[-1] + self.atr_multiplier * self.atr[-1]
                 
-                capital_to_risk = self.equity * self.risk / 100
-                units = int(capital_to_risk / actual_close)
+                pip_distance = diff_pips(
+                    self.data.Close[-1], 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
                 
-                if units == 0:
-                    units = 1
+                units = calculate_units_size(
+                    account_size=self.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value
+                )
                 
-                self.sell(size=units)
+                self.sell(
+                    size=units,
+                    sl=sl_price
+                )
                             
     def next_live(self, trader:TraderBot):
         actual_close = self.data.Close[-1]

@@ -93,7 +93,7 @@ backbone.vix_trader.VixTrader:
   opt_params: 
     ll_hh_window: [5, 7, 10]
     vix_percentage_above_sma: [0.01, 0.02, 0.03, 0.04, 0.05]
-    risk: [1, 2, 3, 4, 5]
+    risk: [1, 2, 3]
   wfo_params:
     look_back_bars: 480
     warmup_bars: 300
@@ -120,7 +120,7 @@ backbone.b_percent_trader.BPercentTrader:
   opt_params: 
     b_open_threshold : [0.9, 0.95, 0.99]
     b_close_threshold : [0.5, 0.6, 0.8, 0.9]
-    risk: [1, 2, 3, 4, 5]
+    risk: [1, 2, 3]
 
   wfo_params:
     look_back_bars: 1920
@@ -136,14 +136,6 @@ backbone.b_percent_trader.BPercentTrader:
         hour: 13-20
         minute: '*/30'
 
-    # LIm:
-    #   lot_size: 0.01
-    #   timeframe: H1
-    #   cron:
-    #     day: mon-fri
-    #     hour: 13-20
-    #     minute: 0
-
     TMEm:
       contract_volume: 100
       timeframe: M30
@@ -158,7 +150,7 @@ backbone.macd_trader.MacdTrader:
   opt_params: 
     cum_rsi_open_threshold : [55, 65, 75, 85, 90]
     cum_rsi_close_threshold : [55, 65, 75, 85, 90]
-    risk: [1]
+    risk: [1, 2, 3]
 
   wfo_params:
     look_back_bars: 1000
@@ -179,7 +171,7 @@ backbone.mean_reversion_trader.MeanRevTrader:
   opt_params: 
     sma_period: [12, 26, 50]
     deviation_threshold: [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
-    risk: [1, 2, 3, 4, 5]
+    risk: [1, 2, 3]
 
   wfo_params:
     look_back_bars: 1920
@@ -200,7 +192,7 @@ backbone.day_per_week_trader.DayPerWeekTrader:
   opt_params: 
     day_to_buy: [0, 1, 2, 3, 4]
     percentage_price_sl: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    risk: [1]
+    risk: [1, 2, 3]
 
   wfo_params:
     look_back_bars: 1000
@@ -226,7 +218,7 @@ backbone.day_per_week_trader.DayPerWeekTrader:
 backbone.bbands_cross_trader.BbandsCrossTrader:
   opt_params: 
     bband_std: [1, 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3]
-    risk: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    risk: [1, 2, 3]
 
   wfo_params:
     look_back_bars: 1000

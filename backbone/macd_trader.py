@@ -63,8 +63,7 @@ class Macd(Strategy):
 
         else:
 
-            if crossover(self.macdsignal, self.macd) and cum_rsi <= 100-self.cum_rsi_open_threshold and actual_close > self.sma[-1]:
-                
+            if crossover(self.macdsignal, self.macd) and cum_rsi <= 100-self.cum_rsi_open_threshold and actual_close > self.sma[-1]:        
                 sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
@@ -86,7 +85,6 @@ class Macd(Strategy):
                 )
                 
             if crossover(self.macd, self.macdsignal) and cum_rsi >= self.cum_rsi_open_threshold and actual_close < self.sma[-1]:
-                
                 sl_price = self.data.Close[-1] + self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(

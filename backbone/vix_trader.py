@@ -9,6 +9,8 @@ from backtesting import Backtest, Strategy
 import numpy as np
 import numpy as np
 
+from backbone.utils.general_purpose import calculate_units_size, diff_pips
+
 np.seterr(divide='ignore')
 
 def  optim_func(series):
@@ -34,12 +36,16 @@ class VixRsi(Strategy):
     vix_sma_period = 10
     rsi_period = 2
     risk=1
+    atr_multiplier = 1.5
+    pip_value = 0.1
     
     def init(self):
         self.rsi = self.I(ta.RSI, self.data.Close, timeperiod=self.rsi_period)
         self.sma = self.I(ta.SMA, self.data.Close, timeperiod=self.sma_period)
         self.vix_sma = self.I(ta.SMA, self.data.VixClose, timeperiod=self.vix_sma_period)
         self.lower_low, self.higher_high = self.I(ll_hh_indicator, self.data.Close, window=self.ll_hh_window)
+        self.atr = self.I(ta.ATR, self.data.High, self.data.Low, self.data.Close)
+        
 
     def next(self):
         actual_close = self.data.Close[-1]
@@ -61,16 +67,25 @@ class VixRsi(Strategy):
             vix_above_sma = vix_close > (vix_sma_value * (1 + self.vix_percentage_above_sma))
 
             if vix_above_sma and cum_rsi <= self.rsi_threshold and actual_close > self.sma[-1]:
+                sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
                 
-                capital_to_risk = self.equity * self.risk / 100
-                units = int(capital_to_risk / actual_close)
+                pip_distance = diff_pips(
+                    self.data.Close[-1], 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
                 
-                if units == 0:
-                    units = 1
+                units = calculate_units_size(
+                    account_size=self.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value
+                )
                 
-                print(capital_to_risk, actual_close)
-                
-                self.buy(size=units)
+                self.buy(
+                    size=units,
+                    sl=sl_price
+                )
                 
     def next_live(self, trader:TraderBot):
         actual_close = self.data.Close[-1]

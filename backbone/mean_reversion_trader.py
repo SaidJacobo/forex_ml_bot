@@ -7,6 +7,8 @@ import MetaTrader5 as mt5
 import numpy as np
 import numpy as np
 
+from backbone.utils.general_purpose import calculate_units_size, diff_pips
+
 np.seterr(divide='ignore')
 
 
@@ -20,10 +22,14 @@ class MeanReversion(Strategy):
     cum_rsi_up_threshold = 75
     cum_rsi_down_threshold = 25
     
+    atr_multiplier = 1.5
+    pip_value = 0.001
+    
     def init(self):
         # Calcular la media móvil simple (SMA)
         self.sma = self.I(ta.SMA, self.data.Close, timeperiod=self.sma_period)
         self.rsi = self.I(ta.RSI, self.data.Close, timeperiod=2)
+        self.atr = self.I(ta.ATR, self.data.High, self.data.Low, self.data.Close)
 
     def next(self):
         # Precio actual y valor de la SMA
@@ -44,19 +50,47 @@ class MeanReversion(Strategy):
         else:
             # Condiciones para comprar (precio por debajo de la SMA más del umbral de desviación)
             if deviation <= -self.deviation_threshold and cum_rsi <= self.cum_rsi_down_threshold:
-
-                capital_to_risk = self.equity * self.risk / 100
-                units = int(capital_to_risk / actual_close)
+                sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
                 
-                self.buy(size=units)
+                pip_distance = diff_pips(
+                    self.data.Close[-1], 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
+                
+                units = calculate_units_size(
+                    account_size=self.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value
+                )
+                
+                self.buy(
+                    size=units,
+                    sl=sl_price
+                )
 
             # Condiciones para vender (precio por encima de la SMA más del umbral de desviación)
             elif deviation >= self.deviation_threshold and cum_rsi >= self.cum_rsi_up_threshold:
+                sl_price = self.data.Close[-1] + self.atr_multiplier * self.atr[-1]
                 
-                capital_to_risk = self.equity * self.risk / 100
-                units = int(capital_to_risk / actual_close)
+                pip_distance = diff_pips(
+                    self.data.Close[-1], 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
                 
-                self.sell(size=units)
+                units = calculate_units_size(
+                    account_size=self.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value
+                )
+                
+                self.sell(
+                    size=units,
+                    sl=sl_price
+                )
     
     def next_live(self, trader:TraderBot):
         actual_close = self.data.Close[-1]

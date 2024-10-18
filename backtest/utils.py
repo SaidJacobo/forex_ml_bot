@@ -125,8 +125,6 @@ def get_wfo_stats(stats, warmup_bars, ohcl_data):
     for stat in stats:
         equity_curves = pd.concat([equity_curves, stat["_equity_curve"].iloc[warmup_bars:]])
     
-    print(equity_curves)
-    
     wfo_stats = compute_stats(
         trades=trades,  # broker.closed_trades,
         equity=equity_curves.Equity,
@@ -155,7 +153,40 @@ def max_drawdown(serie):
     return max_dd
 
 
-def montecarlo_statistics_simulation(trade_history, n_simulations, initial_equity, threshold_ruin=0.85, return_raw_curves=False):
+def montecarlo_statistics_simulation(
+        trade_history, 
+        equity_curve, 
+        n_simulations, 
+        initial_equity, 
+        threshold_ruin=0.85, 
+        return_raw_curves=False
+    ):
+    
+    
+    # Renombro las columnas
+    trade_history = trade_history.rename(columns={'ExitTime':'Date'})
+    trade_history = trade_history[['ExitTime', 'PnL']]
+    
+    equity_curve = equity_curve.reset_index().rename(columns={'index':'Date'})[['Date','Equity']].sort_values(by='Date')
+
+    trade_history['Date'] = pd.to_datetime(trade_history['Date'])
+    equity_curve['Date'] = pd.to_datetime(equity_curve['Date'])
+
+    # joineo los dfs por fechas
+    full_df = pd.merge(
+        equity_curve,
+        trade_history,
+        on='Date',
+        how='left'   
+    )
+
+    full_df = full_df[~full_df['PnL'].isna()]
+    
+    full_df['pct'] = full_df['PnL'] / full_df['Equity'].shift(1)
+
+    
+    
+    
     # Parámetros iniciales
     n_steps = len(trade_history)
     mean_return = trade_history['ReturnPct'].mean()

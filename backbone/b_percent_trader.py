@@ -7,6 +7,8 @@ import numpy as np
 import MetaTrader5 as mt5
 import numpy as np
 
+from backbone.utils.general_purpose import calculate_units_size, diff_pips
+
 np.seterr(divide='ignore')
 
 def  optim_func(series):
@@ -19,6 +21,8 @@ class BPercent(Strategy):
     sma_period = 200
     b_open_threshold = 0.95
     b_close_threshold = 0.5
+    atr_multiplier = 1.5
+    pip_value = 0.1
 
     def init(self):
         
@@ -32,6 +36,8 @@ class BPercent(Strategy):
             nbdevup=self.bband_std, 
             nbdevdn=self.bband_std
         )
+        
+        self.atr = self.I(ta.ATR, self.data.High, self.data.Low, self.data.Close)
 
     def next(self):
         actual_close = self.data.Close[-1]
@@ -49,11 +55,25 @@ class BPercent(Strategy):
         else:
 
             if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma[-1]:
+                sl_price = self.data.Close[-1] + self.atr_multiplier * self.atr[-1]
                 
-                capital_to_risk = self.equity * self.risk / 100
-                units = int(capital_to_risk / actual_close)
+                pip_distance = diff_pips(
+                    self.data.Close[-1], 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
                 
-                self.buy(size=units)
+                units = calculate_units_size(
+                    account_size=self.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value
+                )
+                
+                self.sell(
+                    size=units,
+                    sl=sl_price
+                )
                 
             if b_percent >= self.b_open_threshold and actual_close < self.sma[-1]:
                 
