@@ -1,126 +1,125 @@
-# ##################################################### EndOfMonthTrader #####################################################
-backbone.eom_trader.EndOfMonthTrader:
-  opt_params:
-    null
+# # ##################################################### EndOfMonthTrader #####################################################
+# backbone.eom_trader.EndOfMonthTrader:
+#   opt_params:
+#     null
 
-  wfo_params:
-    null
+#   wfo_params:
+#     null
 
-  indicator_params:
-    rsi_time_period: 2  
+#   indicator_params:
+#     rsi_time_period: 2  
 
-  instruments_info:
-    AMZNm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    AVGOm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    BIDUm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    COSTm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    CSCOm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    INTUm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    METAm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    MSFTm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    NVDAm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    PYPLm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    VRTXm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
+#   instruments_info:
+#     AMZNm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     AVGOm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     BIDUm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     COSTm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     CSCOm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     INTUm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     METAm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     MSFTm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     NVDAm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     PYPLm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
+#     VRTXm:
+#       timeframe: D1
+#       lot_size: 0.01
+#       cron:
+#         day: mon-fri
+#         hour: 14
+#         minute: 0
 
-##################################################### VixTrader #####################################################
-backbone.vix_trader.VixTrader:
-  opt_params: 
-    ll_hh_window: [5, 7, 10]
-    vix_percentage_above_sma: [0.01, 0.02, 0.03, 0.04, 0.05]
-    risk: [1, 2, 3]
-  wfo_params:
-    look_back_bars: 480
-    warmup_bars: 300
+# ##################################################### VixTrader #####################################################
+# backbone.vix_trader.VixTrader:
+#   opt_params: 
+#     ll_hh_window: [5, 7, 10]
+#     vix_percentage_above_sma: [0.01, 0.02, 0.03, 0.04, 0.05]
+#     risk: [1, 2, 3]
+#   wfo_params:
+#     look_back_bars: 480
+#     warmup_bars: 300
 
-  instruments_info:
-    USTECm:
-      contract_volume: 1
-      timeframe: H1
-      cron:
-        day: mon-fri
-        hour: 14-21
-        minute: 0
+#   instruments_info:
+#     USTECm:
+#       timeframe: H1
+#       cron:
+#         day: mon-fri
+#         hour: 14-21
+#         minute: 0
 
-    US500m:
-      contract_volume: 1
-      timeframe: H1
-      cron:
-        day: mon-fri
-        hour: 14-21
-        minute: 0
+#     US500m:
+#       timeframe: H1
+#       cron:
+#         day: mon-fri
+#         hour: 14-21
+#         minute: 0
 
 ##################################################### BBandsTrader #####################################################
-backbone.b_percent_trader.BPercentTrader:
+backbone.b_percent_strategy.BPercent:
+  name: BPercent
   opt_params: 
     b_open_threshold : [0.9, 0.95, 0.99]
     b_close_threshold : [0.5, 0.6, 0.8, 0.9]
-    risk: [1, 2, 3]
+    risk: [1]
 
   wfo_params:
     look_back_bars: 1920
@@ -129,7 +128,6 @@ backbone.b_percent_trader.BPercentTrader:
   instruments_info: 
 
     RLXm:
-      contract_volume: 100
       timeframe: M30
       cron:
         day: mon-fri
@@ -137,109 +135,124 @@ backbone.b_percent_trader.BPercentTrader:
         minute: '*/30'
 
     TMEm:
-      contract_volume: 100
       timeframe: M30
       cron:
         day: mon-fri
         hour: 13-20
         minute: '*/30'
 
-##################################################### MacdTrader #####################################################
+# ##################################################### MacdTrader #####################################################
 
-backbone.macd_trader.MacdTrader:
-  opt_params: 
-    cum_rsi_open_threshold : [55, 65, 75, 85, 90]
-    cum_rsi_close_threshold : [55, 65, 75, 85, 90]
-    risk: [1, 2, 3]
+# backbone.macd_trader.MacdTrader:
+#   opt_params: 
+#     cum_rsi_open_threshold : [55, 65, 75, 85, 90]
+#     cum_rsi_close_threshold : [55, 65, 75, 85, 90]
+#     risk: [1]
 
-  wfo_params:
-    look_back_bars: 1000
-    warmup_bars: 200
+#   wfo_params:
+#     look_back_bars: 1000
+#     warmup_bars: 200
 
-  instruments_info: 
-    XPEVm:
-      contract_volume: 100
-      timeframe: M15
-      cron:
-        day: mon-fri
-        hour: 13-20
-        minute: '*/15'
+#   instruments_info: 
+#     XPEVm:
+#       timeframe: M15
+#       cron:
+#         day: mon-fri
+#         hour: 13-20
+#         minute: '*/15'
 
-##################################################### MeanRevTrader #####################################################
+#     NIOm:
+#       timeframe: M15
+#       cron:
+#         day: mon-fri
+#         hour: 13-20
+#         minute: '*/15'
 
-backbone.mean_reversion_trader.MeanRevTrader:
-  opt_params: 
-    sma_period: [12, 26, 50]
-    deviation_threshold: [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
-    risk: [1, 2, 3]
+#     IBMm:
+#       timeframe: M30
+#       cron:
+#         day: mon-fri
+#         hour: 13-20
+#         minute: '*/30'
 
-  wfo_params:
-    look_back_bars: 1920
-    warmup_bars: 80
+#     ZTOm:
+#       timeframe: H1
+#       cron:
+#         day: mon-fri
+#         hour: 13-20
+#         minute: '0'
 
-  instruments_info:
-    AUDUSDm:
-      timeframe: H1
-      contract_volume: 100000
-      cron:
-        day: mon-fri
-        hour: '*'
-        minute: 0
+# ##################################################### MeanRevTrader #####################################################
+
+# backbone.mean_reversion_trader.MeanRevTrader:
+#   opt_params: 
+#     sma_period: [50]
+#     deviation_threshold: [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2]
+#     risk: [1]
+
+#   wfo_params:
+#     look_back_bars: 1000
+#     warmup_bars: 50
+
+#   instruments_info:
+#     UNHm:
+#       timeframe: H4
+#       cron:
+#         day: mon-fri
+#         hour: '13-20/4'
+#         minute: 0
  
-# ##################################################### DayPerWeekTrader #####################################################
+# # ##################################################### DayPerWeekTrader #####################################################
 
-backbone.day_per_week_trader.DayPerWeekTrader:
-  opt_params: 
-    day_to_buy: [0, 1, 2, 3, 4]
-    percentage_price_sl: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    risk: [1, 2, 3]
+# backbone.day_per_week_trader.DayPerWeekTrader:
+#   opt_params: 
+#     day_to_buy: [0, 1, 2, 3, 4]
+#     percentage_price_sl: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#     risk: [1, 2, 3]
 
-  wfo_params:
-    look_back_bars: 1000
-    warmup_bars: 200
+#   wfo_params:
+#     look_back_bars: 1000
+#     warmup_bars: 200
 
-  instruments_info:
-    AMZNm:
-      timeframe: H4
-      contract_volume: 100
-      cron:
-        day: mon-fri
-        hour: '13-20/4'
-        minute: 0
+#   instruments_info:
+#     TSMm:
+#       timeframe: H4
+#       cron:
+#         day: mon-fri
+#         hour: '13-20/4'
+#         minute: 0
 
-    TSMm:
-      timeframe: H4
-      contract_volume: 100
-      cron:
-        day: mon-fri
-        hour: '13-20/4'
-        minute: 0
+#     WMTm:
+#       timeframe: H4
+#       cron:
+#         day: mon-fri
+#         hour: '13-20/4'
+#         minute: 0
 
-backbone.bbands_cross_trader.BbandsCrossTrader:
-  opt_params: 
-    bband_std: [1, 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3]
-    risk: [1, 2, 3]
 
-  wfo_params:
-    look_back_bars: 1000
-    warmup_bars: 200
+# backbone.bbands_cross_trader.BbandsCrossTrader:
+#   opt_params: 
+#     bband_std: [1, 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3]
+#     risk: [1, 2, 3]
 
-  instruments_info:
-    US30m:
-      timeframe: H4
-      contract_volume: 1
-      cron:
-        day: mon-fri
-        hour: '13-20/4'
-        minute: 0
+#   wfo_params:
+#     look_back_bars: 1000
+#     warmup_bars: 200
 
-    USTECm:
-      timeframe: H2
-      contract_volume: 1
-      cron:
-        day: mon-fri
-        hour: '13-20/2'
-        minute: 0
+#   instruments_info:
+#     US30m:
+#       timeframe: H4
+#       cron:
+#         day: mon-fri
+#         hour: '13-20/4'
+#         minute: 0
+
+#     USTECm:
+#       timeframe: H2
+#       cron:
+#         day: mon-fri
+#         hour: '13-20/2'
+#         minute: 0
 
 
 

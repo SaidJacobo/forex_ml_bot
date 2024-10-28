@@ -1,7 +1,5 @@
 import yaml
 from backbone.utils.general_purpose import load_function
-from apscheduler.schedulers.blocking import BlockingScheduler
-from pytz import utc
 import numpy as np
 
 np.seterr(divide='ignore')
@@ -16,10 +14,11 @@ if __name__ == '__main__':
     with open('configs/test_creds.yml', 'r') as file:
         creds = yaml.safe_load(file)
 
-    scheduler = BlockingScheduler(timezone=utc)
 
-    bot_name = 'backbone.day_per_week_trader.DayPerWeekTrader'
-    configs = strategies[bot_name]
+    strategy_path = 'backbone.b_percent_strategy.BPercent'
+    bot_path = 'backbone.trader_bot.TraderBot'
+    
+    configs = strategies[strategy_path]
 
     instruments_info = configs['instruments_info']
     wfo_params = configs['wfo_params']
@@ -30,8 +29,10 @@ if __name__ == '__main__':
 
         cron = info['cron']
         timeframe = info['timeframe']
-        contract_volume = info['contract_volume']
+        
+        strategy = load_function(strategy_path)
 
-        bot = load_function(bot_name)(ticker, timeframe, contract_volume, creds, opt_params, wfo_params)
+        name = configs['name']
+        bot = load_function(bot_path)(name, ticker, timeframe, creds, opt_params, wfo_params, strategy)
         
         bot.run()

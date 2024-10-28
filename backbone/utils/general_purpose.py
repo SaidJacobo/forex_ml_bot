@@ -53,3 +53,12 @@ def diff_pips(price1, price2, pip_value, absolute=True):
     pips = difference / pip_value
     
     return pips
+
+def transformar_a_uno(numero):
+    # Inicializar contador de decimales
+    decimales = 0
+    while numero != int(numero):
+        numero *= 10
+        decimales += 1
+
+    return 1 / (10 ** decimales)

@@ -16,21 +16,25 @@ if __name__ == '__main__':
     with open('configs/test_creds.yml', 'r') as file:
         creds = yaml.safe_load(file)
 
+
+    bot_path = 'backbone.trader_bot.TraderBot'
+
     scheduler = BlockingScheduler(timezone=utc)
 
-    for bot_name, configs in strategies.items():
+    for strategy_name, configs in strategies.items():
         instruments_info = configs['instruments_info']
         wfo_params = configs['wfo_params']
         opt_params = configs['opt_params']
+        name = configs['name']
 
         for ticker, info in instruments_info.items():
 
             cron = info['cron']
-            lot_size = info['lot_size']
             timeframe = info['timeframe']
-            contract_volume = info['contract_volume']
 
-            bot = load_function(bot_name)(ticker, lot_size, timeframe, contract_volume, creds, opt_params, wfo_params)
+            strategy = load_function(strategy_name)
+            
+            bot = load_function(bot_path)(name, ticker, timeframe, creds, opt_params, wfo_params, strategy)
 
             scheduler.add_job(
                 bot.run, 

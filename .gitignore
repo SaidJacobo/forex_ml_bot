@@ -15,6 +15,9 @@ env/
 # Archivos de datos
 *.csv
 
+# Archivos de btpy
+*.html
+
 # Archivos de texto
 *.txt
 

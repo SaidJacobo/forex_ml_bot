@@ -22,8 +22,6 @@ def get_data(tickers, intervals, date_from, date_to):
     if not mt5.initialize():
         raise Exception("initialize() failed, error code =", mt5.last_error())
 
-
-
     for ticker, interval in parameter_combinations:
         print(ticker)
         # Obtener las tasas históricas
@@ -35,7 +33,6 @@ def get_data(tickers, intervals, date_from, date_to):
         # Convertir el tiempo de segundos a formato datetime
         df['time'] = pd.to_datetime(df['time'], unit='s')
 
-
         # Renombrar columnas para el ticker principal
         df = df.rename(columns={
             'time': 'Date',
@@ -45,7 +42,15 @@ def get_data(tickers, intervals, date_from, date_to):
             'close': 'Close',
             'tick_volume': 'Volume'
         }).set_index('Date')
+        
+        df.index = df.index.tz_localize('UTC').tz_convert('UTC')
+        
+        utc_to_ts = pd.Timestamp(date_to).tz_convert('UTC')
 
+        days = (utc_to_ts - df.index[-1]).days
+        if days > 4:
+            print(f'se descarto {ticker}')
+            continue
 
         if ticker not in symbols.keys():
             symbols[ticker] = {}
@@ -54,8 +59,7 @@ def get_data(tickers, intervals, date_from, date_to):
         symbols[ticker][interval] = df
 
 
-    # Cerrar la conexión con MetaTrader 5
     mt5.shutdown()
-    
     return symbols
+
     

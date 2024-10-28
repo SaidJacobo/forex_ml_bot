@@ -22,7 +22,7 @@ def optim_func_2(stats):
     return (stats['Return [%]'] /  (1 + (-1*stats['Max. Drawdown [%]']))) * np.log(1 + stats['# Trades']) * stability_ratio
     
 class DayPerWeek(Strategy):
-    risk = 1
+    risk = 10
     day_to_buy = 3
     percentage_price_sl = 5
     sma_period = 200
@@ -84,8 +84,18 @@ class DayPerWeek(Strategy):
                 price = info_tick.ask
                 sl_price = price - price *  (self.percentage_price_sl / 100)
                 
-                capital_to_risk = trader.equity * self.risk / 100
-                units = capital_to_risk / price
+                pip_distance = diff_pips(
+                    price,
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
+                
+                units = calculate_units_size(
+                    account_size=self.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value
+                )
                 
                 lots = round(units / trader.contract_volume, 2)
                 
@@ -98,7 +108,7 @@ class DayPerWeek(Strategy):
 
 class DayPerWeekTrader(TraderBot):
     
-    def __init__(self, ticker, timeframe, contract_volume, creds, opt_params, wfo_params):
+    def __init__(self, ticker, timeframe, creds, opt_params, wfo_params):
         name = f'DPW_{ticker}_{timeframe}'
         
         self.trader = TraderBot(
@@ -106,7 +116,6 @@ class DayPerWeekTrader(TraderBot):
             ticker=ticker, 
             timeframe=timeframe, 
             creds=creds,
-            contract_volume=contract_volume
         )
         
         self.opt_params = opt_params

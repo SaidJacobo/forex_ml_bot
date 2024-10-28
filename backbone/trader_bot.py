@@ -1,6 +1,12 @@
 import pandas as pd
 import MetaTrader5 as mt5
 import telebot
+from datetime import datetime, timedelta
+from backtesting import Backtest
+import pytz
+import numpy as np
+
+from backbone.utils.general_purpose import transformar_a_uno
 
 time_frames = {
     'M1': mt5.TIMEFRAME_M1,
@@ -37,14 +43,26 @@ opposite_order_tpyes = {
     mt5.ORDER_TYPE_SELL: mt5.ORDER_TYPE_BUY,
 }
 
+def  optim_func(series):
+    return (series['Return [%]'] /  (1 + (-1*series['Max. Drawdown [%]']))) * np.log(1 + series['# Trades'])
+
 class TraderBot():
     
-    def __init__(self, name, ticker, timeframe, contract_volume, creds:dict):
+    def __init__(
+        self, 
+        name, 
+        ticker, 
+        timeframe, 
+        creds:dict, 
+        opt_params, 
+        wfo_params, 
+        strategy
+    ):
         if not mt5.initialize():
             print("initialize() failed, error code =", mt5.last_error())
             quit()
 
-        self.name = name
+        self.name = f'{name}_{ticker}_{timeframe}'
         bot_token = creds['telegram_bot_token']
         chat_id = creds['telegram_chat_id']
         server = creds['server']
@@ -56,8 +74,12 @@ class TraderBot():
         self.chat_id = chat_id
         self.ticker = ticker
         self.timeframe = timeframe
-        self.contract_volume = contract_volume
-
+        
+        self.opt_params = opt_params
+        self.wfo_params = wfo_params
+        self.strategy = strategy
+        
+        
         authorized = self.mt5.login(server=server, login=account, password=pw)
 
         if authorized:
@@ -69,14 +91,37 @@ class TraderBot():
             
         self.equity = account_info_dict['equity']
         
+        
+        symbol_info = self.mt5.symbol_info(self.ticker)
+        
+        self.contract_volume = symbol_info.trade_contract_size
+        self.minimum_lot = symbol_info.volume_min
+        self.maximum_lot = symbol_info.volume_max
+        self.pip_value = symbol_info.point
+        
+        minimum_units = self.contract_volume * self.minimum_lot
+        self.minimum_fraction = transformar_a_uno(minimum_units)
+
+        self.scaled_contract_volume = self.contract_volume / self.minimum_fraction
+
+        self.scaled_pip_value = self.pip_value * self.minimum_fraction
+        self.scaled_minimum_units = self.minimum_lot * self.scaled_contract_volume
+        self.scaled_maximum_units = self.maximum_lot * self.scaled_contract_volume
+        
+        self.opt_params['minimum_units'] = [self.scaled_minimum_units]
+        self.opt_params['maximum_units'] = [self.scaled_maximum_units]
+        self.opt_params['pip_value'] = [self.scaled_pip_value]
+        self.opt_params['contract_volume'] = [self.scaled_contract_volume]
+        
+        self.opt_params['maximize'] = optim_func  
 
     def get_data(self, date_from, date_to):
         rates = self.mt5.copy_rates_range(self.ticker, time_frames[self.timeframe], date_from, date_to)
             
-        df = pd.DataFrame(rates)
-        df['time'] = pd.to_datetime(df['time'], unit='s')
+        historical_prices = pd.DataFrame(rates)
+        historical_prices['time'] = pd.to_datetime(historical_prices['time'], unit='s')
 
-        df = df.rename(columns={
+        historical_prices = historical_prices.rename(columns={
             'time': 'Date',
             'open': 'Open',
             'high': 'High',
@@ -84,8 +129,8 @@ class TraderBot():
             'close': 'Close',
             'tick_volume': 'Volume'
         }).set_index('Date')
-
-        return df
+  
+        return historical_prices
 
     def get_open_positions(self):
         positions = self.mt5.positions_get(symbol=self.ticker)
@@ -136,7 +181,7 @@ class TraderBot():
             message = f"Se abrio una nueva orden: {self.name}, lot: {self.lot}, price: {price}. Codigo: {result.retcode}"
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
-
+            
     def close_order(self, position):
         close_position_type = opposite_order_tpyes[position.type]
 
@@ -174,4 +219,51 @@ class TraderBot():
     def get_info_tick(self):
         info_tick = self.mt5.symbol_info_tick(self.ticker)
         return info_tick
+
+    def run(self):
+        warmup_bars = self.wfo_params['warmup_bars']
+        look_back_bars = self.wfo_params['look_back_bars']
+
+        timezone = pytz.timezone("Etc/UTC")
+        now = datetime.now(tz=timezone)
+        date_from = now - timedelta(hours=look_back_bars) - timedelta(hours=warmup_bars) 
+        
+        print(f'excecuting run {self.name} at {now}')
+        
+        df = self.get_data(
+            date_from=date_from, 
+            date_to=now,
+        )
+        
+        df.loc[:, ['Open', 'High', 'Low', 'Close']] = df.loc[:, ['Open', 'High', 'Low', 'Close']] * self.minimum_fraction
+
+        df.index = df.index.tz_localize('UTC').tz_convert('UTC')
+
+        bt_train = Backtest(
+            df, 
+            self.strategy,
+            commission=7e-4,
+            cash=15_000, 
+            margin=1/30
+        )
+        
+        stats_training = bt_train.optimize(
+            **self.opt_params
+        )
+        
+        bt = Backtest(
+            df, 
+            self.strategy,
+            commission=7e-4,
+            cash=15_000, 
+            margin=1/30
+        )
+        
+        opt_params = {param: getattr(stats_training._strategy, param) for param in self.opt_params.keys() if param != 'maximize'}
+
+        stats = bt.run(
+            **opt_params
+        )
+
+        bt_train._results._strategy.next_live(trader=self) 
         

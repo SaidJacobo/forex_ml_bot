@@ -145,7 +145,7 @@ class MeanReversion(Strategy):
 
 class MeanRevTrader():
     
-    def __init__(self, ticker, timeframe, contract_volume, creds, opt_params, wfo_params):
+    def __init__(self, ticker, timeframe, creds, opt_params, wfo_params):
         name = f'MeanRevTrader_{ticker}_{timeframe}'
         
         self.trader = TraderBot(
@@ -153,7 +153,6 @@ class MeanRevTrader():
             ticker=ticker, 
             timeframe=timeframe, 
             creds=creds,
-            contract_volume=contract_volume
         )
         
         self.opt_params = opt_params
