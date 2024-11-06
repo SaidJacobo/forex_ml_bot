@@ -17,9 +17,9 @@ if __name__ == '__main__':
         creds = yaml.safe_load(file)
 
 
-    bot_path = 'backbone.trader_bot.TraderBot'
-
     scheduler = BlockingScheduler(timezone=utc)
+
+    bot_path = 'backbone.trader_bot.TraderBot'
 
     for strategy_name, configs in strategies.items():
         instruments_info = configs['instruments_info']

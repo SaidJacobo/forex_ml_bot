@@ -9,7 +9,7 @@ os.chdir(root_dir)
 sys.path.insert(0, os.path.join(root_dir, 'src'))
 
 # %%
-from backtest.utils import run_strategy, run_wfo
+from backbone.utils.wfo_utils import run_strategy, run_wfo
 from backbone.utils.general_purpose import calculate_units_size, diff_pips
 
 import itertools
@@ -270,7 +270,7 @@ intervals = filter_performance.interval.values.tolist()
 # # WFO
 
 # %%
-from backtest.utils import optim_func_2
+from backbone.utils.wfo_utils import optim_func_2
 
 lookback_bars = 1800
 validation_bars = 180
@@ -348,7 +348,7 @@ filtered_wfo_performance
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from backtest.utils import montecarlo_statistics_simulation
+from backbone.utils.wfo_utils import montecarlo_statistics_simulation
 
 # Crear una lista para almacenar los resultados de cada ticker
 data_drawdown = []

@@ -39,10 +39,13 @@ screener_columns = [
 ]
 
 
-def calculate_units_size(account_size, risk_percentage, stop_loss_pips, pip_value):
+def calculate_units_size(account_size, risk_percentage, stop_loss_pips, pip_value, maximum_units, minimum_units):
     account_currency_risk = account_size * (risk_percentage / 100)
     units = round(account_currency_risk / (pip_value * stop_loss_pips))
-    
+
+    units = minimum_units if units < minimum_units else units
+    units = maximum_units if units > maximum_units else units
+
     return units
 
 def diff_pips(price1, price2, pip_value, absolute=True):

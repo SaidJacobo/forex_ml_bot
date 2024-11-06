@@ -117,142 +117,194 @@
 backbone.b_percent_strategy.BPercent:
   name: BPercent
   opt_params: 
-    b_open_threshold : [0.9, 0.95, 0.99]
-    b_close_threshold : [0.5, 0.6, 0.8, 0.9]
+    b_open_threshold : [0.9, 0.95, 1, 1.5]
+    b_close_threshold: [0.2, 0.5, 0.6, 0.8, 0.9, 1]
     risk: [1]
 
   wfo_params:
     look_back_bars: 1920
-    warmup_bars: 300
+    warmup_bars: 200
 
   instruments_info: 
 
-    RLXm:
-      timeframe: M30
+    IQm:
+      timeframe: H1
       cron:
         day: mon-fri
         hour: 13-20
-        minute: '*/30'
+        minute: '0'
 
-    TMEm:
-      timeframe: M30
+    NTESm:
+      timeframe: H1
       cron:
         day: mon-fri
         hour: 13-20
-        minute: '*/30'
+        minute: '0'
 
-# ##################################################### MacdTrader #####################################################
+ ##################################################### MeanRevTrader #####################################################
 
-# backbone.macd_trader.MacdTrader:
-#   opt_params: 
-#     cum_rsi_open_threshold : [55, 65, 75, 85, 90]
-#     cum_rsi_close_threshold : [55, 65, 75, 85, 90]
-#     risk: [1]
+backbone.mean_reversion_strategy.MeanReversion:
+  name: MeanRev
+  opt_params: 
+    sma_period: [50]
+    deviation_threshold: [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2]
+    risk: [1]
 
-#   wfo_params:
-#     look_back_bars: 1000
-#     warmup_bars: 200
+  wfo_params:
+    look_back_bars: 1200
+    warmup_bars: 50
 
-#   instruments_info: 
-#     XPEVm:
-#       timeframe: M15
-#       cron:
-#         day: mon-fri
-#         hour: 13-20
-#         minute: '*/15'
-
-#     NIOm:
-#       timeframe: M15
-#       cron:
-#         day: mon-fri
-#         hour: 13-20
-#         minute: '*/15'
-
-#     IBMm:
-#       timeframe: M30
-#       cron:
-#         day: mon-fri
-#         hour: 13-20
-#         minute: '*/30'
-
-#     ZTOm:
-#       timeframe: H1
-#       cron:
-#         day: mon-fri
-#         hour: 13-20
-#         minute: '0'
-
-# ##################################################### MeanRevTrader #####################################################
-
-# backbone.mean_reversion_trader.MeanRevTrader:
-#   opt_params: 
-#     sma_period: [50]
-#     deviation_threshold: [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2]
-#     risk: [1]
-
-#   wfo_params:
-#     look_back_bars: 1000
-#     warmup_bars: 50
-
-#   instruments_info:
-#     UNHm:
-#       timeframe: H4
-#       cron:
-#         day: mon-fri
-#         hour: '13-20/4'
-#         minute: 0
+  instruments_info:
+    UNHm:
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: '13-20/4'
+        minute: 0
  
+    IQm:
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: '13-20/2'
+        minute: 0
+
 # # ##################################################### DayPerWeekTrader #####################################################
 
-# backbone.day_per_week_trader.DayPerWeekTrader:
-#   opt_params: 
-#     day_to_buy: [0, 1, 2, 3, 4]
-#     percentage_price_sl: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-#     risk: [1, 2, 3]
+backbone.day_per_week_strategy.DayPerWeek:
+  name: DPW
+  opt_params: 
+    day_to_buy: [0, 1, 2, 3, 4]
+    percentage_price_sl: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    risk: [1]
 
-#   wfo_params:
-#     look_back_bars: 1000
-#     warmup_bars: 200
+  wfo_params:
+    look_back_bars: 1500
+    warmup_bars: 200
 
-#   instruments_info:
-#     TSMm:
-#       timeframe: H4
-#       cron:
-#         day: mon-fri
-#         hour: '13-20/4'
-#         minute: 0
+  instruments_info:
+    VRTXm:
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: '13-20/2'
+        minute: 0
 
-#     WMTm:
-#       timeframe: H4
-#       cron:
-#         day: mon-fri
-#         hour: '13-20/4'
-#         minute: 0
+    LLYm:
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: '13-20/2'
+        minute: 0
+
+    JPMm:
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: '13-20/2'
+        minute: 0
 
 
-# backbone.bbands_cross_trader.BbandsCrossTrader:
-#   opt_params: 
-#     bband_std: [1, 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3]
-#     risk: [1, 2, 3]
+backbone.bbands_cross_strategy.BbandsCross:
+  name: BbandsCross
+  opt_params: 
+    bband_std: [1, 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3]
+    risk: [3]
 
-#   wfo_params:
-#     look_back_bars: 1000
-#     warmup_bars: 200
+  wfo_params:
+    look_back_bars: 1200
+    warmup_bars: 200
 
-#   instruments_info:
-#     US30m:
-#       timeframe: H4
-#       cron:
-#         day: mon-fri
-#         hour: '13-20/4'
-#         minute: 0
+  instruments_info:
+    JPMm:
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: '13-20/4'
+        minute: 0
 
-#     USTECm:
-#       timeframe: H2
-#       cron:
-#         day: mon-fri
-#         hour: '13-20/2'
-#         minute: 0
+    ADBEm:
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: '13-20/4'
+        minute: 0
+
+    SBUXm:
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: '13-20/4'
+        minute: 0
+
+    BBm:
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: '13-20/4'
+        minute: 0
+
+    BILIm:
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: '13-20/4'
+        minute: 0
+
+    PYPLm:
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: '13-20/4'
+        minute: 0
+
+    METAm:
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: '13-20/4'
+        minute: 0
+
+
+backbone.channel_strategy.Channel:
+  name: Channel
+  opt_params: 
+    sma_period : [9, 12, 15, 18, 21]
+    atr_multiplier : [1.5, 2, 2.5, 3]
+    risk: [1]
+
+  wfo_params:
+    look_back_bars: 2000
+    warmup_bars: 200
+
+  instruments_info: 
+    # AMZNm:
+    #   timeframe: H2
+    #   cron:
+    #     day: mon-fri
+    #     hour: 13-20/2
+    #     minute: '0'
+
+    # NVDAm:
+    #   timeframe: H2
+    #   cron:
+    #     day: mon-fri
+    #     hour: 13-20/2
+    #     minute: '0'
+
+    USTECm:
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: 13-20/4
+        minute: '0'
+
+    # XNGUSDm:
+    #   timeframe: H1
+    #   cron:
+    #     day: mon-fri
+    #     hour: 13-20/1
+    #     minute: '0'
 
 
 
