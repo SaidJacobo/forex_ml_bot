@@ -89,7 +89,7 @@ class TraderBot:
             self.scaled_maximum_units,
             self.scaled_contract_volume,
             self.minimum_fraction,
-        ) = get_scaled_symbol_metadata(ticker)
+        ) = get_scaled_symbol_metadata(ticker, metatrader=self.mt5)
 
         self.opt_params["minimum_units"] = [self.scaled_minimum_units]
         self.opt_params["maximum_units"] = [self.scaled_maximum_units]
@@ -128,7 +128,7 @@ class TraderBot:
         return positions
 
     def open_order(self, type_, price=None, sl=None, tp=None, size=None):
-        symbol_info = mt5.symbol_info(self.ticker)
+        symbol_info = self.mt5.symbol_info(self.ticker)
         if symbol_info is None:
             print(self.ticker, "not found, can not call order_check()")
         # if the symbol is unavailable in MarketWatch, add it
@@ -146,29 +146,33 @@ class TraderBot:
             in [self.mt5.ORDER_TYPE_BUY_LIMIT, self.mt5.ORDER_TYPE_SELL_LIMIT]
             else self.mt5.TRADE_ACTION_DEAL
         )
-
+        
         request = {
             "action": action,
             "symbol": self.ticker,
             "volume": size,
             "type": mt5_type,
             "price": price,
-            "sl": sl,
-            "tp": tp,
             "magic": 234000,
             "comment": f"{self.name}",
             "type_time": self.mt5.ORDER_TIME_GTC,
             "type_filling": self.mt5.ORDER_FILLING_FOK,
         }
+        
+        if sl:
+            request['sl'] = sl
+        
+        if tp:
+            request['tp'] = tp
+       
+        result_send = self.mt5.order_send(request)
 
-        result = self.mt5.order_send(request)
-
-        if result.retcode != self.mt5.TRADE_RETCODE_DONE:
-            message = f"fallo al abrir orden en {self.name}, retcode={result.retcode}, comment {result.comment}"
+        if not result_send or result_send.retcode != self.mt5.TRADE_RETCODE_DONE:
+            message = f"fallo al abrir orden en {self.name}, retcode={result_send.retcode}, comment {result_send.comment}"
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
         else:
-            message = f"Se abrio una nueva orden: {self.name}, lot: {self.lot}, price: {price}. Codigo: {result.retcode}"
+            message = f"Se abrio una nueva orden: {self.name}, lot: {size}, price: {price}. Codigo: {result_send.retcode}"
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
 
