@@ -29,11 +29,17 @@ def plot_full_equity_curve(df_equity, title):
     fig.update_traces(textposition="bottom right")
     fig.show()
 
-def get_scaled_symbol_metadata(ticker: str):
-    if not mt5.initialize():
-        print("initialize() failed, error code =", mt5.last_error())
-        quit()
-    info = mt5.symbol_info(ticker)
+def get_scaled_symbol_metadata(ticker: str, metatrader=None):
+    
+    if metatrader:
+        info = metatrader.symbol_info(ticker)
+    
+    else: 
+        if not mt5.initialize():
+            print("initialize() failed, error code =", mt5.last_error())
+            quit()
+        info = mt5.symbol_info(ticker)
+        
     contract_volume = info.trade_contract_size
     minimum_lot = info.volume_min
     maximum_lot = info.volume_max
