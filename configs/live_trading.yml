@@ -206,7 +206,7 @@ backbone.day_per_week_strategy.DayPerWeek:
 
 
 backbone.bbands_cross_strategy.BbandsCross:
-  name: BbandsCross
+  name: BBCross
   opt_params: 
     bband_std: [1, 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3]
     risk: [3]
@@ -216,19 +216,19 @@ backbone.bbands_cross_strategy.BbandsCross:
     warmup_bars: 200
 
   instruments_info:
-    JPMm:
-      timeframe: H4
-      cron:
-        day: mon-fri
-        hour: '13-20/4'
-        minute: 0
+    # JPMm:
+    #   timeframe: H4
+    #   cron:
+    #     day: mon-fri
+    #     hour: '13-20/4'
+    #     minute: 0
 
-    ADBEm:
-      timeframe: H4
-      cron:
-        day: mon-fri
-        hour: '13-20/4'
-        minute: 0
+    # ADBEm:
+    #   timeframe: H4
+    #   cron:
+    #     day: mon-fri
+    #     hour: '13-20/4'
+    #     minute: 0
 
     SBUXm:
       timeframe: H4
@@ -237,12 +237,12 @@ backbone.bbands_cross_strategy.BbandsCross:
         hour: '13-20/4'
         minute: 0
 
-    BBm:
-      timeframe: H4
-      cron:
-        day: mon-fri
-        hour: '13-20/4'
-        minute: 0
+    # BBm:
+    #   timeframe: H4
+    #   cron:
+    #     day: mon-fri
+    #     hour: '13-20/4'
+    #     minute: 0
 
     BILIm:
       timeframe: H2
@@ -251,12 +251,12 @@ backbone.bbands_cross_strategy.BbandsCross:
         hour: '13-20/4'
         minute: 0
 
-    PYPLm:
-      timeframe: H4
-      cron:
-        day: mon-fri
-        hour: '13-20/4'
-        minute: 0
+    # PYPLm:
+    #   timeframe: H4
+    #   cron:
+    #     day: mon-fri
+    #     hour: '13-20/4'
+    #     minute: 0
 
     METAm:
       timeframe: H4
@@ -278,19 +278,19 @@ backbone.channel_strategy.Channel:
     warmup_bars: 200
 
   instruments_info: 
-    # AMZNm:
-    #   timeframe: H2
-    #   cron:
-    #     day: mon-fri
-    #     hour: 13-20/2
-    #     minute: '0'
+    AMZNm:
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: 13-20/2
+        minute: '0'
 
-    # NVDAm:
-    #   timeframe: H2
-    #   cron:
-    #     day: mon-fri
-    #     hour: 13-20/2
-    #     minute: '0'
+    NVDAm:
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: 13-20/2
+        minute: '0'
 
     USTECm:
       timeframe: H4
@@ -299,12 +299,12 @@ backbone.channel_strategy.Channel:
         hour: 13-20/4
         minute: '0'
 
-    # XNGUSDm:
-    #   timeframe: H1
-    #   cron:
-    #     day: mon-fri
-    #     hour: 13-20/1
-    #     minute: '0'
+    XNGUSDm:
+      timeframe: H1
+      cron:
+        day: mon-fri
+        hour: 13-20/1
+        minute: '0'
 
 
 
