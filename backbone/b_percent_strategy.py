@@ -78,7 +78,6 @@ class BPercent(Strategy):
                     minimum_units=self.minimum_units
                 )
                 
-                
                 self.buy(
                     size=units,
                     sl=sl_price

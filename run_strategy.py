@@ -15,8 +15,9 @@ if __name__ == '__main__':
         creds = yaml.safe_load(file)
 
 
-    strategy_path = 'backbone.b_percent_strategy.BPercent'
+    strategy_path = 'backbone.bbands_cross_strategy.BbandsCross'
     bot_path = 'backbone.trader_bot.TraderBot'
+    selected_ticker = 'JPMm'
     
     configs = strategies[strategy_path]
 
@@ -26,6 +27,9 @@ if __name__ == '__main__':
 
     
     for ticker, info in instruments_info.items():
+        
+        if ticker != selected_ticker:
+            continue
 
         cron = info['cron']
         timeframe = info['timeframe']

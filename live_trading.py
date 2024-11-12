@@ -16,7 +16,6 @@ if __name__ == '__main__':
     with open('configs/test_creds.yml', 'r') as file:
         creds = yaml.safe_load(file)
 
-
     scheduler = BlockingScheduler(timezone=utc)
 
     bot_path = 'backbone.trader_bot.TraderBot'
