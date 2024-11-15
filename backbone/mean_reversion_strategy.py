@@ -53,7 +53,6 @@ class MeanReversion(Strategy):
             # Condiciones para comprar (precio por debajo de la SMA más del umbral de desviación)
             if deviation <= -self.deviation_threshold and cum_rsi <= self.cum_rsi_down_threshold:
                 sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
-                
                 pip_distance = diff_pips(
                     self.data.Close[-1], 
                     sl_price, 
@@ -68,10 +67,7 @@ class MeanReversion(Strategy):
                     maximum_units=self.maximum_units,
                     minimum_units=self.minimum_units
                 )
-                
-                if units < self.minimum_units:
-                    units = self.minimum_units
-                
+                               
                 self.buy(
                     size=units,
                     sl=sl_price

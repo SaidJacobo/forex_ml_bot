@@ -165,13 +165,13 @@ def walk_forward(
         remaining_bars = len(data_full) - i
         current_validation_bars = min(validation_bars, remaining_bars)
 
-
         validation_data = data_full.iloc[i - warmup_bars : i + current_validation_bars]
 
         validation_date = validation_data.index[warmup_bars]
 
         if verbose:
             print(f"validate from {validation_date} to {validation_data.index[-1]}")
+            
         bt_validation = Backtest(
             validation_data,
             strategy,
