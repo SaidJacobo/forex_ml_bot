@@ -1,4 +1,5 @@
 
+##################################################### BBandsTrader #####################################################
 backbone.b_percent_strategy.BPercent:
   name: BPercent
   opt_params: 
@@ -159,16 +160,38 @@ backbone.channel_strategy.Channel:
     risk: [1]
 
   wfo_params:
-    look_back_bars: 1200
+    look_back_bars: 2000
     warmup_bars: 200
 
   instruments_info: 
-    DOTUSD:
+    AMZNm:
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: 13-20/2
+        minute: '0'
+
+    NVDAm:
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: 13-20/2
+        minute: '0'
+
+    USTECm:
       timeframe: H4
       cron:
         day: mon-fri
         hour: 13-20/4
         minute: '0'
+
+    XNGUSDm:
+      timeframe: H1
+      cron:
+        day: mon-fri
+        hour: 13-20/1
+        minute: '0'
+
 
 
 
