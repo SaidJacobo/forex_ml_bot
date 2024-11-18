@@ -56,38 +56,38 @@ backbone.mean_reversion_strategy.MeanReversion:
 
 # # ##################################################### DayPerWeekTrader #####################################################
 
-backbone.day_per_week_strategy.DayPerWeek:
-  name: DPW
-  opt_params: 
-    day_to_buy: [0, 1, 2, 3, 4]
-    percentage_price_sl: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    risk: [1]
+# backbone.day_per_week_strategy.DayPerWeek:
+#   name: DPW
+#   opt_params: 
+#     day_to_buy: [0, 1, 2, 3, 4]
+#     percentage_price_sl: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+#     risk: [1]
 
-  wfo_params:
-    look_back_bars: 1500
-    warmup_bars: 200
+#   wfo_params:
+#     look_back_bars: 1500
+#     warmup_bars: 200
 
-  instruments_info:
-    VRTXm:
-      timeframe: H2
-      cron:
-        day: mon-fri
-        hour: '13-20/2'
-        minute: 0
+#   instruments_info:
+#     VRTXm:
+#       timeframe: H2
+#       cron:
+#         day: mon-fri
+#         hour: '13-20/2'
+#         minute: 0
 
-    LLYm:
-      timeframe: H2
-      cron:
-        day: mon-fri
-        hour: '13-20/2'
-        minute: 0
+#     LLYm:
+#       timeframe: H2
+#       cron:
+#         day: mon-fri
+#         hour: '13-20/2'
+#         minute: 0
 
-    JPMm:
-      timeframe: H2
-      cron:
-        day: mon-fri
-        hour: '13-20/2'
-        minute: 0
+#     JPMm:
+#       timeframe: H2
+#       cron:
+#         day: mon-fri
+#         hour: '13-20/2'
+#         minute: 0
 
 
 backbone.bbands_cross_strategy.BbandsCross:
