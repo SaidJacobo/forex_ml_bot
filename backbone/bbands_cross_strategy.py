@@ -145,7 +145,7 @@ class BbandsCross(Strategy):
                     minimum_units=self.minimum_units
                 )
                 
-                lots = units / self.contract_volume
+                lots = int((units / self.contract_volume) * 100) / 100
 
                 trader.open_order(
                     type_='buy',
@@ -175,7 +175,7 @@ class BbandsCross(Strategy):
                     minimum_units=self.minimum_units
                 )
                 
-                lots = units / self.contract_volume
+                lots = int((units / self.contract_volume) * 100) / 100
                 
                 trader.open_order(
                     type_='sell',
