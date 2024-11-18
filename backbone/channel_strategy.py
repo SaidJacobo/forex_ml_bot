@@ -72,7 +72,7 @@ class Channel(Strategy):
                     sl=sl_price
                 )
                 
-            if actual_close < self.sma_200[-1] and crossover(self.sma_upper_channel, self.data.Close):
+            if actual_close < self.sma_200[-1] and crossover(self.sma_lower_channel, self.data.Close):
                 sl_price = self.data.Close[-1] + self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
@@ -154,7 +154,7 @@ class Channel(Strategy):
                     sl=sl_price
                 ) 
                 
-            if actual_close < self.sma_200[-1] and crossover(self.sma_upper_channel, self.data.Close):
+            if actual_close < self.sma_200[-1] and crossover(self.sma_lower_channel, self.data.Close):
                 info_tick = trader.get_info_tick()
                 price = info_tick.bid
                 
