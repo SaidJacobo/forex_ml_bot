@@ -12,12 +12,12 @@ backbone.mean_reversion_strategy.MeanReversion:
     warmup_bars: 50
 
   instruments_info:
-    WHEAT.c:
-      timeframe: H4
-      cron:
-        day: mon-fri
-        hour: '13-20/4'
-        minute: 0
+    # WHEAT.c:
+    #   timeframe: H4
+    #   cron:
+    #     day: mon-fri
+    #     hour: '13-20/4'
+    #     minute: 0
  
     XMRUSD:
       timeframe: H4
@@ -25,8 +25,6 @@ backbone.mean_reversion_strategy.MeanReversion:
         day: mon-fri
         hour: '13-20/4'
         minute: 0
-
-# # ##################################################### DayPerWeekTrader #####################################################
 
 
 backbone.channel_strategy.Channel:
@@ -55,33 +53,35 @@ backbone.channel_strategy.Channel:
         hour: 13-20/2
         minute: '0'
 
+backbone.dema_supertrend.DemaSuperTrend:
+  name: DemaSTrend
+  opt_params: 
+    supertrend_length: [2, 3, 4, 5]
+    supertrend_multiplier: [2, 3, 4, 5]
+    exit_method : ['bbands','super_trend']
 
+  wfo_params:
+    look_back_bars: 1800
+    warmup_bars: 200
 
+  instruments_info: 
+    TSLA:
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: 13-20/2
+        minute: '0'
 
+    # SOYBEAN.c:
+    #   timeframe: H3
+    #   cron:
+    #     day: mon-fri
+    #     hour: 13-20/3
+    #     minute: '0'
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-##################################################### Screener #####################################################
-# backbone.screener.Screener:
-#   strategy_params:
-#     null
-
-#   strategy_params: 
-#     telegram_bot_token: 7169280958:AAGzEP6lpNZMC7w_KEntUAQTEUdX2dnYe98
-#     telegram_chat_id : '-4201375396'
-
-#   cron:
-#     day: mon-fri
-#     hour: '13'
-#     minute: '0'
+    ETHUSD:
+      timeframe: H3
+      cron:
+        day: mon-fri
+        hour: 13-20/3
+        minute: '0'
