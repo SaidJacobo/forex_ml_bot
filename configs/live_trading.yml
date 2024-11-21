@@ -12,12 +12,6 @@ backbone.mean_reversion_strategy.MeanReversion:
     warmup_bars: 50
 
   instruments_info:
-    # WHEAT.c:
-    #   timeframe: H4
-    #   cron:
-    #     day: mon-fri
-    #     hour: '13-20/4'
-    #     minute: 0
  
     XMRUSD:
       timeframe: H4
@@ -71,13 +65,6 @@ backbone.dema_supertrend.DemaSuperTrend:
         day: mon-fri
         hour: 13-20/2
         minute: '0'
-
-    # SOYBEAN.c:
-    #   timeframe: H3
-    #   cron:
-    #     day: mon-fri
-    #     hour: 13-20/3
-    #     minute: '0'
 
     ETHUSD:
       timeframe: H3

@@ -100,7 +100,7 @@ def run_strategy(
     )
 
     if plot:
-        bt_train.plot(filename=f"./plots/{ticker}.html", resample=False)
+        bt_train.plot(filename=f"./plots/{ticker}_{interval}.html", resample=False)
     equity_curve = stats._equity_curve["Equity"].values
     x = np.arange(len(equity_curve)).reshape(-1, 1)
     reg = LinearRegression().fit(x, equity_curve)

@@ -102,7 +102,6 @@ class Channel(Strategy):
         
         open_positions = trader.get_open_positions()
         
-        
         if self.opt_params and actual_date in self.opt_params.keys():
             for k, v in self.opt_params[actual_date].items():
                 setattr(self, k, v)
@@ -145,7 +144,7 @@ class Channel(Strategy):
                     minimum_units=self.minimum_units
                 )
                 
-                lots = units / self.contract_volume
+                lots = int((units / self.contract_volume) * 100) / 100
 
                 trader.open_order(
                     type_='buy',
@@ -175,7 +174,7 @@ class Channel(Strategy):
                     minimum_units=self.minimum_units
                 )
                 
-                lots = units / self.contract_volume
+                lots = int((units / self.contract_volume) * 100) / 100
                 
                 trader.open_order(
                     type_='sell',
