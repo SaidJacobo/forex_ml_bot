@@ -41,6 +41,11 @@ class DemaSuperTrend2(Strategy):
         self.supertrend_signal_112 = self.I(super_trend_indicator,self.data.High, self.data.Low, self.data.Close, lenght=11, multiplier=2)
         
     def next(self):
+        actual_date = self.data.index[-1]
+        
+        if self.opt_params and actual_date in self.opt_params.keys():
+            for k, v in self.opt_params[actual_date].items():
+                setattr(self, k, v)
         
         actual_super_trend = getattr(self, self.super_trend_to_use)
         

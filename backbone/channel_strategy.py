@@ -32,11 +32,8 @@ class Channel(Strategy):
             for k, v in self.opt_params[actual_date].items():
                 setattr(self, k, v)
             
-        
         self.sma_upper_channel = ta.SMA(self.data.High, timeperiod=self.sma_period)
         self.sma_lower_channel = ta.SMA(self.data.Low, timeperiod=self.sma_period)
-        
-        actual_close = self.data.Close[-1]
         
         if self.position:
             if self.position.is_long:
