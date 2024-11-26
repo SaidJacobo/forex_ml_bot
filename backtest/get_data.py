@@ -58,8 +58,6 @@ def get_data(tickers, intervals, date_from, date_to):
 
         symbols[ticker][interval] = df
 
-
-    mt5.shutdown()
     return symbols
 
     

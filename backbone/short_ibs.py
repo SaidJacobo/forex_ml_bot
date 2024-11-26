@@ -5,6 +5,7 @@ from backtesting.lib import crossover
 import numpy as np
 import MetaTrader5 as mt5
 import numpy as np
+import pandas as pd
 
 from backbone.utils.general_purpose import calculate_units_size, diff_pips
 

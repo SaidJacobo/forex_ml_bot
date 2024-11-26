@@ -1,4 +1,50 @@
- ##################################################### MeanRevTrader #####################################################
+backbone.short_ibs.ShortIBS:
+  name: ShortIBS
+  opt_params: 
+    'enter_ibs' : [0.7, 0.8, 0.9]
+    'exit_ibs' : [0.1, 0.2, 0.3, 0.4, 0.5]
+
+  wfo_params:
+    look_back_bars: 1200
+    warmup_bars: 200
+
+  instruments_info: 
+    ADAUSD:
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: 13-20/4
+        minute: '0'
+
+    DOTUSD:
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: 13-20/4
+        minute: '0'
+
+backbone.triple_supertrend.TripleSuperTrend:
+  name: TripleST
+  opt_params: 
+    risk: [1]
+
+  wfo_params:
+    null
+
+  instruments_info: 
+    TSLA:
+      timeframe: H3
+      cron:
+        day: mon-fri
+        hour: 13-20/3
+        minute: '0'
+
+    NVDA:
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: 13-20/4
+        minute: '0'
 
 backbone.mean_reversion_strategy.MeanReversion:
   name: MeanRev
@@ -8,18 +54,17 @@ backbone.mean_reversion_strategy.MeanReversion:
     risk: [1]
 
   wfo_params:
-    look_back_bars: 1200
+    look_back_bars: 2000
     warmup_bars: 50
 
   instruments_info:
  
     XMRUSD:
-      timeframe: H4
+      timeframe: H1
       cron:
         day: mon-fri
-        hour: '13-20/4'
+        hour: '13-20/1'
         minute: 0
-
 
 backbone.channel_strategy.Channel:
   name: Channel
@@ -33,42 +78,16 @@ backbone.channel_strategy.Channel:
     warmup_bars: 200
 
   instruments_info: 
-    DOTUSD:
-      timeframe: H4
+    BTCUSD:
+      timeframe: H2
       cron:
         day: mon-fri
-        hour: 13-20/4
+        hour: 13-20/2
         minute: '0'
 
     NVDA:
-      timeframe: H2
+      timeframe: H1
       cron:
         day: mon-fri
-        hour: 13-20/2
-        minute: '0'
-
-backbone.dema_supertrend.DemaSuperTrend:
-  name: DemaSTrend
-  opt_params: 
-    supertrend_length: [2, 3, 4, 5]
-    supertrend_multiplier: [2, 3, 4, 5]
-    exit_method : ['bbands','super_trend']
-
-  wfo_params:
-    look_back_bars: 1800
-    warmup_bars: 200
-
-  instruments_info: 
-    TSLA:
-      timeframe: H2
-      cron:
-        day: mon-fri
-        hour: 13-20/2
-        minute: '0'
-
-    ETHUSD:
-      timeframe: H3
-      cron:
-        day: mon-fri
-        hour: 13-20/3
+        hour: 13-20/1
         minute: '0'

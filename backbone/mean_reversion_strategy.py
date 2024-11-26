@@ -15,7 +15,7 @@ class MeanReversion(Strategy):
     opt_params = None
     
     sma_period = 50
-    deviation_threshold = 0.01
+    deviation_threshold = 0.1
     risk = 1
     cum_rsi_up_threshold = 90
     cum_rsi_down_threshold = 10
