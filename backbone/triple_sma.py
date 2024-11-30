@@ -1,0 +1,185 @@
+import talib as ta
+from backbone.trader_bot import TraderBot
+from backtesting import Strategy
+from backtesting.lib import crossover
+import numpy as np
+import MetaTrader5 as mt5
+import numpy as np
+import pandas as pd
+
+from backbone.utils.general_purpose import calculate_units_size, diff_pips
+
+
+class TripleSMA(Strategy):
+    pip_value = None
+    minimum_units = None
+    maximum_units = None
+    contract_volume = None
+    opt_params = None
+    risk=1
+    
+    atr_multiplier = 2
+
+    def init(self):
+        self.atr = self.I(ta.ATR, self.data.High, self.data.Low, self.data.Close)
+        self.sma_12 = self.I(ta.SMA, self.data.Close, timeperiod=12)
+        self.sma_8 = self.I(ta.SMA, self.data.Close, timeperiod=8)
+        self.sma_5 = self.I(ta.SMA, self.data.Close, timeperiod=5)
+        
+        self.sma_200 = self.I(ta.SMA, self.data.Close, timeperiod=200)
+        
+        
+    def next(self):
+        
+        actual_date = self.data.index[-1]
+        
+        if self.opt_params and actual_date in self.opt_params.keys():
+            for k, v in self.opt_params[actual_date].items():
+                setattr(self, k, v)
+
+        price = self.data.Close[-1]
+        actual_up_trend = self.sma_5[-1] > self.sma_8[-1] > self.sma_12[-1]
+        actual_down_trend = self.sma_5[-1] < self.sma_8[-1] < self.sma_12[-1]
+        
+        past_up_trend = self.sma_5[-2] > self.sma_8[-2] > self.sma_12[-2]
+        past_down_trend = self.sma_5[-2] < self.sma_8[-2] < self.sma_12[-2]
+    
+        if self.position:
+            if self.position.is_long:
+                if not actual_up_trend:
+                    self.position.close()
+
+            if self.position.is_short:
+                if not actual_down_trend:
+                    self.position.close()
+
+        else:
+            
+            if (actual_up_trend and not past_up_trend) and price > self.sma_200[-1]:
+                sl_price = price - self.atr_multiplier * self.atr[-1]
+                
+                pip_distance = diff_pips(
+                    price, 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
+                
+                units = calculate_units_size(
+                    account_size=self.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value,
+                    maximum_units=self.maximum_units,
+                    minimum_units=self.minimum_units
+                )
+                
+                self.buy(
+                    size=units,
+                    sl=sl_price
+                )
+                
+            if (actual_down_trend and not past_down_trend) and price < self.sma_200[-1]:
+                sl_price = price + self.atr_multiplier * self.atr[-1]
+                
+                pip_distance = diff_pips(
+                    price, 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
+                
+                units = calculate_units_size(
+                    account_size=self.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value,
+                    maximum_units=self.maximum_units,
+                    minimum_units=self.minimum_units
+                )
+                
+                self.sell(
+                    size=units,
+                    sl=sl_price
+                )
+                
+    def next_live(self, trader:TraderBot):
+
+        actual_up_trend = self.sma_5[-1] > self.sma_8[-1] > self.sma_12[-1]
+        actual_down_trend = self.sma_5[-1] < self.sma_8[-1] < self.sma_12[-1]
+        
+        past_up_trend = self.sma_5[-2] > self.sma_8[-2] > self.sma_12[-2]
+        past_down_trend = self.sma_5[-2] < self.sma_8[-2] < self.sma_12[-2]
+    
+        open_positions = trader.get_open_positions()
+    
+        if open_positions:
+            if open_positions[-1].type == mt5.ORDER_TYPE_BUY:
+                if not actual_up_trend:
+                    trader.close_order(open_positions[-1])
+
+            if open_positions[-1].type == mt5.ORDER_TYPE_SELL:
+                if not actual_down_trend:
+                    trader.close_order(open_positions[-1])
+
+        else:
+            info_tick = trader.get_info_tick()
+            
+            # if (actual_up_trend and not past_up_trend) and price > self.sma_200[-1]:
+            if True:
+                price = info_tick.ask * 0.01 # <-- minimum fraction
+                
+                sl_price = price - self.atr_multiplier * self.atr[-1]
+                
+                pip_distance = diff_pips(
+                    price, 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
+                
+                size = calculate_units_size(
+                    account_size=trader.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value,
+                    maximum_units=self.maximum_units,
+                    minimum_units=self.minimum_units, 
+                    return_lots=True, 
+                    contract_volume=self.contract_volume,
+                    actual_price=price
+                )
+
+                trader.open_order(
+                    type_='buy',
+                    price=price / 0.01, # <-- minimum fraction
+                    size=size, 
+                    sl=sl_price  / 0.01
+                ) 
+                
+            if (actual_down_trend and not past_down_trend) and price < self.sma_200[-1]:
+                price = info_tick.bid
+                
+                sl_price = price + self.atr_multiplier * self.atr[-1]
+                
+                pip_distance = diff_pips(
+                    price, 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
+                
+                size = calculate_units_size(
+                    account_size=trader.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value,
+                    maximum_units=self.maximum_units,
+                    minimum_units=self.minimum_units, 
+                    return_lots=True, 
+                    contract_volume=self.contract_volume
+                )
+                
+                trader.open_order(
+                    type_='sell',
+                    price=price,
+                    sl=sl_price,
+                    size=size
+                )
+                

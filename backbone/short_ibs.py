@@ -74,3 +74,46 @@ class ShortIBS(Strategy):
                     size=units,
                     sl=sl_price
                 )
+                
+                
+    def next_live(self, trader:TraderBot):       
+        actual_ibs = self.ibs[-1]
+                  
+        open_positions = trader.get_open_positions()
+
+        if open_positions:
+            if open_positions[-1].type == mt5.ORDER_TYPE_SELL:
+                if actual_ibs <= self.exit_ibs:
+                    self.position.close()
+
+        else:
+            info_tick = trader.get_info_tick()
+            
+            price = info_tick.bid
+            
+            if price < self.sma[-1] and actual_ibs >= self.enter_ibs:
+                sl_price = price + self.atr_multiplier * self.atr[-1]
+                
+                pip_distance = diff_pips(
+                    price, 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
+                
+                size = calculate_units_size(
+                    account_size=trader.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value,
+                    maximum_units=self.maximum_units,
+                    minimum_units=self.minimum_units, 
+                    return_lots=True, 
+                    contract_volume=self.contract_volume
+                )
+                
+                trader.open_order(
+                    type_='sell',
+                    price=price,
+                    sl=sl_price,
+                    size=size
+                )

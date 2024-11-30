@@ -97,6 +97,7 @@ class TraderBot:
         self.opt_params["contract_volume"] = [self.scaled_contract_volume]
 
         self.opt_params["maximize"] = optimization_function
+        
 
     def get_data(self, date_from, date_to):
         rates = self.mt5.copy_rates_range(
@@ -212,6 +213,7 @@ class TraderBot:
         return info_tick
 
     def run(self):
+        
         warmup_bars = self.wfo_params["warmup_bars"]
         look_back_bars = self.wfo_params["look_back_bars"]
 
@@ -232,13 +234,16 @@ class TraderBot:
 
         df.index = df.index.tz_localize("UTC").tz_convert("UTC")
 
+        symbol_info = self.mt5.symbol_info_tick(self.ticker)
+        avg_price = (symbol_info.bid + symbol_info.ask) / 2
+        spread = symbol_info.ask - symbol_info.bid
+        commission = round(spread / avg_price, 5)
+        
         bt_train = Backtest(
-            df, self.strategy, commission=7e-4, cash=15_000, margin=1 / 30
+            df, self.strategy, commission=commission, cash=15_000, margin=1 / 30
         )
 
         stats_training = bt_train.optimize(**self.opt_params)
-
-        bt = Backtest(df, self.strategy, commission=7e-4, cash=15_000, margin=1 / 30)
 
         opt_params = {
             param: getattr(stats_training._strategy, param)
@@ -246,7 +251,8 @@ class TraderBot:
             if param != "maximize"
         }
 
-        stats = bt.run(**opt_params)
-
-        bt_train._results._strategy.next_live(trader=self)
+        bt = Backtest(df, self.strategy, commission=commission, cash=15_000, margin=1 / 30)
+        _ = bt.run(**opt_params)
+            
+        bt._results._strategy.next_live(trader=self)
         

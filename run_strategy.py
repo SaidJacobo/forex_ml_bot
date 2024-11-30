@@ -15,9 +15,9 @@ if __name__ == '__main__':
         creds = yaml.safe_load(file)
 
 
-    strategy_path = 'backbone.bbands_cross_strategy.BbandsCross'
+    strategy_path = 'backbone.triple_sma.TripleSMA'
     bot_path = 'backbone.trader_bot.TraderBot'
-    selected_ticker = 'JPMm'
+    selected_ticker = 'ETHUSD'
     
     configs = strategies[strategy_path]
 

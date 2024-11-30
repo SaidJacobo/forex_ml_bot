@@ -103,7 +103,6 @@ class Channel(Strategy):
             for k, v in self.opt_params[actual_date].items():
                 setattr(self, k, v)
             
-        
         self.sma_upper_channel = ta.SMA(self.data.High, timeperiod=self.sma_period)
         self.sma_lower_channel = ta.SMA(self.data.Low, timeperiod=self.sma_period)
         
@@ -119,9 +118,9 @@ class Channel(Strategy):
                     trader.close_order(open_positions[-1])
 
         else:
+            info_tick = trader.get_info_tick()
 
             if actual_close > self.sma_200[-1] and crossover(self.data.Close, self.sma_upper_channel):
-                info_tick = trader.get_info_tick()
                 price = info_tick.ask
                 
                 sl_price = price - self.atr_multiplier * self.atr[-1]
@@ -132,26 +131,25 @@ class Channel(Strategy):
                     pip_value=self.pip_value
                 )
                 
-                units = calculate_units_size(
+                size = calculate_units_size(
                     account_size=trader.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
                     pip_value=self.pip_value,
                     maximum_units=self.maximum_units,
-                    minimum_units=self.minimum_units
+                    minimum_units=self.minimum_units, 
+                    return_lots=True, 
+                    contract_volume=self.contract_volume
                 )
-                
-                lots = int((units / self.contract_volume) * 100) / 100
 
                 trader.open_order(
                     type_='buy',
                     price=price,
-                    size=lots, 
+                    size=size, 
                     sl=sl_price
                 ) 
                 
             if actual_close < self.sma_200[-1] and crossover(self.sma_lower_channel, self.data.Close):
-                info_tick = trader.get_info_tick()
                 price = info_tick.bid
                 
                 sl_price = price + self.atr_multiplier * self.atr[-1]
@@ -162,20 +160,20 @@ class Channel(Strategy):
                     pip_value=self.pip_value
                 )
                 
-                units = calculate_units_size(
+                size = calculate_units_size(
                     account_size=trader.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
                     pip_value=self.pip_value,
                     maximum_units=self.maximum_units,
-                    minimum_units=self.minimum_units
+                    minimum_units=self.minimum_units, 
+                    return_lots=True, 
+                    contract_volume=self.contract_volume
                 )
-                
-                lots = int((units / self.contract_volume) * 100) / 100
                 
                 trader.open_order(
                     type_='sell',
                     price=price,
                     sl=sl_price,
-                    size=lots
+                    size=size
                 )

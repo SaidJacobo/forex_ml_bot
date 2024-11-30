@@ -51,7 +51,7 @@ class TripleSuperTrend(Strategy):
         
         else:
             price = self.data.Close[-1]
-            
+                        
             if st_buy_signal:
                 sl_price = price - self.atr_multiplier * self.atr[-1]
                 pip_distance = diff_pips(
@@ -95,4 +95,79 @@ class TripleSuperTrend(Strategy):
                 self.sell(
                     size=units,
                     sl=sl_price
+                )
+                
+                
+    def next_live(self, trader:TraderBot):
+        st_buy_signal = self.supertrend_signal_123[-1] == 1 and self.supertrend_signal_101[-1] == 1 and self.supertrend_signal_112[-1] == 1
+        st_sell_signal = self.supertrend_signal_123[-1] == -1 and self.supertrend_signal_101[-1] == -1 and self.supertrend_signal_112[-1] == -1
+        
+        open_positions = trader.get_open_positions()
+        
+        if open_positions:
+            if open_positions[-1].type == mt5.ORDER_TYPE_BUY and not st_buy_signal:
+                    trader.close_order(open_positions[-1])
+
+            if open_positions[-1].type == mt5.ORDER_TYPE_SELL and not st_sell_signal:
+                    trader.close_order(open_positions[-1])
+        
+        else:
+            
+            info_tick = trader.get_info_tick()
+            
+            if st_buy_signal:
+                price = info_tick.ask
+                sl_price = price - self.atr_multiplier * self.atr[-1]
+                
+                pip_distance = diff_pips(
+                    price, 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
+                
+                size = calculate_units_size(
+                    account_size=trader.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value,
+                    maximum_units=self.maximum_units,
+                    minimum_units=self.minimum_units, 
+                    return_lots=True, 
+                    contract_volume=self.contract_volume
+                )
+
+                trader.open_order(
+                    type_='buy',
+                    price=price,
+                    size=size, 
+                    sl=sl_price
+                ) 
+
+            if st_sell_signal:
+                
+                price = info_tick.bid
+                sl_price = price + self.atr_multiplier * self.atr[-1]
+                
+                pip_distance = diff_pips(
+                    price, 
+                    sl_price, 
+                    pip_value=self.pip_value
+                )
+                
+                size = calculate_units_size(
+                    account_size=trader.equity, 
+                    risk_percentage=self.risk, 
+                    stop_loss_pips=pip_distance, 
+                    pip_value=self.pip_value,
+                    maximum_units=self.maximum_units,
+                    minimum_units=self.minimum_units, 
+                    return_lots=True, 
+                    contract_volume=self.contract_volume
+                )
+                
+                trader.open_order(
+                    type_='sell',
+                    price=price,
+                    sl=sl_price,
+                    size=size
                 )
