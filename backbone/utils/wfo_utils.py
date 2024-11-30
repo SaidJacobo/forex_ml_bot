@@ -43,7 +43,8 @@ def get_scaled_symbol_metadata(ticker: str, metatrader=None):
     contract_volume = info.trade_contract_size
     minimum_lot = info.volume_min
     maximum_lot = info.volume_max
-    pip_value = info.point
+    # pip_value = info.point # <-- Creo que aca puede haber un problema
+    pip_value = info.volume_step 
     minimum_units = contract_volume * minimum_lot
 
     minimum_fraction = transformar_a_uno(minimum_units)
