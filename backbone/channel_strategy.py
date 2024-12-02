@@ -60,8 +60,8 @@ class Channel(Strategy):
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
                     pip_value=self.pip_value,
-                    maximum_units=self.maximum_units,
-                    minimum_units=self.minimum_units
+                    maximum_lot=self.maximum_units,
+                    minimum_lot=self.minimum_units
                 )
                 
                 self.buy(
@@ -83,8 +83,8 @@ class Channel(Strategy):
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
                     pip_value=self.pip_value,
-                    maximum_units=self.maximum_units,
-                    minimum_units=self.minimum_units
+                    maximum_lot=self.maximum_units,
+                    minimum_lot=self.minimum_units
                 )
                 
                 self.sell(
@@ -136,8 +136,8 @@ class Channel(Strategy):
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
                     pip_value=self.pip_value,
-                    maximum_units=self.maximum_units,
-                    minimum_units=self.minimum_units, 
+                    maximum_lot=self.maximum_units,
+                    minimum_lot=self.minimum_units, 
                     return_lots=True, 
                     contract_volume=self.contract_volume
                 )
@@ -165,8 +165,8 @@ class Channel(Strategy):
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
                     pip_value=self.pip_value,
-                    maximum_units=self.maximum_units,
-                    minimum_units=self.minimum_units, 
+                    maximum_lot=self.maximum_units,
+                    minimum_lot=self.minimum_units, 
                     return_lots=True, 
                     contract_volume=self.contract_volume
                 )

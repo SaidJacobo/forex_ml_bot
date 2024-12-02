@@ -43,31 +43,28 @@ def calculate_units_size(
     account_size, 
     risk_percentage, 
     stop_loss_pips, 
-    pip_value, 
-    maximum_units, 
-    minimum_units,
+    maximum_lot, 
+    minimum_lot,
     return_lots=False,
     contract_volume=None,
-    actual_price=None,
     trade_tick_value_loss=None
     
     ):
     
     account_currency_risk = account_size * (risk_percentage / 100)
     lots = account_currency_risk / (trade_tick_value_loss * stop_loss_pips)
+    lots = int(lots * 100) / 100
+    
+    lots = max(lots, minimum_lot)
+    lots = min(lots, maximum_lot)    
    
     if return_lots:
-        lots = int(lots * 100) / 100
         return lots    
-
-    units = lots * contract_volume
-    units = minimum_units if units < minimum_units else units
-    units = maximum_units if units > maximum_units else units
-
-    units = max(units, minimum_units)
-    units = min(units, maximum_units)
+    
+    units = int(lots * contract_volume)
 
     return units
+
 
 def diff_pips(price1, price2, pip_value, absolute=True):
     if absolute:

@@ -85,17 +85,18 @@ class TraderBot:
 
         (
             self.scaled_pip_value,
-            self.scaled_minimum_units,
-            self.scaled_maximum_units,
+            self.scaled_minimum_lot,
+            self.scaled_maximum_lot,
             self.scaled_contract_volume,
             self.minimum_fraction,
             self.trade_tick_value_loss,
         ) = get_scaled_symbol_metadata(ticker, metatrader=self.mt5)
 
-        self.opt_params["minimum_units"] = [self.scaled_minimum_units]
-        self.opt_params["maximum_units"] = [self.scaled_maximum_units]
+        self.opt_params["minimum_lot"] = [self.scaled_minimum_lot]
+        self.opt_params["maximum_lot"] = [self.scaled_maximum_lot]
         self.opt_params["pip_value"] = [self.scaled_pip_value]
         self.opt_params["contract_volume"] = [self.scaled_contract_volume]
+        self.opt_params["trade_tick_value_loss"] = [self.trade_tick_value_loss]
 
         self.opt_params["maximize"] = optimization_function
         

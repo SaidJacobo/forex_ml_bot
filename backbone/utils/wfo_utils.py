@@ -52,14 +52,14 @@ def get_scaled_symbol_metadata(ticker: str, metatrader=None):
     scaled_contract_volume = contract_volume / minimum_fraction
 
     scaled_pip_value = pip_value * minimum_fraction
-    scaled_minimum_units = minimum_lot * scaled_contract_volume
-    scaled_maximum_units = maximum_lot * scaled_contract_volume
+    scaled_minimum_lot = minimum_lot / minimum_fraction
+    scaled_maximum_lot = maximum_lot / minimum_fraction
 
 
     return (
         scaled_pip_value,
-        scaled_minimum_units,
-        scaled_maximum_units,
+        scaled_minimum_lot,
+        scaled_maximum_lot,
         scaled_contract_volume,
         minimum_fraction,
         trade_tick_value_loss
@@ -79,10 +79,11 @@ def run_strategy(
 
     (
         scaled_pip_value,
-        scaled_minimum_units,
-        scaled_maximum_units,
+        scaled_minimum_lot,
+        scaled_maximum_lot,
         scaled_contract_volume,
         minimum_fraction,
+        trade_tick_value_loss,
     ) = get_scaled_symbol_metadata(ticker)
 
     scaled_prices = prices.copy()
@@ -96,9 +97,10 @@ def run_strategy(
 
     stats = bt_train.run(
         pip_value=scaled_pip_value,
-        minimum_units=scaled_minimum_units,
-        maximum_units=scaled_maximum_units,
+        minimum_lot=scaled_minimum_lot,
+        maximum_lot=scaled_maximum_lot,
         contract_volume=scaled_contract_volume,
+        trade_tick_value_loss=trade_tick_value_loss,
         opt_params=opt_params,
     )
 
@@ -265,10 +267,11 @@ def run_wfo(
 
     (
         scaled_pip_value,
-        scaled_minimum_units,
-        scaled_maximum_units,
+        scaled_minimum_lot,
+        scaled_maximum_lot,
         scaled_contract_volume,
         minimum_fraction,
+        trade_tick_value_loss,
     ) = get_scaled_symbol_metadata(ticker)
 
     scaled_prices = prices.copy()
@@ -276,10 +279,12 @@ def run_wfo(
         scaled_prices.loc[:, ["Open", "High", "Low", "Close"]].copy() * minimum_fraction
     )
 
-    params["minimum_units"] = [scaled_minimum_units]
-    params["maximum_units"] = [scaled_maximum_units]
+    params["minimum_lot"] = [scaled_minimum_lot]
+    params["maximum_lot"] = [scaled_maximum_lot]
     params["contract_volume"] = [scaled_contract_volume]
     params["pip_value"] = [scaled_pip_value]
+    params["trade_tick_value_loss"] = [trade_tick_value_loss]
+    
     params["maximize"] = optim_func
 
     wfo_stats, optimized_params_history = walk_forward(

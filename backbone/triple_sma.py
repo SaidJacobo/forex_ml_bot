@@ -12,9 +12,10 @@ from backbone.utils.general_purpose import calculate_units_size, diff_pips
 
 class TripleSMA(Strategy):
     pip_value = None
-    minimum_units = None
-    maximum_units = None
+    minimum_lot = None
+    maximum_lot = None
     contract_volume = None
+    trade_tick_value_loss = None
     opt_params = None
     risk=1
     
@@ -68,9 +69,11 @@ class TripleSMA(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_units=self.maximum_units,
-                    minimum_units=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 self.buy(
@@ -91,9 +94,11 @@ class TripleSMA(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_units=self.maximum_units,
-                    minimum_units=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 self.sell(
@@ -123,8 +128,7 @@ class TripleSMA(Strategy):
         else:
             info_tick = trader.get_info_tick()
             
-            # if (actual_up_trend and not past_up_trend) and price > self.sma_200[-1]:
-            if True:
+            if (actual_up_trend and not past_up_trend) and price > self.sma_200[-1]:
                 minimum_fraction = trader.minimum_fraction
                 
                 price = info_tick.ask * minimum_fraction # <-- minimum fraction
@@ -141,13 +145,11 @@ class TripleSMA(Strategy):
                     account_size=trader.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_units=self.maximum_units,
-                    minimum_units=self.minimum_units, 
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
                     return_lots=True, 
                     contract_volume=self.contract_volume,
-                    actual_price=price,
-                    trade_tick_value_loss=trader.trade_tick_value_loss
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
 
                 trader.open_order(
@@ -172,11 +174,11 @@ class TripleSMA(Strategy):
                     account_size=trader.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_units=self.maximum_units,
-                    minimum_units=self.minimum_units, 
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
                     return_lots=True, 
-                    contract_volume=self.contract_volume
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 trader.open_order(
