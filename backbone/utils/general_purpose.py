@@ -48,24 +48,24 @@ def calculate_units_size(
     minimum_units,
     return_lots=False,
     contract_volume=None,
-    actual_price=None
+    actual_price=None,
+    trade_tick_value_loss=None
     
     ):
     
-    valor_pip_unidad = pip_value / actual_price
     account_currency_risk = account_size * (risk_percentage / 100)
-    units = round(account_currency_risk / (valor_pip_unidad * stop_loss_pips))
-    
-    real_units = units * 0.01 # <-- para ver que onda
+    lots = account_currency_risk / (trade_tick_value_loss * stop_loss_pips)
+   
+    if return_lots:
+        lots = int(lots * 100) / 100
+        return lots    
 
+    units = lots * contract_volume
     units = minimum_units if units < minimum_units else units
     units = maximum_units if units > maximum_units else units
 
-    if return_lots:
-        lots = int((units / contract_volume) * 100) / 100
-        
-        real_lots = round(lots * 0.01, 2) # <-- minimum fraction
-        return real_lots
+    units = max(units, minimum_units)
+    units = min(units, maximum_units)
 
     return units
 

@@ -89,6 +89,7 @@ class TraderBot:
             self.scaled_maximum_units,
             self.scaled_contract_volume,
             self.minimum_fraction,
+            self.trade_tick_value_loss,
         ) = get_scaled_symbol_metadata(ticker, metatrader=self.mt5)
 
         self.opt_params["minimum_units"] = [self.scaled_minimum_units]

@@ -106,8 +106,7 @@ backbone.triple_sma.TripleSMA:
     warmup_bars: 0
 
   instruments_info: 
-    # USDJPY:
-    ETHUSD:
+    USDJPY:
       timeframe: H3
       cron:
         day: mon-fri

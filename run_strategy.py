@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     strategy_path = 'backbone.triple_sma.TripleSMA'
     bot_path = 'backbone.trader_bot.TraderBot'
-    selected_ticker = 'ETHUSD'
+    selected_ticker = 'USDJPY'
     
     configs = strategies[strategy_path]
 
