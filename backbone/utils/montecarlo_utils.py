@@ -134,7 +134,7 @@ def monte_carlo_simulation_v2(
     """
     # Filtrar trades por tipo y resultados
     long_trades = trade_history[trade_history['Size'] > 0]
-    short_trades = trade_history[trade_history['Size'] > 0]
+    short_trades = trade_history[trade_history['Size'] < 0]
     
     long_winning_trades = long_trades[long_trades['PnL'] > 0]
     short_winning_trades = short_trades[short_trades['PnL'] > 0]

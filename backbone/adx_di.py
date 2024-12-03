@@ -12,9 +12,10 @@ from backbone.utils.general_purpose import calculate_units_size, diff_pips
 
 class AdxDi(Strategy):
     pip_value = None
-    minimum_units = None
-    maximum_units = None
+    minimum_lot = None
+    maximum_lot = None
     contract_volume = None
+    trade_tick_value_loss = None
     opt_params = None
     risk=1
     
@@ -37,7 +38,6 @@ class AdxDi(Strategy):
             for k, v in self.opt_params[actual_date].items():
                 setattr(self, k, v)
 
-        actual_close = self.data.Close[-1]
     
         if self.position:
             if self.position.is_long:
@@ -49,12 +49,13 @@ class AdxDi(Strategy):
                     self.position.close()
 
         else:
+            price = self.data.Close[-1]
 
             if self.adx[-1] >= self.adx_threshold and self.plus_di[-1] > self.minus_di[-1]:        
                 sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -63,9 +64,11 @@ class AdxDi(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 self.buy(
@@ -74,10 +77,10 @@ class AdxDi(Strategy):
                 )
                 
             if self.adx[-1] >= self.adx_threshold and self.plus_di[-1] < self.minus_di[-1]:        
-                sl_price = self.data.Close[-1] + self.atr_multiplier * self.atr[-1]
+                sl_price = price + self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -86,9 +89,11 @@ class AdxDi(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 self.sell(
@@ -127,18 +132,18 @@ class AdxDi(Strategy):
                     account_size=trader.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units, 
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
                     return_lots=True, 
-                    contract_volume=self.contract_volume
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
 
                 trader.open_order(
                     type_='buy',
-                    price=price,
+                    price=price / trader.minimum_fraction, # <-- minimum fraction
                     size=size, 
-                    sl=sl_price
+                    sl=sl_price  / trader.minimum_fraction
                 ) 
                 
             if self.adx[-1] >= self.adx_threshold and self.plus_di[-1] < self.minus_di[-1]:        
@@ -156,16 +161,16 @@ class AdxDi(Strategy):
                     account_size=trader.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units, 
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
                     return_lots=True, 
-                    contract_volume=self.contract_volume
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 trader.open_order(
                     type_='sell',
-                    price=price,
-                    sl=sl_price,
-                    size=size
+                    price=price / trader.minimum_fraction, # <-- minimum fraction
+                    size=size, 
+                    sl=sl_price  / trader.minimum_fraction
                 )

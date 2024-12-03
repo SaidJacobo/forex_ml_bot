@@ -129,9 +129,8 @@ class TripleSMA(Strategy):
             info_tick = trader.get_info_tick()
             
             if (actual_up_trend and not past_up_trend) and price > self.sma_200[-1]:
-                minimum_fraction = trader.minimum_fraction
                 
-                price = info_tick.ask * minimum_fraction # <-- minimum fraction
+                price = info_tick.ask * trader.minimum_fraction # <-- minimum fraction
                 
                 sl_price = price - self.atr_multiplier * self.atr[-1]
                 
@@ -154,9 +153,9 @@ class TripleSMA(Strategy):
 
                 trader.open_order(
                     type_='buy',
-                    price=price / minimum_fraction, # <-- minimum fraction
+                    price=price / trader.minimum_fraction, # <-- minimum fraction
                     size=size, 
-                    sl=sl_price  / minimum_fraction
+                    sl=sl_price  / trader.minimum_fraction
                 ) 
                 
             if (actual_down_trend and not past_down_trend) and price < self.sma_200[-1]:

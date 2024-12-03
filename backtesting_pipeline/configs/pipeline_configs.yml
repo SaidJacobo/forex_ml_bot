@@ -1,0 +1,40 @@
+get_data:
+  date_from: '2021-01-01'
+  date_to: '2024-11-01'
+  out_path: './backtesting_pipeline/get_data'
+
+
+preliminar_analysis:
+  strategy_path: 'backbone.adx_di.AdxDi'
+  date_from: '2021-01-01'
+  date_to: '2024-11-01'
+  in_path: './backtesting_pipeline/get_data'
+  out_path: 'backtesting_pipeline/AdxDi/preliminar_analysis'
+
+
+full_analysis:
+  strategy_path: 'backbone.adx_di.AdxDi'
+  opt_params:
+    adx_threshold: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+  warmup_bars: 14 # asegurarse que este es el mayor valor de parametro para indicadores que tenga la estrategia
+  validation_bars: 200
+  date_from: '2021-01-01'
+  date_to: '2024-11-01'
+  data_path: './backtesting_pipeline/get_data'
+  in_path: 'backtesting_pipeline/AdxDi/preliminar_analysis'
+  out_path: 'backtesting_pipeline/AdxDi/wfo'
+
+
+
+# random_analysis:
+
+montecarlo:
+  in_path: 'backtesting_pipeline/AdxDi/wfo'
+  n_simulations: 100
+  initial_equity: 10000
+  threshold_ruin: 0.9
+  out_path: 'backtesting_pipeline/AdxDi/montecarlo'
+
+
+
+

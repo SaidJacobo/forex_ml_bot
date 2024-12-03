@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import pandas_ta as pandas_ta
 import MetaTrader5 as mt5
@@ -8,7 +9,7 @@ import pandas as pd
 import random
 random.seed(42)
 
-def get_data(tickers, intervals, date_from, date_to):
+def get_data(tickers, intervals, date_from, date_to, save_in=None):
     parameter_combinations = list(itertools.product(
         tickers, intervals
     ))
@@ -57,6 +58,10 @@ def get_data(tickers, intervals, date_from, date_to):
             symbols[ticker][interval] = {}
 
         symbols[ticker][interval] = df
+        
+        if save_in:
+            file_name = f'{ticker}_{interval}_{date_from.date()}_{date_to.date()}.csv'
+            symbols[ticker][interval].to_csv(os.path.join(save_in, file_name))
 
     return symbols
 
