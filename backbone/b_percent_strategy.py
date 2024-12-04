@@ -10,18 +10,19 @@ np.seterr(divide='ignore')
 
 class BPercent(Strategy):
     pip_value = None
-    minimum_units = None
-    maximum_units = None
+    minimum_lot = None
+    maximum_lot = None
     contract_volume = None
+    trade_tick_value_loss = None
     opt_params = None
-        
-    risk= 1
+    risk=1
+    
     bbands_timeperiod = 50
     bband_std = 1.5
     sma_period = 200
     b_open_threshold = 0.90
     b_close_threshold = 0.5
-    atr_multiplier = 1.8
+    atr_multiplier = 2
 
     def init(self):
         
@@ -46,8 +47,8 @@ class BPercent(Strategy):
             self.b_open_threshold = self.opt_params[actual_date]['b_open_threshold']
             self.b_close_threshold = self.opt_params[actual_date]['b_open_threshold']
         
-        actual_close = self.data.Close[-1]
-        b_percent = (actual_close - self.lower_band[-1]) / (self.upper_band[-1] - self.lower_band[-1])
+        price = self.data.Close[-1]
+        b_percent = (price - self.lower_band[-1]) / (self.upper_band[-1] - self.lower_band[-1])
         
         if self.position:
             if self.position.is_long:
@@ -59,12 +60,11 @@ class BPercent(Strategy):
                     self.position.close()
 
         else:
-            if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma[-1]:
-
-                sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
+            if b_percent <= 1 - self.b_open_threshold and price > self.sma[-1]:
+                sl_price = price - self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -73,9 +73,11 @@ class BPercent(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 self.buy(
@@ -83,11 +85,11 @@ class BPercent(Strategy):
                     sl=sl_price
                 )
                 
-            if b_percent >= self.b_open_threshold and actual_close < self.sma[-1]:
-                sl_price = self.data.Close[-1] + self.atr_multiplier * self.atr[-1]
+            if b_percent >= self.b_open_threshold and price < self.sma[-1]:
+                sl_price = price + self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -96,19 +98,21 @@ class BPercent(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 self.sell(
                     size=units,
-                    sl=sl_price    
+                    sl=sl_price
                 )
                 
     def next_live(self, trader:TraderBot):
-        actual_close = self.data.Close[-1]
-        b_percent = (actual_close - self.lower_band[-1]) / (self.upper_band[-1] - self.lower_band[-1])
+        price = self.data.Close[-1]
+        b_percent = (price - self.lower_band[-1]) / (self.upper_band[-1] - self.lower_band[-1])
         
         open_positions = trader.get_open_positions()
         
@@ -123,7 +127,7 @@ class BPercent(Strategy):
 
         else:
 
-            if b_percent <= 1 - self.b_open_threshold and actual_close > self.sma[-1]:
+            if b_percent <= 1 - self.b_open_threshold and price > self.sma[-1]:
                 info_tick = trader.get_info_tick()
                 price = info_tick.ask
                 
@@ -153,7 +157,7 @@ class BPercent(Strategy):
                     sl=sl_price
                 )             
                 
-            if b_percent >= self.b_open_threshold and actual_close < self.sma[-1]:
+            if b_percent >= self.b_open_threshold and price < self.sma[-1]:
                 info_tick = trader.get_info_tick()
                 price = info_tick.bid
                 

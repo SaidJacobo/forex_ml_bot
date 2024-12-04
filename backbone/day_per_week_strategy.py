@@ -10,13 +10,13 @@ np.seterr(divide='ignore')
 
 class DayPerWeek(Strategy):
     pip_value = None
-    minimum_units = None
-    maximum_units = None
+    minimum_lot = None
+    maximum_lot = None
     contract_volume = None
-    
+    trade_tick_value_loss = None
     opt_params = None
+    risk=1
     
-    risk = 1
     day_to_buy = 3
     percentage_price_sl = 5
     sma_period = 200
@@ -46,12 +46,14 @@ class DayPerWeek(Strategy):
                     self.position.close()
 
         else:
+            price = self.data.Close[-1]
+            
             # es el dia de compra, el precio esta por encima de la sma
             if today.day_of_week == self.day_to_buy and self.data.Close[-1] > self.sma[-1]:
-                sl_price = self.data.Close[-1] - self.data.Close[-1] *  (self.percentage_price_sl / 100)
+                sl_price = price - self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -60,14 +62,16 @@ class DayPerWeek(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 self.buy(
                     size=units,
-                    sl=sl_price,
+                    sl=sl_price
                 )
     
     def next_live(self, trader:TraderBot):

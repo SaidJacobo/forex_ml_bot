@@ -52,7 +52,7 @@ class AdxDi(Strategy):
             price = self.data.Close[-1]
 
             if self.adx[-1] >= self.adx_threshold and self.plus_di[-1] > self.minus_di[-1]:        
-                sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
+                sl_price = price - self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
                     price, 

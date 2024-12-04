@@ -16,10 +16,17 @@ from backbone.utils.wfo_utils import run_strategy
 
 if __name__ == "__main__":
 
-    with open("./backtesting_pipeline/configs/pipeline_configs.yml", "r") as file_name:
-        configs = yaml.safe_load(file_name)
     with open("./backtesting_pipeline/configs/backtest_params.yml", "r") as file_name:
         bt_params = yaml.safe_load(file_name)
+    
+    initial_cash = bt_params["initial_cash"]
+    margin = bt_params["margin"]
+        
+    config_path = bt_params['config_path']
+        
+    with open(config_path, "r") as file_name:
+        configs = yaml.safe_load(file_name)
+        
     configs = configs["preliminar_analysis"]
 
     date_from = configs["date_from"]
@@ -35,7 +42,7 @@ if __name__ == "__main__":
 
     plot_path = os.path.join(out_path, "plots")
     if not os.path.exists(plot_path):
-        os.make_dirs(plot_path)
+        os.makedirs(plot_path)
         
     strategy_name = strategy_path.split(".")[-1]
     strategy = load_function(strategy_path)
@@ -50,14 +57,15 @@ if __name__ == "__main__":
     limited_testing_start_date = Timestamp(date_from, tz="UTC")
     limited_testing_end_date = Timestamp(date_to, tz="UTC")
 
-    initial_cash = bt_params["initial_cash"]
-    margin = bt_params["margin"]
-
     performance = pd.DataFrame()
     stats_per_symbol = {}
     symbols = {}
 
     for file_name in all_files:
+
+        file_name_components = file_name.split("_")
+        ticker = file_name_components[0]
+        interval = file_name_components[1]
 
         try:
             prices = pd.read_csv(os.path.join(data_path, file_name))
@@ -70,10 +78,7 @@ if __name__ == "__main__":
                 symbols[ticker] = {}
             symbols[ticker][interval] = prices
 
-            file_name_components = file_name.split("_")
 
-            ticker = file_name_components[0]
-            interval = file_name_components[1]
 
             print(ticker, interval)
 

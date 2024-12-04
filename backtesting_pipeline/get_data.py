@@ -16,9 +16,14 @@ import pytz
 from datetime import datetime
 
 if __name__ == '__main__':
-
-    with open('./backtesting_pipeline/configs/pipeline_configs.yml', 'r') as file:
-        configs = yaml.safe_load(file)
+    
+    with open("./backtesting_pipeline/configs/backtest_params.yml", "r") as file_name:
+        bt_params = yaml.safe_load(file_name)
+    
+    config_path = bt_params['config_path']
+    
+    with open(config_path, "r") as file_name:
+        configs = yaml.safe_load(file_name)
 
     configs = configs['get_data']
     

@@ -17,9 +17,13 @@ def  optim_func(series):
     return (series['Return [%]'] /  (1 + (-1*series['Max. Drawdown [%]']))) * np.log(1 + series['# Trades'])
 
 class Macd(Strategy):
+    pip_value = None
+    minimum_lot = None
+    maximum_lot = None
+    contract_volume = None
+    trade_tick_value_loss = None
+    opt_params = None
     risk=1
-    atr_multiplier = 1.5
-    pip_value = 0.1
     
     sma_period = 200
     macd_fast_period = 7
@@ -49,8 +53,8 @@ class Macd(Strategy):
         self.rsi = self.I(ta.RSI, self.data.Close, timeperiod=self.rsi_period)
 
     def next(self):
-        actual_close = self.data.Close[-1]
         cum_rsi = self.rsi[-1] + self.rsi[-2]
+        price = self.data.Close[-1]
     
         if self.position:
             if self.position.is_long:
@@ -63,11 +67,11 @@ class Macd(Strategy):
 
         else:
 
-            if crossover(self.macdsignal, self.macd) and cum_rsi <= 100-self.cum_rsi_open_threshold and actual_close > self.sma[-1]:        
-                sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
+            if crossover(self.macdsignal, self.macd) and cum_rsi <= 100-self.cum_rsi_open_threshold and price > self.sma[-1]:        
+                sl_price = price - self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -76,7 +80,11 @@ class Macd(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 self.buy(
@@ -84,11 +92,11 @@ class Macd(Strategy):
                     sl=sl_price
                 )
                 
-            if crossover(self.macd, self.macdsignal) and cum_rsi >= self.cum_rsi_open_threshold and actual_close < self.sma[-1]:
-                sl_price = self.data.Close[-1] + self.atr_multiplier * self.atr[-1]
+            if crossover(self.macd, self.macdsignal) and cum_rsi >= self.cum_rsi_open_threshold and price < self.sma[-1]:
+                sl_price = price + self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -97,7 +105,11 @@ class Macd(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 self.sell(

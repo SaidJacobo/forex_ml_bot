@@ -35,13 +35,12 @@ random_test:
   date_to: '2024-11-01'
   strategy_path: 'backbone.random_trader.RandomTrader'
   data_path: './backtesting_pipeline/get_data'
-  in_path: 'backtesting_pipeline/AdxDi/preliminar_analysis'
+  in_path: 'backtesting_pipeline/AdxDi/wfo'
   out_path: 'backtesting_pipeline/AdxDi/random_test'
 
 montecarlo:
   in_path: 'backtesting_pipeline/AdxDi/wfo'
-  n_simulations: 100
-  initial_equity: 10000
+  n_simulations: 1000
   threshold_ruin: 0.9
   out_path: 'backtesting_pipeline/AdxDi/montecarlo'
 

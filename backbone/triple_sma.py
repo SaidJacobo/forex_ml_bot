@@ -55,6 +55,7 @@ class TripleSMA(Strategy):
                     self.position.close()
 
         else:
+            price = self.data.Close[-1]
             
             if (actual_up_trend and not past_up_trend) and price > self.sma_200[-1]:
                 sl_price = price - self.atr_multiplier * self.atr[-1]

@@ -20,13 +20,14 @@ def super_trend_indicator(high, low, close, lenght=7, multiplier=3):
 
 class DemaSuperTrend2(Strategy):
     pip_value = None
-    minimum_units = None
-    maximum_units = None
+    minimum_lot = None
+    maximum_lot = None
     contract_volume = None
+    trade_tick_value_loss = None
     opt_params = None
+    risk=1
     
     dema_period = 200
-    risk = 1
     atr_multiplier = 1.5
     super_trend_to_use = 'supertrend_signal_73' # <-- parametro a optimizar
 
@@ -62,11 +63,13 @@ class DemaSuperTrend2(Strategy):
                 self.position.close()
         
         else:
+            price = self.data.Close[-1]
             
             if actual_close > self.dema[-1] and st_buy_signal:
-                sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
+                sl_price = price - self.atr_multiplier * self.atr[-1]
+                
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -75,21 +78,23 @@ class DemaSuperTrend2(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
-                               
+                
                 self.buy(
                     size=units,
                     sl=sl_price
                 )
 
             if actual_close < self.dema[-1] and st_sell_signal:
-                sl_price = self.data.Close[-1] + self.atr_multiplier * self.atr[-1]
+                sl_price = price + self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -98,11 +103,13 @@ class DemaSuperTrend2(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
-                               
+                
                 self.sell(
                     size=units,
                     sl=sl_price

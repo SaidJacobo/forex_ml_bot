@@ -9,14 +9,15 @@ np.seterr(divide='ignore')
 
 class MeanReversion(Strategy):
     pip_value = None
-    minimum_units = None
-    maximum_units = None
+    minimum_lot = None
+    maximum_lot = None
     contract_volume = None
+    trade_tick_value_loss = None
     opt_params = None
+    risk=1
     
     sma_period = 50
     deviation_threshold = 0.1
-    risk = 1
     cum_rsi_up_threshold = 90
     cum_rsi_down_threshold = 10
     atr_multiplier = 2
@@ -35,26 +36,27 @@ class MeanReversion(Strategy):
                 setattr(self, k, v)
 
         # Precio actual y valor de la SMA
-        actual_close = self.data.Close[-1]
+        price = self.data.Close[-1]
         sma_value = self.sma[-1]
         cum_rsi = self.rsi[-1] + self.rsi[-2]
 
         # Desviación del precio con respecto a la SMA (en porcentaje)
-        deviation = (actual_close - sma_value) / sma_value
+        deviation = (price - sma_value) / sma_value
 
         if self.position:
-            if self.position.is_long and actual_close >= self.sma[-1]:
+            if self.position.is_long and price >= self.sma[-1]:
                 self.position.close()
 
-            if self.position.is_short and actual_close <= self.sma[-1]:
+            if self.position.is_short and price <= self.sma[-1]:
                 self.position.close() 
         
         else:
             # Condiciones para comprar (precio por debajo de la SMA más del umbral de desviación)
             if deviation <= -self.deviation_threshold and cum_rsi <= self.cum_rsi_down_threshold:
-                sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
+                sl_price = price - self.atr_multiplier * self.atr[-1]
+                
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -63,11 +65,13 @@ class MeanReversion(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
-                               
+                
                 self.buy(
                     size=units,
                     sl=sl_price
@@ -75,10 +79,10 @@ class MeanReversion(Strategy):
 
             # Condiciones para vender (precio por encima de la SMA más del umbral de desviación)
             elif deviation >= self.deviation_threshold and cum_rsi >= self.cum_rsi_up_threshold:
-                sl_price = self.data.Close[-1] + self.atr_multiplier * self.atr[-1]
+                sl_price = price + self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -87,11 +91,13 @@ class MeanReversion(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
-                               
+                
                 self.sell(
                     size=units,
                     sl=sl_price

@@ -11,11 +11,12 @@ from backbone.utils.general_purpose import calculate_units_size, diff_pips
 
 class Channel(Strategy):
     pip_value = None
-    minimum_units = None
-    maximum_units = None
+    minimum_lot = None
+    maximum_lot = None
     contract_volume = None
-    risk = 1
+    trade_tick_value_loss = None
     opt_params = None
+    risk=1
     
     sma_period = 26
     atr_multiplier = 1.5
@@ -26,7 +27,6 @@ class Channel(Strategy):
         
     def next(self):
         actual_date = self.data.index[-1]
-        actual_close = self.data.Close[-1]
         
         if self.opt_params and actual_date in self.opt_params.keys():
             for k, v in self.opt_params[actual_date].items():
@@ -45,12 +45,13 @@ class Channel(Strategy):
                     self.position.close()
 
         else:
+            price = self.data.Close[-1]
 
-            if actual_close > self.sma_200[-1] and crossover(self.data.Close, self.sma_upper_channel):
-                sl_price = self.data.Close[-1] - self.atr_multiplier * self.atr[-1]
+            if price > self.sma_200[-1] and crossover(self.data.Close, self.sma_upper_channel):
+                sl_price = price - self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -59,9 +60,11 @@ class Channel(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 self.buy(
@@ -69,11 +72,11 @@ class Channel(Strategy):
                     sl=sl_price
                 )
                 
-            if actual_close < self.sma_200[-1] and crossover(self.sma_lower_channel, self.data.Close):
-                sl_price = self.data.Close[-1] + self.atr_multiplier * self.atr[-1]
+            if price < self.sma_200[-1] and crossover(self.sma_lower_channel, self.data.Close):
+                sl_price = price + self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
-                    self.data.Close[-1], 
+                    price, 
                     sl_price, 
                     pip_value=self.pip_value
                 )
@@ -82,9 +85,11 @@ class Channel(Strategy):
                     account_size=self.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=False, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 self.sell(

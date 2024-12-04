@@ -13,12 +13,18 @@ from backbone.utils.montecarlo_utils import monte_carlo_simulation_v2
 
 if __name__ == "__main__":
 
-    with open("./backtesting_pipeline/configs/pipeline_configs.yml", "r") as file_name:
+    with open("./backtesting_pipeline/configs/backtest_params.yml", "r") as file_name:
+        bt_params = yaml.safe_load(file_name)
+    
+    initial_cash = bt_params["initial_cash"]
+    config_path = bt_params['config_path']
+        
+    with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
+        
     configs = configs["montecarlo"]
 
     in_path = configs["in_path"]
-    initial_equity = configs["initial_equity"]
     n_simulations = configs["n_simulations"]
     threshold_ruin = configs["threshold_ruin"]
     out_path = configs["out_path"]
@@ -52,7 +58,7 @@ if __name__ == "__main__":
                 equity_curve=eq_curve,
                 trade_history=trades_history,
                 n_simulations=n_simulations,
-                initial_equity=initial_equity,
+                initial_equity=initial_cash,
                 threshold_ruin=threshold_ruin,
                 return_raw_curves=False,
                 percentiles=[0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95],

@@ -38,8 +38,17 @@ lookback_bars_per_interval = {
 }
 
 if __name__ == "__main__":
-    with open("./backtesting_pipeline/configs/pipeline_configs.yml", "r") as file_name:
+    with open("./backtesting_pipeline/configs/backtest_params.yml", "r") as file_name:
+        bt_params = yaml.safe_load(file_name)
+
+    initial_cash = bt_params["initial_cash"]
+    margin = bt_params["margin"]
+    
+    config_path = bt_params['config_path']
+        
+    with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
+        
     configs = configs["full_analysis"]
     date_from = configs["date_from"]
     date_to = configs["date_to"]
@@ -54,13 +63,7 @@ if __name__ == "__main__":
     
     plot_path = os.path.join(out_path, "plots")
     if not os.path.exists(plot_path):
-        os.make_dirs(plot_path)
-
-    with open("./backtesting_pipeline/configs/backtest_params.yml", "r") as file_name:
-        bt_params = yaml.safe_load(file_name)
-    
-    initial_cash = bt_params["initial_cash"]
-    margin = bt_params["margin"]
+        os.makedirs(plot_path)
 
     filter_performance = pd.read_csv(os.path.join(in_path, "filter_performance.csv"))
 
