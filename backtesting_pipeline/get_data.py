@@ -91,18 +91,4 @@ if __name__ == '__main__':
     with open(f"{commissions_path}/commissions.yml", "w") as file:
         yaml.dump(commissions, file, default_flow_style=False)
 
-    
-
-        
-    # max_start_date = None
-    # intervals_start_dates = {}
-
-    # tickers = np.unique(list(symbols.keys())).tolist()
-
-    # for interval in intervals:
-    #     for ticker in tickers:
-    #         if not max_start_date or symbols[ticker][interval].index.min() > max_start_date:
-    #             max_start_date = symbols[ticker][interval].index.min()
-            
-    #     intervals_start_dates[interval] = max_start_date
 
