@@ -10,6 +10,7 @@ import MetaTrader5 as mt5
 
 np.seterr(divide="ignore")
 
+
 def optimization_function(stats):
     equity_curve = stats._equity_curve["Equity"].values
     x = np.arange(len(equity_curve)).reshape(-1, 1)
@@ -22,6 +23,7 @@ def optimization_function(stats):
         * stability_ratio
     )
 
+
 def plot_full_equity_curve(df_equity, title):
 
     fig = px.line(x=df_equity.index, y=df_equity.Equity)
@@ -29,21 +31,20 @@ def plot_full_equity_curve(df_equity, title):
     fig.update_traces(textposition="bottom right")
     fig.show()
 
+
 def get_scaled_symbol_metadata(ticker: str, metatrader=None):
-    
+
     if metatrader:
         info = metatrader.symbol_info(ticker)
-    
-    else: 
+    else:
         if not mt5.initialize():
             print("initialize() failed, error code =", mt5.last_error())
             quit()
         info = mt5.symbol_info(ticker)
-        
     contract_volume = info.trade_contract_size
     minimum_lot = info.volume_min
     maximum_lot = info.volume_max
-    pip_value = info.trade_tick_size # <-- Creo que aca puede haber un problema
+    pip_value = info.trade_tick_size  # <-- Creo que aca puede haber un problema
     minimum_units = contract_volume * minimum_lot
     trade_tick_value_loss = info.trade_tick_value_loss
 
@@ -55,15 +56,15 @@ def get_scaled_symbol_metadata(ticker: str, metatrader=None):
     scaled_minimum_lot = minimum_lot / minimum_fraction
     scaled_maximum_lot = maximum_lot / minimum_fraction
 
-
     return (
         scaled_pip_value,
         scaled_minimum_lot,
         scaled_maximum_lot,
         scaled_contract_volume,
         minimum_fraction,
-        trade_tick_value_loss
+        trade_tick_value_loss,
     )
+
 
 def run_strategy(
     strategy,
@@ -74,6 +75,7 @@ def run_strategy(
     commission: float,
     margin: float,
     plot=False,
+    plot_path=None,
     opt_params=None,
 ):
 
@@ -105,7 +107,14 @@ def run_strategy(
     )
 
     if plot:
-        bt_train.plot(filename=f"./plots/{ticker}_{interval}.html", resample=False)
+        if plot_path:
+            bt_train.plot(
+                filename=f"{plot_path}/{ticker}_{interval}.html", resample=False
+            )
+            
+        else:
+            bt_train.plot(filename=f"./plots/{ticker}_{interval}.html", resample=False)
+    
     equity_curve = stats._equity_curve["Equity"].values
     x = np.arange(len(equity_curve)).reshape(-1, 1)
     reg = LinearRegression().fit(x, equity_curve)
@@ -133,6 +142,7 @@ def run_strategy(
 
     return df_stats, stats
 
+
 def walk_forward(
     strategy,
     data_full,
@@ -151,6 +161,7 @@ def walk_forward(
     equity_final = None
 
     # Iniciar el índice en el final del primer lookback
+
     i = lookback_bars + warmup_bars
 
     while i < len(data_full):
@@ -159,14 +170,12 @@ def walk_forward(
 
         if verbose:
             print(f"train from {train_data.index[0]} to {train_data.index[-1]}")
-        
         bt_training = Backtest(
             train_data, strategy, cash=cash, commission=commission, margin=margin
         )
 
         with patch("backtesting.backtesting._tqdm", lambda *args, **kwargs: args[0]):
             stats_training = bt_training.optimize(**params)
-
         remaining_bars = len(data_full) - i
         current_validation_bars = min(validation_bars, remaining_bars)
 
@@ -176,7 +185,6 @@ def walk_forward(
 
         if verbose:
             print(f"validate from {validation_date} to {validation_data.index[-1]}")
-            
         bt_validation = Backtest(
             validation_data,
             strategy,
@@ -210,6 +218,7 @@ def walk_forward(
     wfo_stats = get_wfo_stats(stats_master, warmup_bars, data_full)
 
     return wfo_stats, optimized_params_history
+
 
 def get_wfo_stats(stats, warmup_bars, ohcl_data):
     trades = pd.DataFrame(
@@ -249,6 +258,7 @@ def get_wfo_stats(stats, warmup_bars, ohcl_data):
 
     return wfo_stats
 
+
 def run_wfo(
     strategy,
     ticker,
@@ -284,7 +294,7 @@ def run_wfo(
     params["contract_volume"] = [scaled_contract_volume]
     params["pip_value"] = [scaled_pip_value]
     params["trade_tick_value_loss"] = [trade_tick_value_loss]
-    
+
     params["maximize"] = optim_func
 
     wfo_stats, optimized_params_history = walk_forward(
