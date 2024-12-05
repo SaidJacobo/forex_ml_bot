@@ -30,6 +30,7 @@ if __name__ == "__main__":
     out_path = configs["out_path"]
 
     filter_performance = pd.read_csv(os.path.join(in_path, "filter_performance.csv"))
+    filter_performance = filter_performance.sort_values(by='custom_metric', ascending=False).drop_duplicates(subset=['ticker'])
 
     # Crear una lista para almacenar los resultados de cada ticker
 

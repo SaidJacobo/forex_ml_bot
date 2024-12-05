@@ -76,9 +76,8 @@ if __name__ == "__main__":
 
             if ticker not in symbols.keys():
                 symbols[ticker] = {}
+            
             symbols[ticker][interval] = prices
-
-
 
             print(ticker, interval)
 
@@ -99,8 +98,10 @@ if __name__ == "__main__":
 
             performance = pd.concat([performance, df_stats])
             stats_per_symbol[ticker][interval] = stats
+            
         except Exception as e:
             print(f"hubo un problema con {ticker} {interval}: {e}")
+            
     performance["return/dd"] = performance["return"] / -performance["drawdown"]
     performance["drawdown"] = -performance["drawdown"]
     performance["custom_metric"] = (
@@ -120,9 +121,11 @@ if __name__ == "__main__":
     rob_test["return_dd_mean_std"] = (
         rob_test[("return/dd", "mean")] / rob_test[("return/dd", "std")]
     )
+    
     rob_test = rob_test[
         (rob_test[("return/dd", "mean")] >= 1) & (rob_test[("trades", "mean")] > 10)
     ].sort_values(by="return_dd_mean_std", ascending=False)
+    
     rob_test.to_csv(os.path.join(out_path, "rob_test.csv"))
 
     average_positive_tickers = rob_test.reset_index().ticker.tolist()
@@ -130,6 +133,7 @@ if __name__ == "__main__":
     filter_performance = performance[
         performance["ticker"].isin(average_positive_tickers)
     ]
+    
     filter_performance = filter_performance.sort_values(
         by=["ticker", "interval"], ascending=[True, True]
     )[
@@ -158,6 +162,8 @@ if __name__ == "__main__":
         interval = row.interval
 
         prices = symbols[ticker][interval]
+        
+        commission = commissions[ticker]
 
         df_stats, stats = run_strategy(
             strategy=strategy,

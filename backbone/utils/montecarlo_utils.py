@@ -148,7 +148,9 @@ def monte_carlo_simulation_v2(
     prob_long_winner = len(long_winning_trades) / len(long_trades) if len(long_trades) > 0 else 0
     prob_short_winner = len(short_winning_trades) / len(short_trades) if len(short_trades) > 0 else 0
 
-    # Media y desviación estándar de los resultados
+    # ADVERTENCIA la media y desvio se esta calculando mal. debe joinearse el df de equity y el de trades
+    # Y calcular el porcentaje basado en eso. Luego si ejecutar estas lineas
+    
     long_win_mean, long_win_std = long_winning_trades['ReturnPct'].mean(), long_winning_trades['ReturnPct'].std()
     long_loss_mean, long_loss_std = long_losing_trades['ReturnPct'].mean(), long_losing_trades['ReturnPct'].std()
     short_win_mean, short_win_std = short_winning_trades['ReturnPct'].mean(), short_winning_trades['ReturnPct'].std()

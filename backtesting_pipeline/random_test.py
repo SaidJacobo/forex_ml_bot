@@ -58,12 +58,13 @@ if __name__ == '__main__':
 
     filter_performance = pd.read_csv(os.path.join(in_path, "filter_performance.csv"))
 
+    filter_performance = filter_performance.sort_values(by='custom_metric', ascending=False).drop_duplicates(subset=['ticker'])
+
     commissions_path = os.path.join(data_path, "commissions/commissions.yml")
     with open(commissions_path, "r") as file_name:
         commissions = yaml.safe_load(file_name)
     
     strategy = load_function(strategy_path)
-
 
     performance = pd.DataFrame()
     all_opt_params = {}
@@ -147,6 +148,25 @@ if __name__ == '__main__':
     performance["custom_metric"] = (
         performance["return"] / (1 + performance.drawdown)
     ) * np.log(1 + performance.trades)
+
+    performance = performance.sort_values(
+        by=["ticker", "interval"], ascending=[True, True]
+    )[
+        [
+            "strategy",
+            "ticker",
+            "interval",
+            "stability_ratio",
+            "trades",
+            "return",
+            "drawdown",
+            "return/dd",
+            "custom_metric",
+            "win_rate",
+            "avg_trade_percent",
+            "Duration",
+        ]
+    ]
 
     performance.to_csv(os.path.join(out_path, "performance.csv"), index=False)
     
