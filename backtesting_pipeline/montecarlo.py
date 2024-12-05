@@ -36,10 +36,12 @@ if __name__ == "__main__":
 
     data_drawdown = []
     data_return = []
-    montecarlo_simulations = {}
 
     all_drawdowns = pd.DataFrame()
     all_returns = pd.DataFrame()
+    
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
 
     for index, row in filter_performance.iterrows():
         ticker = row.ticker
@@ -50,7 +52,7 @@ if __name__ == "__main__":
             )
 
             eq_curve = pd.read_csv(
-                os.path.join(in_path, f"{ticker}_{interval}", "equity.csv")
+                os.path.join(in_path, f"{ticker}_{interval}", "equity.csv"), index_col=0
             )
 
             # Simulación de Montecarlo para cada ticker (datos agregados)
@@ -65,34 +67,12 @@ if __name__ == "__main__":
                 percentiles=[0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95],
             )
 
-            montecarlo_simulations[f"{ticker}_{interval}"] = mc
+            mc = mc.round(3).reset_index().rename(
+                columns={'index':'metric'}
+            )
+            
+            mc.to_csv(os.path.join(out_path, f"{ticker}_{interval}.csv"), index=False)
+            
         except Exception as e:
+            
             print(f"hubo un problema con {ticker}_{interval}: {e}")
-    dd_df = pd.DataFrame()
-    returns_df = pd.DataFrame()
-
-    for ticker, mc in montecarlo_simulations.items():
-        mc = mc.rename(
-            columns={
-                "Drawdown (%)": f"drawdown_{ticker}",
-                "Final Return (%)": f"return_{ticker}",
-            }
-        )
-
-        if dd_df.empty:
-            dd_df = mc[[f"drawdown_{ticker}"]]
-        else:
-            dd_df = pd.merge(
-                dd_df, mc[[f"drawdown_{ticker}"]], left_index=True, right_index=True
-            )
-        if returns_df.empty:
-            returns_df = mc[[f"return_{ticker}"]]
-        else:
-            returns_df = pd.merge(
-                returns_df, mc[[f"return_{ticker}"]], left_index=True, right_index=True
-            )
-    if not os.path.exists(out_path):
-        os.makedirs(out_path)
-    returns_df.to_csv(os.path.join(out_path, "returns.csv"))
-
-    dd_df.to_csv(os.path.join(out_path, "drawdowns.csv"))

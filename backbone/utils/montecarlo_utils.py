@@ -137,7 +137,7 @@ def monte_carlo_simulation_v2(
         trade_history,
         equity_curve,
         left_on='ExitTime',
-        right_on='Date',
+        right_index=True,
         how='inner'
     )
     
