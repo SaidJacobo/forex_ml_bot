@@ -58,8 +58,6 @@ if __name__ == '__main__':
 
     filter_performance = pd.read_csv(os.path.join(in_path, "filter_performance.csv"))
 
-    filter_performance = filter_performance.sort_values(by='custom_metric', ascending=False).drop_duplicates(subset=['ticker'])
-
     commissions_path = os.path.join(data_path, "commissions/commissions.yml")
     with open(commissions_path, "r") as file_name:
         commissions = yaml.safe_load(file_name)

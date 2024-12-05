@@ -133,6 +133,16 @@ def monte_carlo_simulation_v2(
         dict: Resultados estadísticos de las simulaciones, incluyendo drawdowns y retornos.
     """
     # Filtrar trades por tipo y resultados
+    trade_history = pd.merge(
+        trade_history,
+        equity_curve,
+        left_on='ExitTime',
+        right_on='Date',
+        how='inner'
+    )
+    
+    trade_history['ReturnPct'] = trade_history['PnL'] / trade_history['Equity'].shift(1)
+    
     long_trades = trade_history[trade_history['Size'] > 0]
     short_trades = trade_history[trade_history['Size'] < 0]
     
@@ -147,9 +157,6 @@ def monte_carlo_simulation_v2(
     prob_short = len(short_trades) / len(trade_history) if len(trade_history) > 0 else 0
     prob_long_winner = len(long_winning_trades) / len(long_trades) if len(long_trades) > 0 else 0
     prob_short_winner = len(short_winning_trades) / len(short_trades) if len(short_trades) > 0 else 0
-
-    # ADVERTENCIA la media y desvio se esta calculando mal. debe joinearse el df de equity y el de trades
-    # Y calcular el porcentaje basado en eso. Luego si ejecutar estas lineas
     
     long_win_mean, long_win_std = long_winning_trades['ReturnPct'].mean(), long_winning_trades['ReturnPct'].std()
     long_loss_mean, long_loss_std = long_losing_trades['ReturnPct'].mean(), long_losing_trades['ReturnPct'].std()
