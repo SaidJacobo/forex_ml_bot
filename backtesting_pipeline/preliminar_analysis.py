@@ -13,6 +13,12 @@ import yaml
 from backbone.utils.general_purpose import load_function
 from backbone.utils.wfo_utils import run_strategy
 
+def replace_strategy_name(obj, name):
+    if isinstance(obj, dict):
+        return {k: replace_strategy_name(v, name) for k, v in obj.items()}
+    elif isinstance(obj, str):
+        return obj.replace("{strategy_name}", name)
+    return obj
 
 if __name__ == "__main__":
 
@@ -21,12 +27,15 @@ if __name__ == "__main__":
     
     initial_cash = bt_params["initial_cash"]
     margin = bt_params["margin"]
-        
+    
     config_path = bt_params['config_path']
         
     with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
-        
+    
+    strategy_name = bt_params["strategy_name"]
+    configs = replace_strategy_name(obj=configs, name=strategy_name)
+     
     configs = configs["preliminar_analysis"]
 
     date_from = configs["date_from"]

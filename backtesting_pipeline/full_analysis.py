@@ -24,6 +24,12 @@ def find_matching_files(directory, ticker, interval):
 
     return matching_files
 
+def replace_strategy_name(obj, name):
+    if isinstance(obj, dict):
+        return {k: replace_strategy_name(v, name) for k, v in obj.items()}
+    elif isinstance(obj, str):
+        return obj.replace("{strategy_name}", name)
+    return obj
 
 lookback_bars_per_interval = {
     5: 3000,
@@ -48,7 +54,10 @@ if __name__ == "__main__":
         
     with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
-        
+
+    strategy_name = bt_params["strategy_name"]
+    configs = replace_strategy_name(obj=configs, name=strategy_name)
+ 
     configs = configs["full_analysis"]
     date_from = configs["date_from"]
     date_to = configs["date_to"]
@@ -160,6 +169,7 @@ if __name__ == "__main__":
 
             if ticker not in wfo_stats_per_symbol.keys():
                 wfo_stats_per_symbol[ticker] = {}
+                
             df_stats, wfo_stats = run_strategy(
                 strategy=strategy,
                 ticker=ticker,
@@ -243,6 +253,7 @@ if __name__ == "__main__":
 
         if not os.path.exists(path):
             os.makedirs(path)
+            
         wfo_stats_per_symbol[ticker][interval]._trades.to_csv(
             os.path.join(path, "trades.csv"), index=False
         )

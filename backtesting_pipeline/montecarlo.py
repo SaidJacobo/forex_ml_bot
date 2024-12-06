@@ -10,6 +10,12 @@ import pandas as pd
 import yaml
 from backbone.utils.montecarlo_utils import monte_carlo_simulation_v2
 
+def replace_strategy_name(obj, name):
+    if isinstance(obj, dict):
+        return {k: replace_strategy_name(v, name) for k, v in obj.items()}
+    elif isinstance(obj, str):
+        return obj.replace("{strategy_name}", name)
+    return obj
 
 if __name__ == "__main__":
 
@@ -21,13 +27,17 @@ if __name__ == "__main__":
         
     with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
-        
+    
+    strategy_name = bt_params["strategy_name"]
+    configs = replace_strategy_name(obj=configs, name=strategy_name)
+            
     configs = configs["montecarlo"]
 
     in_path = configs["in_path"]
     n_simulations = configs["n_simulations"]
     threshold_ruin = configs["threshold_ruin"]
     out_path = configs["out_path"]
+    root_path = configs["root_path"]
 
     filter_performance = pd.read_csv(os.path.join(in_path, "filter_performance.csv"))
     filter_performance = filter_performance.sort_values(by='custom_metric', ascending=False).drop_duplicates(subset=['ticker'])
@@ -46,13 +56,15 @@ if __name__ == "__main__":
     for index, row in filter_performance.iterrows():
         ticker = row.ticker
         interval = row.interval
+        method = row.method
+        
         try:
             trades_history = pd.read_csv(
-                os.path.join(in_path, f"{ticker}_{interval}", "trades.csv")
+                os.path.join(root_path, method, f"{ticker}_{interval}", "trades.csv")
             )
 
             eq_curve = pd.read_csv(
-                os.path.join(in_path, f"{ticker}_{interval}", "equity.csv"), index_col=0
+                os.path.join(root_path, method, f"{ticker}_{interval}", "equity.csv"), index_col=0
             )
 
             # Simulación de Montecarlo para cada ticker (datos agregados)

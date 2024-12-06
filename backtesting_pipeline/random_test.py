@@ -13,12 +13,20 @@ import yaml
 from backbone.utils.general_purpose import load_function
 from backbone.utils.wfo_utils import run_strategy
 
+
 def find_matching_files(directory, ticker, interval):
     pattern = rf"^{ticker}_{interval}_.+_.+\.csv$"
     all_files = os.listdir(directory)
     matching_files = [file for file in all_files if re.match(pattern, file)]
 
     return matching_files
+
+def replace_strategy_name(obj, name):
+    if isinstance(obj, dict):
+        return {k: replace_strategy_name(v, name) for k, v in obj.items()}
+    elif isinstance(obj, str):
+        return obj.replace("{strategy_name}", name)
+    return obj
 
 time_frames = {
     16385: 1,
@@ -37,14 +45,19 @@ if __name__ == '__main__':
     
     with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
-            
+
+    strategy_name = bt_params["strategy_name"]
+    configs = replace_strategy_name(obj=configs, name=strategy_name)
+          
     configs = configs["random_test"]
 
     date_from = configs["date_from"]
     date_to = configs["date_to"]
-    strategy = configs["strategy_path"]
-    in_path = configs["in_path"]
     data_path = configs["data_path"]
+    
+    in_path = configs["in_path"]
+    root_path = configs["root_path"]
+    
     out_path = configs["out_path"]
     strategy_path = configs["strategy_path"]
     plot_path = os.path.join(out_path, "plots")
@@ -74,6 +87,7 @@ if __name__ == '__main__':
         try:
             ticker = row.ticker
             interval = row.interval
+            method = row.method
             
             path = os.path.join(data_path, "data")
             matching_file = find_matching_files(path, ticker, interval).pop()
@@ -85,11 +99,11 @@ if __name__ == '__main__':
             
             # busco los trades para obtener sus probs
             trade_history = pd.read_csv(
-                os.path.join(in_path, f'{ticker}_{interval}', 'trades.csv')
+                os.path.join(root_path, method, f'{ticker}_{interval}', 'trades.csv')
             )
             
             equity_curve = pd.read_csv(
-                os.path.join(in_path, f'{ticker}_{interval}', 'equity.csv')
+                os.path.join(root_path, method, f'{ticker}_{interval}', 'equity.csv')
             )
             
             long_trades = trade_history[trade_history['Size'] > 0]
