@@ -182,9 +182,15 @@ if __name__ == "__main__":
 
         if not os.path.exists(path):
             os.makedirs(path)
+            
         stats_per_symbol[ticker][interval]._trades.to_csv(
             os.path.join(path, "trades.csv"), index=False
         )
+        
+        stats_per_symbol[ticker][interval]._equity_curve.index.name = None # <-- ???
+
         stats_per_symbol[ticker][interval]._equity_curve.to_csv(
             os.path.join(path, "equity.csv"),
         )
+        
+        
