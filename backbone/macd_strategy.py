@@ -29,6 +29,7 @@ class Macd(Strategy):
     macd_fast_period = 7
     macd_slow_period = 26
     macd_signal_period = 9
+    atr_multiplier = 1.5
     
     cum_rsi_open_threshold = 65
     cum_rsi_close_threshold = 45
