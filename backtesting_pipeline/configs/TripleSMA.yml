@@ -14,20 +14,22 @@ preliminar_analysis:
   date_from: '2021-01-01'
   date_to: '2024-11-01'
   in_path: './backtesting_pipeline/get_data'
-  out_path: 'backtesting_pipeline/TripleSMA/preliminar_analysis'
+  out_path: 'backtesting_pipeline/strategies/TripleSMA/preliminar_analysis'
 
 random_test:
   date_from: '2021-01-01'
   date_to: '2024-11-01'
   strategy_path: 'backbone.random_trader.RandomTrader'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
   data_path: './backtesting_pipeline/get_data'
-  in_path: 'backtesting_pipeline/TripleSMA/preliminar_analysis'
-  out_path: 'backtesting_pipeline/TripleSMA/random_test'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/random_test'
 
 montecarlo:
-  in_path: 'backtesting_pipeline/TripleSMA/preliminar_analysis'
+  in_path: './backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
+  root_path: './backtesting_pipeline/strategies/{strategy_name}'
   n_simulations: 1000
   threshold_ruin: 0.9
-  out_path: 'backtesting_pipeline/TripleSMA/montecarlo'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
 
 

@@ -52,9 +52,6 @@ if __name__ == "__main__":
         os.path.join(full_analysis_path, 'filter_performance.csv')
     )
         
-    pa_filter_performance['method'] = 'preliminar_analysis'
-    wfo_filter_performance['method'] = 'wfo'
-
     filter_performance = pd.concat(
         [pa_filter_performance, wfo_filter_performance,]
     ).sort_values(by='custom_metric').drop_duplicates(subset=['ticker'])

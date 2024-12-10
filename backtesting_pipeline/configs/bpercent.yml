@@ -42,13 +42,13 @@ random_test:
   strategy_path: 'backbone.random_trader.RandomTrader'
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   data_path: './backtesting_pipeline/get_data'
-  root_path: 'backtesting_pipeline/strategies/BPercent'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/random_test'
 
 montecarlo:
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
-  strategy_path: 'backtesting_pipeline/strategies/BPercent'
-  root_path: 'backtesting_pipeline/strategies/BPercent'
+  strategy_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
   n_simulations: 1000
   threshold_ruin: 0.9
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
