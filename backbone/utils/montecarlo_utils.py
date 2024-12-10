@@ -199,7 +199,7 @@ def monte_carlo_simulation_v2(
         dd = (equity - peak) / peak * 100 # Drawdown en porcentaje
 
         # Calcular retorno final
-        ret = (equity[-1] - initial_equity) / initial_equity  # Retorno en porcentaje
+        ret = ((equity[-1] - initial_equity) / initial_equity) * 100  # Retorno en porcentaje
         
         if np.any(np.array(equity) <= initial_equity * threshold_ruin):
             ruin_count += 1
