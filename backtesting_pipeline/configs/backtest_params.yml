@@ -1,5 +1,5 @@
-config_path: ./backtesting_pipeline/configs/BPercent.yml
-strategy_name: BPercent
+config_path: ./backtesting_pipeline/configs/Macd.yml
+strategy_name: Macd
 
 initial_cash: 10_000
 margin: 0.03
