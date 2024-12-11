@@ -135,10 +135,13 @@ if __name__ == "__main__":
             all_wfo_performances = pd.concat([all_wfo_performances, df_stats])
         except Exception as e:
             print(f"No se pudo ejecutar para el ticker {ticker}: {e}")
+            
     all_wfo_performances["return/dd"] = (
         all_wfo_performances["return"] / -all_wfo_performances["drawdown"]
     )
+    
     all_wfo_performances["drawdown"] = -all_wfo_performances["drawdown"]
+    
     all_wfo_performances["custom_metric"] = (
         all_wfo_performances["return"] / (1 + all_wfo_performances.drawdown)
     ) * np.log(1 + all_wfo_performances.trades)
@@ -146,6 +149,7 @@ if __name__ == "__main__":
     all_wfo_performances.drawdown_duration = pd.to_timedelta(
         all_wfo_performances.drawdown_duration
     )
+    
     all_wfo_performances.drawdown_duration = (
         all_wfo_performances.drawdown_duration.dt.days
     )
@@ -188,6 +192,7 @@ if __name__ == "__main__":
             performance = pd.concat([performance, df_stats])
         except Exception as e:
             print(f"hubo un problema con {ticker} {interval}: {e}")
+    
     performance["return/dd"] = performance["return"] / -performance["drawdown"]
     performance["drawdown"] = -performance["drawdown"]
     performance["custom_metric"] = (
@@ -240,6 +245,8 @@ if __name__ == "__main__":
             "Duration",
         ]
     ]
+
+    filter_performance['method'] = 'wfo'
 
     filter_performance.to_csv(
         os.path.join(out_path, "filter_performance.csv"), index=False
