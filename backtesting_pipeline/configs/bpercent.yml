@@ -39,6 +39,7 @@ choose_the_best:
 random_test:
   date_from: '2021-01-01'
   date_to: '2024-11-01'
+  n_iterations: 10
   strategy_path: 'backbone.random_trader.RandomTrader'
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   data_path: './backtesting_pipeline/get_data'
