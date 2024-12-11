@@ -162,6 +162,7 @@ if __name__ == "__main__":
         ]
     ].sort_values(by='custom_metric', ascending=False).drop_duplicates(subset=['ticker'])
 
+    filter_performance['method'] = 'preliminar_analysis'
 
     filter_performance.to_csv(
         os.path.join(out_path, "filter_performance.csv"), index=False

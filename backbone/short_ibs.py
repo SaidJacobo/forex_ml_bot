@@ -96,6 +96,8 @@ class ShortIBS(Strategy):
             price = info_tick.bid
             
             if price < self.sma[-1] and actual_ibs >= self.enter_ibs:
+                price = info_tick.bid
+                
                 sl_price = price + self.atr_multiplier * self.atr[-1]
                 
                 pip_distance = diff_pips(
@@ -108,16 +110,16 @@ class ShortIBS(Strategy):
                     account_size=trader.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units, 
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
                     return_lots=True, 
-                    contract_volume=self.contract_volume
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss
                 )
                 
                 trader.open_order(
                     type_='sell',
-                    price=price,
-                    sl=sl_price,
-                    size=size
+                    price=price / trader.minimum_fraction,
+                    size=size, 
+                    sl=sl_price  / trader.minimum_fraction
                 )
