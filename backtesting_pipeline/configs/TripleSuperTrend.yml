@@ -1,0 +1,38 @@
+# GD -- PA -- FA -- RT
+#             |__  MC
+
+# GD -- PA -- RT
+#        |__  MC
+
+get_data:
+  date_from: '2021-01-01'
+  date_to: '2024-11-01'
+  out_path: './backtesting_pipeline/get_data'
+
+preliminar_analysis:
+  strategy_path: 'backbone.triple_supertrend.TripleSuperTrend'
+  date_from: '2021-01-01'
+  date_to: '2024-11-01'
+  in_path: './backtesting_pipeline/get_data'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
+
+
+random_test:
+  date_from: '2021-01-01'
+  date_to: '2024-11-01'
+  strategy_path: 'backbone.random_trader.RandomTrader'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
+  data_path: './backtesting_pipeline/get_data'
+  root_path: 'backtesting_pipeline/strategies/TripleSuperTrend'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/random_test'
+
+montecarlo:
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
+  strategy_path: 'backtesting_pipeline/strategies/TripleSuperTrend'
+  root_path: 'backtesting_pipeline/strategies/TripleSuperTrend'
+  n_simulations: 1000
+  threshold_ruin: 0.9
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
+
+
+

@@ -22,7 +22,7 @@ random_test:
   strategy_path: 'backbone.random_trader.RandomTrader'
   data_path: './backtesting_pipeline/get_data'
   in_path: 'backtesting_pipeline/TripleSMA/preliminar_analysis'
-  out_path: 'backtesting_pipeline/TripleSMA/random_test'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/TripleSMA/random_test'
 
 montecarlo:
   in_path: 'backtesting_pipeline/TripleSMA/preliminar_analysis'
