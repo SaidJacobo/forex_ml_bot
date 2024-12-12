@@ -62,7 +62,6 @@ ordered_cols = [
     "custom_metric",
     "win_rate",
     "avg_trade_percent",
-    "Duration",
 ]
 
 if __name__ == '__main__':
