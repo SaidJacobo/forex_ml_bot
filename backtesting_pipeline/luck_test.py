@@ -45,12 +45,13 @@ if __name__ == '__main__':
     strategy_name = bt_params["strategy_name"]
     configs = replace_strategy_name(obj=configs, name=strategy_name)
           
-    configs = configs["take_of_trades_test"]
+    configs = configs["luck_test"]
 
     in_path = configs['in_path']
     root_path = configs['root_path']
-    take_off_trades = configs['take_off_trades']
+    trades_percent_to_remove = configs['trades_percent_to_remove']
     out_path = configs['out_path']
+    
     
     if not os.path.exists(out_path):
         os.makedirs(out_path)
@@ -76,6 +77,8 @@ if __name__ == '__main__':
             os.path.join(root_path, method, f'{ticker}_{interval}', 'equity.csv'), index_col=0
         )
 
+        trades_to_remove = round((trades_percent_to_remove/100) * trades.shape[0])
+        
         trades = pd.merge(
             trades,
             equity,
@@ -89,10 +92,14 @@ if __name__ == '__main__':
         trades['ReturnPct'] = trades['PnL'] / trades['Equity'].shift(1)
         trades['id'] = [uuid.uuid4() for _ in range(len(trades.index))]
 
-        top_trades = trades.sort_values(by='ReturnPct', ascending=False).head(take_off_trades)
+        top_best_trades = trades.sort_values(by='ReturnPct', ascending=False).head(trades_to_remove)
+        top_worst_trades = trades.sort_values(by='ReturnPct', ascending=False).tail(trades_to_remove)
+        
+        trades_to_remove *= 2
         
         filtered_trade_return_pct = trades[
-            (~trades['id'].isin(top_trades.id))
+            (~trades['id'].isin(top_best_trades.id))
+            & (~trades['id'].isin(top_worst_trades.id))
             & (~trades['ReturnPct'].isna())
         ].sort_values(by='EntryTime').ReturnPct
 
@@ -110,7 +117,7 @@ if __name__ == '__main__':
         stability_ratio = reg.score(x, new_curve)
         
         metrics = pd.DataFrame({
-            'strategy': [f'take_off_{take_off_trades}_trades'],
+            'strategy': [f'take_off_{trades_to_remove}_trades'],
             'ticker': [ticker],
             'interval': [interval],
             'stability_ratio': [stability_ratio],
@@ -130,7 +137,7 @@ if __name__ == '__main__':
 
         fig.add_trace(go.Scatter(x=np.arange(0, len(new_curve), 1), y=new_curve,
                             mode='lines',
-                            name=f'take_of_{take_off_trades}_trades'))
+                            name=f'take_of_{trades_to_remove}_trades'))
 
         fig.show()
         fig.write_html(

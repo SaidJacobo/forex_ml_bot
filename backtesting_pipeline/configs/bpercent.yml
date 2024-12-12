@@ -54,11 +54,11 @@ montecarlo:
   threshold_ruin: 0.9
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
 
-take_of_trades_test:
+luck_test:
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   root_path: 'backtesting_pipeline/strategies/{strategy_name}'
-  take_off_trades: 5
-  out_path: 'backtesting_pipeline/strategies/{strategy_name}/take_of_trades'
+  trades_percent_to_remove: 2.5
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/luck_test'
 
 
 
