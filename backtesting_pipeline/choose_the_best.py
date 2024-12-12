@@ -54,7 +54,7 @@ if __name__ == "__main__":
         
     filter_performance = pd.concat(
         [pa_filter_performance, wfo_filter_performance,]
-    ).sort_values(by='custom_metric').drop_duplicates(subset=['ticker'])
+    ).sort_values(by='custom_metric', ascending=False).drop_duplicates(subset=['ticker'])
     
     filter_performance.to_csv(
         os.path.join(out_path, 'filter_performance.csv')
