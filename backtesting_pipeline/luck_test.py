@@ -67,6 +67,7 @@ if __name__ == '__main__':
         ticker = row.ticker
         interval = row.interval
         method = row.method
+        strategy = row.strategy
         
         # busco los trades para obtener sus probs
         trades = pd.read_csv(
@@ -139,14 +140,16 @@ if __name__ == '__main__':
                             mode='lines',
                             name=f'take_of_{trades_to_remove}_trades'))
 
+        fig.update_layout(title=f"{strategy_name}_{ticker}_{interval}")
+
         fig.show()
+        
         fig.write_html(
             os.path.join(out_path, f'{strategy_name}_{ticker}_{interval}.html')
         )
 
-    
     all_metrics.to_csv(
-        os.path.join(out_path, 'performance.csv'), index=False
+        os.path.join(out_path, 'luck_test_performance.csv'), index=False
     )
     
     
