@@ -207,7 +207,7 @@ if __name__ == '__main__':
         by=["ticker", "interval"], ascending=[True, True]
     )[ordered_cols]
 
-    performance.to_csv(os.path.join(out_path, "mean_performance.csv"), index=False)
+    performance.to_csv(os.path.join(out_path, "random_test_mean_performance.csv"), index=False)
     
     for index, row in filter_performance.iterrows():
         ticker = row.ticker
