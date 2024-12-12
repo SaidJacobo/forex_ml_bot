@@ -35,6 +35,36 @@ time_frames = {
     16388: 4,
 }
 
+cols_to_calculate_mean = [
+    'stability_ratio',
+    'return',
+    'final_eq',
+    'drawdown', 
+    'drawdown_duration', 
+    'win_rate', 
+    'sharpe_ratio',
+    'trades', 
+    'avg_trade_percent', 
+    'exposure', 
+    'final_equity', 
+    'Duration'
+]
+
+ordered_cols = [
+    "strategy",
+    "ticker",
+    "interval",
+    "stability_ratio",
+    "trades",
+    "return",
+    "drawdown",
+    "return/dd",
+    "custom_metric",
+    "win_rate",
+    "avg_trade_percent",
+    "Duration",
+]
+
 if __name__ == '__main__':
     with open("./backtesting_pipeline/configs/backtest_params.yml", "r") as file_name:
         bt_params = yaml.safe_load(file_name)
@@ -58,16 +88,18 @@ if __name__ == '__main__':
     in_path = configs["in_path"]
     root_path = configs["root_path"]
     
+    n_iterations = configs["n_iterations"]
+    
     out_path = configs["out_path"]
     strategy_path = configs["strategy_path"]
     plot_path = os.path.join(out_path, "plots")
+    
     
     if not os.path.exists(out_path):
         os.makedirs(out_path)
         
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
-        
 
     filter_performance = pd.read_csv(os.path.join(in_path, "filter_performance.csv"))
 
@@ -133,23 +165,33 @@ if __name__ == '__main__':
             
             if ticker not in stats_per_symbol.keys():
                 stats_per_symbol[ticker] = {}
+            
+            mean_performance = pd.DataFrame()
+            
+            
+            for i in range(0, n_iterations):
+                first = i == 0
                 
-            df_stats, wfo_stats = run_strategy(
-                strategy=strategy,
-                ticker=ticker,
-                interval=interval,
-                commission=commission,
-                prices=prices,
-                initial_cash=initial_cash,
-                margin=margin,
-                opt_params=params,
-                plot=True,
-                plot_path=plot_path,
-            )
+                df_stats, wfo_stats = run_strategy(
+                    strategy=strategy,
+                    ticker=ticker,
+                    interval=interval,
+                    commission=commission,
+                    prices=prices,
+                    initial_cash=initial_cash,
+                    margin=margin,
+                    opt_params=params,
+                    plot=first,
+                    plot_path=plot_path,
+                )
 
-            stats_per_symbol[ticker][interval] = wfo_stats
+                mean_performance = pd.concat([mean_performance, df_stats])
+                
+                if i == 0:
+                    stats_per_symbol[ticker][interval] = wfo_stats
 
-            performance = pd.concat([performance, df_stats])
+            mean_performance = mean_performance.groupby(by=['strategy','ticker','interval'])[cols_to_calculate_mean].mean().reset_index()
+            performance = pd.concat([performance, mean_performance])
         
         except Exception as e:
             print(f"hubo un problema con {ticker} {interval}: {e}")
@@ -163,24 +205,9 @@ if __name__ == '__main__':
 
     performance = performance.sort_values(
         by=["ticker", "interval"], ascending=[True, True]
-    )[
-        [
-            "strategy",
-            "ticker",
-            "interval",
-            "stability_ratio",
-            "trades",
-            "return",
-            "drawdown",
-            "return/dd",
-            "custom_metric",
-            "win_rate",
-            "avg_trade_percent",
-            "Duration",
-        ]
-    ]
+    )[ordered_cols]
 
-    performance.to_csv(os.path.join(out_path, "performance.csv"), index=False)
+    performance.to_csv(os.path.join(out_path, "mean_performance.csv"), index=False)
     
     for index, row in filter_performance.iterrows():
         ticker = row.ticker

@@ -39,6 +39,7 @@ choose_the_best:
 random_test:
   date_from: '2021-01-01'
   date_to: '2024-11-01'
+  n_iterations: 10
   strategy_path: 'backbone.random_trader.RandomTrader'
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   data_path: './backtesting_pipeline/get_data'
@@ -52,5 +53,12 @@ montecarlo:
   n_simulations: 1000
   threshold_ruin: 0.9
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
+
+luck_test:
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  trades_percent_to_remove: 2.5
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/luck_test'
+
 
 

@@ -59,7 +59,7 @@ def calculate_units_size(
     lots = min(lots, maximum_lot)    
    
     if return_lots:
-        return lots    
+        return int(lots)
     
     units = int(lots * contract_volume)
 

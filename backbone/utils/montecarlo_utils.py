@@ -1,6 +1,12 @@
 import numpy as np
 import pandas as pd
 
+def max_drawdown(equity_curve):
+    running_max = np.maximum.accumulate(equity_curve)
+    drawdown = (equity_curve - running_max) / running_max
+    return np.min(drawdown) * 100  # Convertir el drawdown a porcentaje
+
+
 def montecarlo_statistics_simulation(
     trade_history,
     equity_curve,
@@ -47,13 +53,6 @@ def montecarlo_statistics_simulation(
     ruin_threshold = (
         initial_equity * threshold_ruin
     )  # Umbral de ruina en términos de equidad
-
-    # Función para calcular el drawdown máximo en porcentaje
-
-    def max_drawdown(equity_curve):
-        running_max = np.maximum.accumulate(equity_curve)
-        drawdown = (equity_curve - running_max) / running_max
-        return np.min(drawdown) * 100  # Convertir el drawdown a porcentaje
 
     # Simulaciones de Montecarlo
 

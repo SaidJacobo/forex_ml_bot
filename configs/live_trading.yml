@@ -51,3 +51,24 @@ backbone.triple_supertrend.TripleSuperTrend:
         hour: 13-20/4
         minute: '0'
 
+backbone.b_percent_strategy.BPercent:
+  name: BPercent
+  opt_params: 
+    risk: [1]
+
+  wfo_params:
+    use_wfo: False
+    look_back_bars: 200
+    warmup_bars: 0
+
+  instruments_info: 
+    EURUSD:
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: 13-20/2
+        minute: '0'
+
+
+
+
