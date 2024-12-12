@@ -36,6 +36,16 @@ choose_the_best:
   full_analysis_path: 'backtesting_pipeline/strategies/{strategy_name}/wfo'
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
 
+montecarlo:
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+  strategy_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  n_simulations: 1000
+  threshold_ruin: 0.9
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
+
+#tickers
+
 random_test:
   date_from: '2021-01-01'
   date_to: '2024-11-01'
@@ -46,18 +56,10 @@ random_test:
   root_path: 'backtesting_pipeline/strategies/{strategy_name}'
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/random_test'
 
-montecarlo:
-  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
-  strategy_path: 'backtesting_pipeline/strategies/{strategy_name}'
-  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
-  n_simulations: 1000
-  threshold_ruin: 0.9
-  out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
-
 luck_test:
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   root_path: 'backtesting_pipeline/strategies/{strategy_name}'
-  trades_percent_to_remove: 2.5
+  trades_percent_to_remove: 3
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/luck_test'
 
 
