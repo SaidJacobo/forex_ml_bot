@@ -180,7 +180,7 @@ if __name__ == '__main__':
                     initial_cash=initial_cash,
                     margin=margin,
                     opt_params=params,
-                    plot=first,
+                    plot=False,
                     plot_path=plot_path,
                 )
 
