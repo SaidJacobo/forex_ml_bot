@@ -222,7 +222,7 @@ def monte_carlo_simulation_v2(
 
     # Calcular el riesgo de ruina
 
-    risk_of_ruin = ruin_count / n_simulations
+    risk_of_ruin = (ruin_count / n_simulations) * 100
     drawdown_stats.loc["Risk of Ruin"] = risk_of_ruin
 
     # Combinar las métricas de drawdowns y retornos porcentuales

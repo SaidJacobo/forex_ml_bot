@@ -10,7 +10,7 @@ get_data:
   out_path: './backtesting_pipeline/get_data'
 
 preliminar_analysis:
-  strategy_path: 'backbone.b_percent_strategy.BPercent'
+  strategy_path: 'backbone.channel_strategy.Channel'
   date_from: '2021-01-01'
   date_to: '2024-11-01'
   in_path: './backtesting_pipeline/get_data'
@@ -19,11 +19,10 @@ preliminar_analysis:
 full_analysis:
   date_from: '2021-01-01'
   date_to: '2024-11-01'
-  strategy_path: 'backbone.b_percent_strategy.BPercent'
+  strategy_path: 'backbone.channel_strategy.Channel'
   opt_params:
-    b_open_threshold : [0.9, 0.95, 1, 1.5]
-    b_close_threshold: [0.2, 0.5, 0.6, 0.8, 0.9, 1]
-
+    sma_period : [9, 12, 15, 18, 21]
+    
 # ADVERTENCIA asegurarse que warmup_bars es el mayor valor de parametro para indicadores que tenga la estrategia
   warmup_bars: 200
   validation_bars: 200
@@ -49,7 +48,7 @@ montecarlo:
 random_test:
   date_from: '2021-01-01'
   date_to: '2024-11-01'
-  n_iterations: 10
+  n_iterations: 50
   strategy_path: 'backbone.random_trader.RandomTrader'
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   data_path: './backtesting_pipeline/get_data'
@@ -61,6 +60,7 @@ luck_test:
   root_path: 'backtesting_pipeline/strategies/{strategy_name}'
   trades_percent_to_remove: 3
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/luck_test'
+
 
 
 

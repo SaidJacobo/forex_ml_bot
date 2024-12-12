@@ -27,21 +27,28 @@ full_analysis:
   warmup_bars: 14
   validation_bars: 200
   data_path: './backtesting_pipeline/get_data'
-  in_path: 'backtesting_pipeline/AdxDi/preliminar_analysis'
-  out_path: 'backtesting_pipeline/AdxDi/wfo'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/wfo'
+
+choose_the_best:
+  preliminar_analysis_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
+  full_analysis_path: 'backtesting_pipeline/strategies/{strategy_name}/wfo'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
 
 random_test:
   date_from: '2021-01-01'
   date_to: '2024-11-01'
   strategy_path: 'backbone.random_trader.RandomTrader'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   data_path: './backtesting_pipeline/get_data'
-  in_path: 'backtesting_pipeline/AdxDi/wfo'
-  out_path: 'backtesting_pipeline/AdxDi/random_test'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/random_test'
 
 montecarlo:
-  in_path: 'backtesting_pipeline/AdxDi/wfo'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+  strategy_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
   n_simulations: 1000
   threshold_ruin: 0.9
-  out_path: 'backtesting_pipeline/AdxDi/montecarlo'
-
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
 
