@@ -12,7 +12,9 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 import yaml
+import plotly.graph_objects as go
 from backbone.utils.montecarlo_utils import max_drawdown
+
 pd.set_option('display.max_columns', 500) # number of columns to be displayed
 
 
@@ -65,7 +67,6 @@ if __name__ == '__main__':
         interval = row.interval
         method = row.method
         
-        
         # busco los trades para obtener sus probs
         trades = pd.read_csv(
             os.path.join(root_path, method, f'{ticker}_{interval}', 'trades.csv')
@@ -82,6 +83,8 @@ if __name__ == '__main__':
             right_index=True,
             how='inner'
         )
+        
+        original_eq_curve = trades.Equity
 
         trades['ReturnPct'] = trades['PnL'] / trades['Equity'].shift(1)
         trades['id'] = [uuid.uuid4() for _ in range(len(trades.index))]
@@ -118,7 +121,27 @@ if __name__ == '__main__':
         })
     
         all_metrics = pd.concat([all_metrics, metrics])
+
+        # Create traces
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=np.arange(0, len(original_eq_curve), 1), y=original_eq_curve,
+                            mode='lines',
+                            name='equity original'))
+
+        fig.add_trace(go.Scatter(x=np.arange(0, len(new_curve), 1), y=new_curve,
+                            mode='lines',
+                            name=f'take_of_{take_off_trades}_trades'))
+
+        fig.show()
+        fig.write_html(
+            os.path.join(out_path, f'{strategy_name}_{ticker}_{interval}.html')
+        )
+
     
     all_metrics.to_csv(
         os.path.join(out_path, 'performance.csv'), index=False
     )
+    
+    
+    
+    
