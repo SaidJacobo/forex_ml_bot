@@ -126,10 +126,10 @@ class BPercent(Strategy):
                     trader.close_order(open_positions[-1])
 
         else:
+            info_tick = trader.get_info_tick()
 
             if b_percent <= 1 - self.b_open_threshold and price > self.sma[-1]:
-                info_tick = trader.get_info_tick()
-                price = info_tick.ask
+                price = info_tick.ask * trader.minimum_fraction
                 
                 sl_price = price - self.atr_multiplier * self.atr[-1]
                 
@@ -139,27 +139,27 @@ class BPercent(Strategy):
                     pip_value=self.pip_value
                 )
                 
-                units = calculate_units_size(
+                size = calculate_units_size(
                     account_size=trader.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=True, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss,
+                    minimum_fraction = trader.minimum_fraction
                 )
-                
-                lots = units / self.contract_volume
 
                 trader.open_order(
                     type_='buy',
-                    price=price,
-                    size=lots, 
-                    sl=sl_price
-                )             
+                    price=price / trader.minimum_fraction, # <-- minimum fraction
+                    size=size, 
+                    sl=sl_price  / trader.minimum_fraction
+                )       
                 
             if b_percent >= self.b_open_threshold and price < self.sma[-1]:
-                info_tick = trader.get_info_tick()
-                price = info_tick.bid
+                price = info_tick.bid * trader.minimum_fraction
                 
                 sl_price = price + self.atr_multiplier * self.atr[-1]
                 
@@ -169,20 +169,21 @@ class BPercent(Strategy):
                     pip_value=self.pip_value
                 )
                 
-                units = calculate_units_size(
+                size = calculate_units_size(
                     account_size=trader.equity, 
                     risk_percentage=self.risk, 
                     stop_loss_pips=pip_distance, 
-                    pip_value=self.pip_value,
-                    maximum_lot=self.maximum_units,
-                    minimum_lot=self.minimum_units
+                    maximum_lot=self.maximum_lot,
+                    minimum_lot=self.minimum_lot, 
+                    return_lots=True, 
+                    contract_volume=self.contract_volume,
+                    trade_tick_value_loss=self.trade_tick_value_loss,
+                    minimum_fraction = trader.minimum_fraction
                 )
-                
-                lots = units / self.contract_volume
                 
                 trader.open_order(
                     type_='sell',
-                    price=price,
-                    sl=sl_price,
-                    size=lots
+                    price=price / trader.minimum_fraction, # <-- minimum fraction
+                    size=size, 
+                    sl=sl_price  / trader.minimum_fraction
                 )

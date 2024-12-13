@@ -92,11 +92,9 @@ class ShortIBS(Strategy):
 
         else:
             info_tick = trader.get_info_tick()
-            
-            price = info_tick.bid
-            
+                      
             if price < self.sma[-1] and actual_ibs >= self.enter_ibs:
-                price = info_tick.bid
+                price = info_tick.bid * trader.minimum_fraction
                 
                 sl_price = price + self.atr_multiplier * self.atr[-1]
                 
@@ -114,12 +112,13 @@ class ShortIBS(Strategy):
                     minimum_lot=self.minimum_lot, 
                     return_lots=True, 
                     contract_volume=self.contract_volume,
-                    trade_tick_value_loss=self.trade_tick_value_loss
+                    trade_tick_value_loss=self.trade_tick_value_loss,
+                    minimum_fraction = trader.minimum_fraction
                 )
                 
                 trader.open_order(
                     type_='sell',
-                    price=price / trader.minimum_fraction,
+                    price=price / trader.minimum_fraction, # <-- minimum fraction
                     size=size, 
                     sl=sl_price  / trader.minimum_fraction
                 )

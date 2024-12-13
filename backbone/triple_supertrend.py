@@ -122,7 +122,7 @@ class TripleSuperTrend(Strategy):
             info_tick = trader.get_info_tick()
             
             if st_buy_signal:
-                price = info_tick.ask
+                price = info_tick.ask * trader.minimum_fraction
                 
                 sl_price = price - self.atr_multiplier * self.atr[-1]
                 
@@ -140,7 +140,8 @@ class TripleSuperTrend(Strategy):
                     minimum_lot=self.minimum_lot, 
                     return_lots=True, 
                     contract_volume=self.contract_volume,
-                    trade_tick_value_loss=self.trade_tick_value_loss
+                    trade_tick_value_loss=self.trade_tick_value_loss,
+                    minimum_fraction = trader.minimum_fraction
                 )
 
                 trader.open_order(
@@ -148,10 +149,10 @@ class TripleSuperTrend(Strategy):
                     price=price / trader.minimum_fraction, # <-- minimum fraction
                     size=size, 
                     sl=sl_price  / trader.minimum_fraction
-                ) 
+                )
 
             if st_sell_signal:
-                price = info_tick.bid
+                price = info_tick.bid * trader.minimum_fraction
                 
                 sl_price = price + self.atr_multiplier * self.atr[-1]
                 
@@ -169,7 +170,8 @@ class TripleSuperTrend(Strategy):
                     minimum_lot=self.minimum_lot, 
                     return_lots=True, 
                     contract_volume=self.contract_volume,
-                    trade_tick_value_loss=self.trade_tick_value_loss
+                    trade_tick_value_loss=self.trade_tick_value_loss,
+                    minimum_fraction = trader.minimum_fraction
                 )
                 
                 trader.open_order(

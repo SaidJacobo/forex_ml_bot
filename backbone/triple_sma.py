@@ -130,8 +130,7 @@ class TripleSMA(Strategy):
             info_tick = trader.get_info_tick()
             
             if (actual_up_trend and not past_up_trend) and price > self.sma_200[-1]:
-                
-                price = info_tick.ask * trader.minimum_fraction # <-- minimum fraction
+                price = info_tick.ask * trader.minimum_fraction
                 
                 sl_price = price - self.atr_multiplier * self.atr[-1]
                 
@@ -149,7 +148,8 @@ class TripleSMA(Strategy):
                     minimum_lot=self.minimum_lot, 
                     return_lots=True, 
                     contract_volume=self.contract_volume,
-                    trade_tick_value_loss=self.trade_tick_value_loss
+                    trade_tick_value_loss=self.trade_tick_value_loss,
+                    minimum_fraction = trader.minimum_fraction
                 )
 
                 trader.open_order(
@@ -157,10 +157,10 @@ class TripleSMA(Strategy):
                     price=price / trader.minimum_fraction, # <-- minimum fraction
                     size=size, 
                     sl=sl_price  / trader.minimum_fraction
-                ) 
+                )
                 
             if (actual_down_trend and not past_down_trend) and price < self.sma_200[-1]:
-                price = info_tick.bid
+                price = info_tick.bid * trader.minimum_fraction
                 
                 sl_price = price + self.atr_multiplier * self.atr[-1]
                 
@@ -178,13 +178,14 @@ class TripleSMA(Strategy):
                     minimum_lot=self.minimum_lot, 
                     return_lots=True, 
                     contract_volume=self.contract_volume,
-                    trade_tick_value_loss=self.trade_tick_value_loss
+                    trade_tick_value_loss=self.trade_tick_value_loss,
+                    minimum_fraction = trader.minimum_fraction
                 )
                 
                 trader.open_order(
                     type_='sell',
-                    price=price,
-                    sl=sl_price,
-                    size=size
+                    price=price / trader.minimum_fraction, # <-- minimum fraction
+                    size=size, 
+                    sl=sl_price  / trader.minimum_fraction
                 )
                 
