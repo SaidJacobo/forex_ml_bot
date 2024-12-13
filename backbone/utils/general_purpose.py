@@ -48,7 +48,7 @@ def calculate_units_size(
     return_lots=False,
     contract_volume=None,
     trade_tick_value_loss=None,
-    minimum_fraction=None
+    volume_step=None
     
     ):
     
@@ -60,8 +60,9 @@ def calculate_units_size(
     lots = min(lots, maximum_lot)    
    
     if return_lots:
-        if minimum_fraction < 1:
-            return lots
+        if volume_step < 1:
+            number_of_decimals = len(str(volume_step).split('.')[1])
+            return round(lots, number_of_decimals)
         else:
             return float(int(lots))
     

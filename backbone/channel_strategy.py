@@ -145,7 +145,7 @@ class Channel(Strategy):
                     return_lots=True, 
                     contract_volume=self.contract_volume,
                     trade_tick_value_loss=self.trade_tick_value_loss,
-                    minimum_fraction = trader.minimum_fraction
+                    volume_step = trader.volume_step
                 )
 
                 trader.open_order(
@@ -175,7 +175,7 @@ class Channel(Strategy):
                     return_lots=True, 
                     contract_volume=self.contract_volume,
                     trade_tick_value_loss=self.trade_tick_value_loss,
-                    minimum_fraction = trader.minimum_fraction
+                    volume_step = trader.volume_step
                 )
                 
                 trader.open_order(
