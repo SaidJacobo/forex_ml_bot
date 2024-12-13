@@ -1,4 +1,4 @@
-backbone.bbands_cross.BbandsCross:
+backbone.bbands_cross_strategy.BbandsCross:
   name: BbandsCross
   opt_params: 
     risk: [1]
