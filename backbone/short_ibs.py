@@ -82,6 +82,7 @@ class ShortIBS(Strategy):
                 
     def next_live(self, trader:TraderBot):       
         actual_ibs = self.ibs[-1]
+        price = self.data.Close[-1]
                   
         open_positions = trader.get_open_positions()
 
