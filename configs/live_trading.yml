@@ -9,13 +9,6 @@ backbone.bbands_cross_strategy.BbandsCross:
     warmup_bars: 0
 
   instruments_info: 
-    US2000.cash:
-      timeframe: H1
-      cron:
-        day: mon-fri
-        hour: 13-20/1
-        minute: '0'
-  
     GBPUSD:
       timeframe: H1
       cron:
