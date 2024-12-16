@@ -23,6 +23,13 @@ backbone.bbands_cross_strategy.BbandsCross:
         hour: 13-20/2
         minute: '0'
 
+    US2000.cash:
+      timeframe: H1
+      cron:
+        day: mon-fri
+        hour: 13-20/1
+        minute: '0'
+
 backbone.b_percent_strategy.BPercent:
   name: BPercent
   opt_params: 
