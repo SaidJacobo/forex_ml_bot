@@ -140,7 +140,11 @@ if __name__ == '__main__':
                             mode='lines',
                             name=f'take_of_{trades_to_remove}_trades'))
 
-        fig.update_layout(title=f"{strategy_name}_{ticker}_{interval}")
+        fig.update_layout(
+            title=f"{strategy_name}_{ticker}_{interval}",
+            xaxis_title='Time',
+            yaxis_title='Equity'
+        )
 
         fig.show()
         
