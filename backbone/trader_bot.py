@@ -102,9 +102,9 @@ class TraderBot:
         self.opt_params["maximize"] = optimization_function
         
 
-    def get_data(self, date_from, date_to):
-        rates = self.mt5.copy_rates_range(
-            self.ticker, time_frames[self.timeframe], date_from, date_to
+    def get_data(self, n_bars=None):
+        rates = self.mt5.copy_rates_from_pos(
+            self.ticker, time_frames[self.timeframe], 1, n_bars
         )
 
         historical_prices = pd.DataFrame(rates)
@@ -222,13 +222,11 @@ class TraderBot:
 
         timezone = pytz.timezone("Etc/UTC")
         now = datetime.now(tz=timezone)
-        date_from = now - timedelta(hours=look_back_bars) - timedelta(hours=warmup_bars)
 
         print(f"excecuting run {self.name} at {now}")
 
         df = self.get_data(
-            date_from=date_from,
-            date_to=now,
+            n_bars=look_back_bars + warmup_bars,
         )
 
         df.loc[:, ["Open", "High", "Low", "Close"]] = (
