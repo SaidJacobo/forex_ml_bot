@@ -6,7 +6,7 @@ backbone.bbands_cross_strategy.BbandsCross:
   wfo_params:
     use_wfo: False
     look_back_bars: 200
-    warmup_bars: 0
+    warmup_bars: 200
 
   instruments_info: 
     GBPUSD:
@@ -38,7 +38,7 @@ backbone.b_percent_strategy.BPercent:
   wfo_params:
     use_wfo: False
     look_back_bars: 200
-    warmup_bars: 0
+    warmup_bars: 200
 
   instruments_info:
     EURUSD:
@@ -56,7 +56,7 @@ backbone.channel_strategy.Channel:
   wfo_params:
     use_wfo: False
     look_back_bars: 200
-    warmup_bars: 0
+    warmup_bars: 200
 
   instruments_info:
     NVDA:
@@ -74,7 +74,7 @@ backbone.short_ibs.ShortIBS:
   wfo_params:
     use_wfo: False
     look_back_bars: 200
-    warmup_bars: 0
+    warmup_bars: 200
 
   instruments_info: 
     BABA:
@@ -99,7 +99,7 @@ backbone.triple_sma.TripleSMA:
   wfo_params:
     use_wfo: False
     look_back_bars: 200
-    warmup_bars: 0
+    warmup_bars: 200
 
   instruments_info: 
     NVDA:
@@ -117,7 +117,7 @@ backbone.triple_supertrend.TripleSuperTrend:
   wfo_params:
     use_wfo: False
     look_back_bars: 200
-    warmup_bars: 0
+    warmup_bars: 200
     
   instruments_info: 
     NVDA:
