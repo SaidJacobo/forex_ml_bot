@@ -91,6 +91,9 @@ if __name__ == '__main__':
     
     out_path = configs["out_path"]
     strategy_path = configs["strategy_path"]
+    run_only_in = configs['run_only_in']
+    
+    
     plot_path = os.path.join(out_path, "plots")
     
     
@@ -101,6 +104,10 @@ if __name__ == '__main__':
         os.makedirs(plot_path)
 
     filter_performance = pd.read_csv(os.path.join(in_path, "filter_performance.csv"))
+    
+    if run_only_in:
+        filter_performance['ticker_interval'] = filter_performance['ticker'] + '_' + filter_performance['interval'].astype(str)
+        filter_performance = filter_performance[filter_performance['ticker_interval'].isin(run_only_in)]
 
     commissions_path = os.path.join(data_path, "commissions/commissions.yml")
     with open(commissions_path, "r") as file_name:

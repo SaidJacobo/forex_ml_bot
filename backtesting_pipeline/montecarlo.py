@@ -38,9 +38,14 @@ if __name__ == "__main__":
     threshold_ruin = configs["threshold_ruin"]
     out_path = configs["out_path"]
     root_path = configs["root_path"]
+    run_only_in = configs['run_only_in']
 
     filter_performance = pd.read_csv(os.path.join(in_path, "filter_performance.csv"))
     filter_performance = filter_performance.sort_values(by='custom_metric', ascending=False).drop_duplicates(subset=['ticker'])
+    
+    if run_only_in:
+        filter_performance['ticker_interval'] = filter_performance['ticker'] + '_' + filter_performance['interval'].astype(str)
+        filter_performance = filter_performance[filter_performance['ticker_interval'].isin(run_only_in)]
 
     # Crear una lista para almacenar los resultados de cada ticker
 

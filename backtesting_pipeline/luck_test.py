@@ -51,12 +51,17 @@ if __name__ == '__main__':
     root_path = configs['root_path']
     trades_percent_to_remove = configs['trades_percent_to_remove']
     out_path = configs['out_path']
+    run_only_in = configs['run_only_in']
     
     
     if not os.path.exists(out_path):
         os.makedirs(out_path)
         
     filter_performance = pd.read_csv(os.path.join(in_path, "filter_performance.csv"))
+    
+    if run_only_in:
+        filter_performance['ticker_interval'] = filter_performance['ticker'] + '_' + filter_performance['interval'].astype(str)
+        filter_performance = filter_performance[filter_performance['ticker_interval'].isin(run_only_in)]
 
     all_opt_params = {}
     symbols = {}
