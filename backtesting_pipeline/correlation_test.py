@@ -96,7 +96,8 @@ if __name__ == '__main__':
 
         # Ajustar el modelo de regresión lineal
         reg = LinearRegression().fit(x, y)
-        stability_ratio = reg.score(x, y)
+        determination = reg.score(x, y)
+        correlation = np.corrcoef(prices['perc_diff'], equity['perc_diff'])[0, 1]
 
         # Predicciones para la recta
         x_range = np.linspace(x.min(), x.max(), 100).reshape(-1, 1)  # Rango de X para la recta
@@ -113,8 +114,24 @@ if __name__ == '__main__':
         # Personalización
         fig.update_layout(
             title=f"Correlación {strategy_name} con {ticker}_{interval}",
-            xaxis_title=f'{ticker}_{interval} Monthly Returns',
+            xaxis_title=f'{ticker}_{interval} Monthly Price Variation',
             yaxis_title=f'{strategy_name} Monthly Returns'
+        )
+
+        # Agregar anotación con los valores R² y Pearson
+        fig.add_annotation(
+            x=0.95,  # Posición en el gráfico (en unidades de fracción del eje)
+            y=0.95,
+            xref='paper', yref='paper',
+            text=f"<b>r = {correlation:.3f}<br>R² = {determination:.3f}</b>",
+            showarrow=False,
+            font=dict(size=16, color="black"),
+            align="left",
+            bordercolor="black",
+            borderwidth=1,
+            borderpad=4,
+            bgcolor="white",
+            opacity=0.8
         )
 
         if show:
@@ -124,14 +141,14 @@ if __name__ == '__main__':
             os.path.join(out_path, f'{strategy_name}_{ticker}_{interval}.html')
         )
         
-        correlation = np.corrcoef(prices['perc_diff'], equity['perc_diff'])[0, 1]
+    
         
         result = pd.concat([
             result,
             pd.DataFrame({
                 'strategy': [f'{strategy_name}_{ticker}_{interval}'],
-                'correlation_with_asset': [correlation],
-                'stability_ratio': [stability_ratio],
+                'correlation': [correlation],
+                'determination': [determination],
             })
         ])
     
