@@ -98,6 +98,7 @@ class TraderBot:
         self.opt_params["pip_value"] = [self.scaled_pip_value]
         self.opt_params["contract_volume"] = [self.scaled_contract_volume]
         self.opt_params["trade_tick_value_loss"] = [self.trade_tick_value_loss]
+        self.opt_params["volume_step"] = [self.volume_step]
 
         self.opt_params["maximize"] = optimization_function
         
