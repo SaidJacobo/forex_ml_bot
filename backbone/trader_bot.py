@@ -172,7 +172,9 @@ class TraderBot:
         result_send = self.mt5.order_send(request)
 
         if not result_send or result_send.retcode != self.mt5.TRADE_RETCODE_DONE:
-            message = f"fallo al abrir orden en {self.name}, retcode={result_send.retcode}, comment {result_send.comment}"
+            message = f"fallo al abrir orden en {self.name}, retcode={result_send.retcode}, comment {result_send.comment}: \n"
+            message += str(request)
+            
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
         else:

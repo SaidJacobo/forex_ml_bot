@@ -13,14 +13,14 @@ backbone.bbands_cross_strategy.BbandsCross:
       timeframe: H1
       cron:
         day: mon-fri
-        hour: 13-20/1
+        hour: '*/1'
         minute: '0'
 
     USDCHF:
       timeframe: H2
       cron:
         day: mon-fri
-        hour: 13-20/2
+        hour: '*/2'
         minute: '0'
 
     US2000.cash:
@@ -45,7 +45,7 @@ backbone.b_percent_strategy.BPercent:
       timeframe: H2
       cron:
         day: mon-fri
-        hour: 13-20/2
+        hour: '*/2'
         minute: '0'
 
 backbone.channel_strategy.Channel:
@@ -88,7 +88,7 @@ backbone.short_ibs.ShortIBS:
       timeframe: H3
       cron:
         day: mon-fri
-        hour: 13-20/3
+        hour: '*/3'
         minute: '0'
 
 backbone.triple_sma.TripleSMA:
