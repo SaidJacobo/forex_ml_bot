@@ -16,8 +16,8 @@ preliminar_analysis:
   in_path: './backtesting_pipeline/get_data'
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
 
-
 montecarlo:
+  run_only_in: ['GBPUSD_16385','US2000.cash_16385','USDCHF_16386'] #null
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
   strategy_path: 'backtesting_pipeline/strategies/{strategy_name}'
   root_path: 'backtesting_pipeline/strategies/{strategy_name}'
@@ -25,9 +25,8 @@ montecarlo:
   threshold_ruin: 0.9
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
 
-#tickers
-
 random_test:
+  run_only_in: ['GBPUSD_16385','US2000.cash_16385','USDCHF_16386'] #null
   date_from: '2021-01-01'
   date_to: '2024-11-01'
   n_iterations: 30
@@ -38,7 +37,16 @@ random_test:
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/random_test'
 
 luck_test:
+  run_only_in: ['GBPUSD_16385','US2000.cash_16385','USDCHF_16386'] #null
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
   root_path: 'backtesting_pipeline/strategies/{strategy_name}'
   trades_percent_to_remove: 3
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/luck_test'
+
+correlation_test:
+  run_only_in: ['GBPUSD_16385','US2000.cash_16385','USDCHF_16386'] #null
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+  data_path: './backtesting_pipeline/get_data'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/correlation_test'
+  show: True
