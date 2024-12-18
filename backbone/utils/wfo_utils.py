@@ -88,6 +88,7 @@ def run_strategy(
         scaled_contract_volume,
         minimum_fraction,
         trade_tick_value_loss,
+        volume_step,
     ) = get_scaled_symbol_metadata(ticker)
 
     scaled_prices = prices.copy()
@@ -105,6 +106,7 @@ def run_strategy(
         maximum_lot=scaled_maximum_lot,
         contract_volume=scaled_contract_volume,
         trade_tick_value_loss=trade_tick_value_loss,
+        volume_step=volume_step,
         opt_params=opt_params,
     )
 

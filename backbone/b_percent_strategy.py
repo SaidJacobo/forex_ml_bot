@@ -15,6 +15,7 @@ class BPercent(Strategy):
     contract_volume = None
     trade_tick_value_loss = None
     opt_params = None
+    volume_step = None 
     risk=1
     
     bbands_timeperiod = 50

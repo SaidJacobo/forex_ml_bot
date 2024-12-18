@@ -1,5 +1,5 @@
-config_path: ./backtesting_pipeline/configs/BBandsCross.yml
-strategy_name: BBandsCross
+config_path: ./backtesting_pipeline/configs/Bpercent.yml
+strategy_name: Bpercent
 
 initial_cash: 10_000
 margin: 0.03
