@@ -1,5 +1,6 @@
 backbone.bbands_cross_strategy.BbandsCross:
-  name: BCross
+  name: BbandsCross
+  metatrader_name: BCross # <-- Nombre para mostrar en las operaciones de metatrader
   opt_params: 
     risk: [1]
 
@@ -31,7 +32,8 @@ backbone.bbands_cross_strategy.BbandsCross:
         minute: '0'
 
 backbone.b_percent_strategy.BPercent:
-  name: BPerc
+  name: BPercent
+  metatrader_name: BPerc
   opt_params: 
     risk: [1]
 
@@ -50,6 +52,7 @@ backbone.b_percent_strategy.BPercent:
 
 backbone.channel_strategy.Channel:
   name: Channel
+  metatrader_name: Channel
   opt_params: 
     risk: [1]
 
@@ -67,7 +70,8 @@ backbone.channel_strategy.Channel:
         minute: '0'
 
 backbone.short_ibs.ShortIBS:
-  name: ShrtIB
+  name: ShortIBS
+  metatrader_name: ShrtIB
   opt_params: 
     risk: [1]
 
@@ -92,7 +96,8 @@ backbone.short_ibs.ShortIBS:
         minute: '0'
 
 backbone.triple_sma.TripleSMA:
-  name: 3SMA
+  name: TripleSMA
+  metatrader_name: 3SMA
   opt_params: 
     risk: [1]
 
@@ -111,6 +116,7 @@ backbone.triple_sma.TripleSMA:
 
 backbone.triple_supertrend.TripleSuperTrend:
   name: TripleST
+  metatrader_name: TripleST
   opt_params: 
     risk: [1]
 

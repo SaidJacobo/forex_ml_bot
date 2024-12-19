@@ -42,7 +42,7 @@ if __name__ == '__main__':
         instruments_info = configs['instruments_info']
         wfo_params = configs['wfo_params']
         opt_params = configs['opt_params']
-        name = configs['name']
+        metatrader_name = configs['metatrader_name']
 
         for ticker, info in instruments_info.items():
 
@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
             strategy = load_function(strategy_name)
             
-            bot = load_function(bot_path)(name, ticker, timeframe, creds, opt_params, wfo_params, strategy)
+            bot = load_function(bot_path)(metatrader_name, ticker, timeframe, creds, opt_params, wfo_params, strategy)
 
             scheduler.add_job(
                 bot.run, 
@@ -66,7 +66,7 @@ if __name__ == '__main__':
                 coalesce=True
             )
             
-            print(f'Se ejecutara {name}_{ticker}_{timeframe} en la fecha {start_date}')
+            print(f'Se ejecutara {metatrader_name}_{ticker}_{timeframe} en la fecha {start_date}')
         
     scheduler.start()
 

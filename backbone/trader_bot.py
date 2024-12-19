@@ -52,10 +52,10 @@ class TraderBot:
             quit()
         
         name_ticker = ticker.split('.')[0] # --> para simbolos como us2000.cash le quito el .cash
-        self.name = f"{name}_{name_ticker}_{timeframe}"
+        self.metatrader_name = f"{name}_{name_ticker}_{timeframe}"
         
-        if len(self.name) > 16:
-            raise Exception(f'El nombre del bot debe tener un length menor o igual a 16: {self.name} tiene {len(self.name)}')
+        if len(self.metatrader_name) > 16:
+            raise Exception(f'El nombre del bot debe tener un length menor o igual a 16: {self.metatrader_name} tiene {len(self.metatrader_name)}')
         
         bot_token = creds["telegram_bot_token"]
         chat_id = creds["telegram_chat_id"]
@@ -131,7 +131,7 @@ class TraderBot:
     def get_open_positions(self):
         positions = self.mt5.positions_get(symbol=self.ticker)
         positions = [
-            position for position in positions if position.comment == self.name
+            position for position in positions if position.comment == self.metatrader_name
         ]
 
         return positions
@@ -163,7 +163,7 @@ class TraderBot:
             "type": mt5_type,
             "price": price,
             "magic": 234000,
-            "comment": f"{self.name}",
+            "comment": f"{self.metatrader_name}",
             "type_time": self.mt5.ORDER_TIME_GTC,
             "type_filling": self.mt5.ORDER_FILLING_FOK,
         }
@@ -177,13 +177,13 @@ class TraderBot:
         result_send = self.mt5.order_send(request)
 
         if not result_send or result_send.retcode != self.mt5.TRADE_RETCODE_DONE:
-            message = f"fallo al abrir orden en {self.name}, retcode={result_send.retcode}, comment {result_send.comment}: \n"
+            message = f"fallo al abrir orden en {self.metatrader_name}, retcode={result_send.retcode}, comment {result_send.comment}: \n"
             message += str(request)
             
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
         else:
-            message = f"Se abrio una nueva orden: {self.name}, lot: {size}, price: {price}. Codigo: {result_send.retcode}"
+            message = f"Se abrio una nueva orden: {self.metatrader_name}, lot: {size}, price: {price}. Codigo: {result_send.retcode}"
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
 
@@ -202,7 +202,7 @@ class TraderBot:
             "position": position.ticket,
             "price": price,
             "magic": 234000,
-            "comment": f"{self.name} close",
+            "comment": f"{self.metatrader_name} close",
             "type_time": self.mt5.ORDER_TIME_GTC,
             "type_filling": self.mt5.ORDER_FILLING_FOK,
         }
@@ -210,11 +210,11 @@ class TraderBot:
         result = self.mt5.order_send(request)
 
         if result.retcode != self.mt5.TRADE_RETCODE_DONE:
-            message = f"fallo al cerrar orden en {self.name}, retcode: {result.retcode}"
+            message = f"fallo al cerrar orden en {self.metatrader_name}, retcode: {result.retcode}"
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
         else:
-            message = f"Orden cerrada: {self.name} closed, {result}"
+            message = f"Orden cerrada: {self.metatrader_name} closed, {result}"
             print(message)
             self.bot.send_message(chat_id=self.chat_id, text=message)
 
@@ -230,7 +230,7 @@ class TraderBot:
         timezone = pytz.timezone("Etc/UTC")
         now = datetime.now(tz=timezone)
 
-        print(f"excecuting run {self.name} at {now}")
+        print(f"excecuting run {self.metatrader_name} at {now}")
 
         df = self.get_data(
             n_bars=look_back_bars + warmup_bars,

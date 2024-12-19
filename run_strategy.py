@@ -15,9 +15,9 @@ if __name__ == '__main__':
         creds = yaml.safe_load(file)
 
 
-    strategy_path = 'backbone.triple_sma.TripleSMA'
+    strategy_path = 'backbone.short_ibs.ShortIBS'
     bot_path = 'backbone.trader_bot.TraderBot'
-    selected_ticker = 'USDJPY'
+    selected_ticker = 'EURUSD'
     
     configs = strategies[strategy_path]
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
         
         strategy = load_function(strategy_path)
 
-        name = configs['name']
+        name = configs['metatrader_name']
         bot = load_function(bot_path)(name, ticker, timeframe, creds, opt_params, wfo_params, strategy)
         
         bot.run()
