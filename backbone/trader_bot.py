@@ -50,8 +50,12 @@ class TraderBot:
         if not mt5.initialize():
             print("initialize() failed, error code =", mt5.last_error())
             quit()
-            
-        self.name = f"{name}_{ticker}_{timeframe}"
+        
+        name_ticker = ticker.split('.')[0] # --> para simbolos como us2000.cash le quito el .cash
+        self.name = f"{name}_{name_ticker}_{timeframe}"
+        
+        if len(self.name) > 16:
+            raise Exception(f'El nombre del bot debe tener un length menor o igual a 16: {self.name} tiene {len(self.name)}')
         
         bot_token = creds["telegram_bot_token"]
         chat_id = creds["telegram_chat_id"]

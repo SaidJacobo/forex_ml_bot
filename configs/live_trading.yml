@@ -1,5 +1,5 @@
 backbone.bbands_cross_strategy.BbandsCross:
-  name: BbandsCross
+  name: BCross
   opt_params: 
     risk: [1]
 
@@ -31,7 +31,7 @@ backbone.bbands_cross_strategy.BbandsCross:
         minute: '0'
 
 backbone.b_percent_strategy.BPercent:
-  name: BPercent
+  name: BPerc
   opt_params: 
     risk: [1]
 
@@ -67,7 +67,7 @@ backbone.channel_strategy.Channel:
         minute: '0'
 
 backbone.short_ibs.ShortIBS:
-  name: ShortIBS
+  name: ShrtIB
   opt_params: 
     risk: [1]
 
@@ -92,7 +92,7 @@ backbone.short_ibs.ShortIBS:
         minute: '0'
 
 backbone.triple_sma.TripleSMA:
-  name: TripleSMA
+  name: 3SMA
   opt_params: 
     risk: [1]
 
