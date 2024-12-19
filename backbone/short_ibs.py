@@ -26,6 +26,7 @@ class ShortIBS(Strategy):
     trade_tick_value_loss = None
     opt_params = None
     volume_step = None
+    volume_step = None
     risk=1
     
     enter_ibs = 0.9
