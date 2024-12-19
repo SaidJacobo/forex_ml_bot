@@ -43,6 +43,7 @@ if __name__ == '__main__':
         wfo_params = configs['wfo_params']
         opt_params = configs['opt_params']
         metatrader_name = configs['metatrader_name']
+        bot_name = configs['name']
 
         for ticker, info in instruments_info.items():
 
@@ -66,7 +67,7 @@ if __name__ == '__main__':
                 coalesce=True
             )
             
-            print(f'Se ejecutara {metatrader_name}_{ticker}_{timeframe} en la fecha {start_date}')
+            print(f'Se ejecutara {bot_name}_{ticker}_{timeframe} en la fecha {start_date}')
         
     scheduler.start()
 
