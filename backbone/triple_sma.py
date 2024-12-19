@@ -109,6 +109,7 @@ class TripleSMA(Strategy):
                 )
                 
     def next_live(self, trader:TraderBot):
+        actual_close = self.data.Close[-1]
 
         actual_up_trend = self.sma_5[-1] > self.sma_8[-1] > self.sma_12[-1]
         actual_down_trend = self.sma_5[-1] < self.sma_8[-1] < self.sma_12[-1]
@@ -129,8 +130,8 @@ class TripleSMA(Strategy):
 
         else:
             info_tick = trader.get_info_tick()
-            
-            if (actual_up_trend and not past_up_trend) and price > self.sma_200[-1]:
+
+            if (actual_up_trend and not past_up_trend) and actual_close > self.sma_200[-1]:
                 price = info_tick.ask * trader.minimum_fraction
                 
                 sl_price = price - self.atr_multiplier * self.atr[-1]
@@ -160,7 +161,7 @@ class TripleSMA(Strategy):
                     sl=sl_price  / trader.minimum_fraction
                 )
                 
-            if (actual_down_trend and not past_down_trend) and price < self.sma_200[-1]:
+            if (actual_down_trend and not past_down_trend) and actual_close < self.sma_200[-1]:
                 price = info_tick.bid * trader.minimum_fraction
                 
                 sl_price = price + self.atr_multiplier * self.atr[-1]
