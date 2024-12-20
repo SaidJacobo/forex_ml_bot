@@ -286,6 +286,7 @@ def run_wfo(
         scaled_contract_volume,
         minimum_fraction,
         trade_tick_value_loss,
+        volume_step
     ) = get_scaled_symbol_metadata(ticker)
 
     scaled_prices = prices.copy()
@@ -298,6 +299,7 @@ def run_wfo(
     params["contract_volume"] = [scaled_contract_volume]
     params["pip_value"] = [scaled_pip_value]
     params["trade_tick_value_loss"] = [trade_tick_value_loss]
+    params["volume_step"] = [volume_step]
 
     params["maximize"] = optim_func
 
