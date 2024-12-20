@@ -26,10 +26,11 @@ if __name__ == "__main__":
         bt_params = yaml.safe_load(file_name)
     
     initial_cash = bt_params["initial_cash"]
-    margin = bt_params["margin"]
-    
     config_path = bt_params['config_path']
         
+    with open("./configs/leverages.yml", "r") as file_name:
+            leverages = yaml.safe_load(file_name)
+
     with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
     
@@ -59,6 +60,7 @@ if __name__ == "__main__":
     commissions_path = os.path.join(in_path, "commissions/commissions.yml")
     with open(commissions_path, "r") as file_name:
         commissions = yaml.safe_load(file_name)
+        
     data_path = os.path.join(in_path, "data")
     all_files = os.listdir(data_path)
 
@@ -91,9 +93,12 @@ if __name__ == "__main__":
             print(ticker, interval)
 
             commission = commissions[ticker]
-
+            leverage = leverages[ticker]
+            margin = 1 / leverage
+            
             if ticker not in stats_per_symbol.keys():
                 stats_per_symbol[ticker] = {}
+                
             df_stats, stats = run_strategy(
                 strategy=strategy,
                 ticker=ticker,
@@ -175,6 +180,8 @@ if __name__ == "__main__":
         prices = symbols[ticker][interval]
         
         commission = commissions[ticker]
+        leverage = leverages[ticker]
+        margin = 1 / leverage
 
         df_stats, stats = run_strategy(
             strategy=strategy,

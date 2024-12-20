@@ -69,11 +69,13 @@ if __name__ == '__main__':
         bt_params = yaml.safe_load(file_name)
     
     initial_cash = bt_params["initial_cash"]
-    margin = bt_params["margin"]
     config_path = bt_params['config_path']
     
     with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
+        
+    with open("./configs/leverages.yml", "r") as file_name:
+            leverages = yaml.safe_load(file_name)
 
     strategy_name = bt_params["strategy_name"]
     configs = replace_strategy_name(obj=configs, name=strategy_name)
@@ -93,9 +95,7 @@ if __name__ == '__main__':
     strategy_path = configs["strategy_path"]
     run_only_in = configs['run_only_in']
     
-    
     plot_path = os.path.join(out_path, "plots")
-    
     
     if not os.path.exists(out_path):
         os.makedirs(out_path)
@@ -168,6 +168,8 @@ if __name__ == '__main__':
 
             print(ticker, interval)
             commission = commissions[ticker]
+            leverage = leverages[ticker]
+            margin = 1 / leverage
             
             if ticker not in stats_per_symbol.keys():
                 stats_per_symbol[ticker] = {}

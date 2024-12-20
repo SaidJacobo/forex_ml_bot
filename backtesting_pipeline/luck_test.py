@@ -93,7 +93,6 @@ if __name__ == '__main__':
             how='inner'
         )
         
-        original_eq_curve = trades.Equity
 
         trades['ReturnPct'] = trades['PnL'] / trades['Equity'].shift(1)
         trades['id'] = [uuid.uuid4() for _ in range(len(trades.index))]
@@ -103,24 +102,24 @@ if __name__ == '__main__':
         
         trades_to_remove *= 2
         
-        filtered_trade_return_pct = trades[
+        filtered_trades = trades[
             (~trades['id'].isin(top_best_trades.id))
             & (~trades['id'].isin(top_worst_trades.id))
             & (~trades['ReturnPct'].isna())
-        ].sort_values(by='EntryTime').ReturnPct
+        ].sort_values(by='ExitTime')
 
-        new_curve = initial_cash * (1 + filtered_trade_return_pct).cumprod()
+
+        filtered_trades['Equity'] = initial_cash * (1 + filtered_trades.ReturnPct).cumprod()
         
-        dd = -1 * max_drawdown(new_curve)
-        ret = ((new_curve.iloc[-1] - new_curve.iloc[0]) / new_curve.iloc[0]) * 100
+        dd = -1 * max_drawdown(filtered_trades['Equity'])
+        ret = ((filtered_trades.iloc[-1]['Equity'] - filtered_trades.iloc[0]['Equity']) / filtered_trades.iloc[0]['Equity']) * 100
         ret_dd = ret / dd
-        custom_metric = (ret / (1 + dd)) * np.log(1 + len(new_curve))  
+        custom_metric = (ret / (1 + dd)) * np.log(1 + filtered_trades.shape[0])  
         
-        # original_return = (equity.Equity.iloc[-1] / equity.Equity.iloc[0]) * 100
         
-        x = np.arange(len(new_curve)).reshape(-1, 1)
-        reg = LinearRegression().fit(x, new_curve)
-        stability_ratio = reg.score(x, new_curve)
+        x = np.arange(filtered_trades.shape[0]).reshape(-1, 1)
+        reg = LinearRegression().fit(x, filtered_trades['Equity'])
+        stability_ratio = reg.score(x, filtered_trades['Equity'])
         
         metrics = pd.DataFrame({
             'strategy': [f'take_off_{trades_to_remove}_trades'],
@@ -137,11 +136,11 @@ if __name__ == '__main__':
 
         # Create traces
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=np.arange(0, len(original_eq_curve), 1), y=original_eq_curve,
+        fig.add_trace(go.Scatter(x=trades.ExitTime, y=trades.Equity,
                             mode='lines',
                             name='equity original'))
 
-        fig.add_trace(go.Scatter(x=np.arange(0, len(new_curve), 1), y=new_curve,
+        fig.add_trace(go.Scatter(x=filtered_trades.ExitTime, y=filtered_trades.Equity,
                             mode='lines',
                             name=f'take_of_{trades_to_remove}_trades'))
 

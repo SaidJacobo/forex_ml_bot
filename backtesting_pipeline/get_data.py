@@ -62,10 +62,10 @@ if __name__ == '__main__':
         or ('Crypto CFD' in symbol.path)
         or ('Equities I CFD' in symbol.path)
         or ('Equities II CFD' in symbol.path)
-        or ('Agriculture' in symbol.path)
-        or ('Equities II CFD' in symbol.path)
         or ('Commodities' in symbol.path)
         or ('Forex' in symbol.path)
+        or ('Exotics' in symbol.path)
+        or ('Metals CFD' in symbol.path)
         )
     ]
 
