@@ -29,7 +29,7 @@ if __name__ == "__main__":
     config_path = bt_params['config_path']
         
     with open("./configs/leverages.yml", "r") as file_name:
-            leverages = yaml.safe_load(file_name)
+        leverages = yaml.safe_load(file_name)
 
     with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
@@ -45,6 +45,7 @@ if __name__ == "__main__":
     in_path = configs["in_path"]
     out_path = configs["out_path"]
     strategy_path = configs["strategy_path"]
+    run_only_in = configs["run_only_in"]
 
     out_path = os.path.join(out_path)
     if not os.path.exists(out_path):
@@ -77,6 +78,9 @@ if __name__ == "__main__":
         file_name_components = file_name.split("_")
         ticker = file_name_components[0]
         interval = file_name_components[1]
+
+        if run_only_in and f'{ticker}_{interval}' not in run_only_in:
+            continue
 
         try:
             prices = pd.read_csv(os.path.join(data_path, file_name))
