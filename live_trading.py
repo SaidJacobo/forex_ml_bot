@@ -49,12 +49,13 @@ if __name__ == '__main__':
 
             cron = info['cron']
             timeframe = info['timeframe']
+            risk = info['risk']
             
             start_date = siguiente_hora_multiplo(timeframes[timeframe])
 
             strategy = load_function(strategy_name)
             
-            bot = load_function(bot_path)(metatrader_name, ticker, timeframe, creds, opt_params, wfo_params, strategy)
+            bot = load_function(bot_path)(metatrader_name, ticker, timeframe, creds, opt_params, wfo_params, strategy, risk)
 
             scheduler.add_job(
                 bot.run, 

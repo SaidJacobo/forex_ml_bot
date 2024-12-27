@@ -46,7 +46,7 @@ opposite_order_tpyes = {
 class TraderBot:
 
     def __init__(
-        self, name:str, ticker:str, timeframe:str, creds: dict, opt_params:dict, wfo_params:dict, strategy
+        self, name:str, ticker:str, timeframe:str, creds: dict, opt_params:dict, wfo_params:dict, strategy, risk:float
     ):
         if not mt5.initialize():
             print("initialize() failed, error code =", mt5.last_error())
@@ -73,7 +73,7 @@ class TraderBot:
         self.ticker = ticker
         self.timeframe = timeframe
 
-        self.opt_params = opt_params
+        self.opt_params = opt_params if opt_params != None else {}
         self.wfo_params = wfo_params
         self.strategy = strategy
 
@@ -107,6 +107,7 @@ class TraderBot:
         self.opt_params["contract_volume"] = [self.scaled_contract_volume]
         self.opt_params["trade_tick_value_loss"] = [self.trade_tick_value_loss]
         self.opt_params["volume_step"] = [self.volume_step]
+        self.opt_params["risk"] = [risk]
 
         self.opt_params["maximize"] = optimization_function
         

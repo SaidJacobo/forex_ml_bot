@@ -15,9 +15,9 @@ if __name__ == '__main__':
         creds = yaml.safe_load(file)
 
 
-    strategy_path = 'backbone.short_ibs.ShortIBS'
+    strategy_path = 'backbone.bbands_cross_strategy.BbandsCross'
     bot_path = 'backbone.trader_bot.TraderBot'
-    selected_ticker = 'EURUSD'
+    selected_ticker = 'GBPUSD'
     
     configs = strategies[strategy_path]
 
@@ -33,10 +33,11 @@ if __name__ == '__main__':
 
         cron = info['cron']
         timeframe = info['timeframe']
+        risk = info['risk']
         
         strategy = load_function(strategy_path)
 
         name = configs['metatrader_name']
-        bot = load_function(bot_path)(name, ticker, timeframe, creds, opt_params, wfo_params, strategy)
+        bot = load_function(bot_path)(name, ticker, timeframe, creds, opt_params, wfo_params, strategy, risk)
         
         bot.run()
