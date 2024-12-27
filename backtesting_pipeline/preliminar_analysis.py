@@ -119,12 +119,6 @@ if __name__ == "__main__":
             
         except Exception as e:
             print(f"hubo un problema con {ticker} {interval}: {e}")
-            
-    performance["return/dd"] = performance["return"] / -performance["drawdown"]
-    performance["drawdown"] = -performance["drawdown"]
-    performance["custom_metric"] = (
-        performance["return"] / (1 + performance.drawdown)
-    ) * np.log(1 + performance.trades)
 
     performance.to_csv(os.path.join(out_path, "performance.csv"), index=False)
 
@@ -166,8 +160,13 @@ if __name__ == "__main__":
             "return/dd",
             "custom_metric",
             "win_rate",
-            "avg_trade_percent",
             "Duration",
+            "MeanWinningReturnPct",
+            "StdWinningReturnPct",
+            "MeanLosingReturnPct",
+            "StdLosingReturnPct",
+            "MeanTradeDuration",
+            "StdTradeDuration"
         ]
     ].sort_values(by='custom_metric', ascending=False).drop_duplicates(subset=['ticker'])
 

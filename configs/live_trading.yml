@@ -2,7 +2,7 @@ backbone.bbands_cross_strategy.BbandsCross:
   name: BbandsCross
   metatrader_name: BCross # <-- Nombre para mostrar en las operaciones de metatrader
   opt_params: 
-    risk: [1]
+    null
 
   wfo_params:
     use_wfo: False
@@ -11,6 +11,7 @@ backbone.bbands_cross_strategy.BbandsCross:
 
   instruments_info: 
     GBPUSD:
+      risk: 1.5
       timeframe: H1
       cron:
         day: mon-fri
@@ -18,6 +19,7 @@ backbone.bbands_cross_strategy.BbandsCross:
         minute: '0'
 
     USDCHF:
+      risk: 1.5
       timeframe: H2
       cron:
         day: mon-fri
@@ -25,6 +27,7 @@ backbone.bbands_cross_strategy.BbandsCross:
         minute: '0'
 
     US2000.cash:
+      risk: 0.5
       timeframe: H1
       cron:
         day: mon-fri
@@ -35,7 +38,7 @@ backbone.b_percent_strategy.BPercent:
   name: BPercent
   metatrader_name: BPerc
   opt_params: 
-    risk: [1]
+    null
 
   wfo_params:
     use_wfo: False
@@ -44,6 +47,7 @@ backbone.b_percent_strategy.BPercent:
 
   instruments_info:
     EURUSD:
+      risk: 1.5
       timeframe: H2
       cron:
         day: mon-fri
@@ -54,7 +58,7 @@ backbone.channel_strategy.Channel:
   name: Channel
   metatrader_name: Channel
   opt_params: 
-    risk: [1]
+    null
 
   wfo_params:
     use_wfo: False
@@ -63,6 +67,7 @@ backbone.channel_strategy.Channel:
 
   instruments_info:
     NVDA:
+      risk: 0.5
       timeframe: H3
       cron:
         day: mon-fri
@@ -73,7 +78,7 @@ backbone.short_ibs.ShortIBS:
   name: ShortIBS
   metatrader_name: ShrtIB
   opt_params: 
-    risk: [1]
+    null
 
   wfo_params:
     use_wfo: False
@@ -82,6 +87,7 @@ backbone.short_ibs.ShortIBS:
 
   instruments_info: 
     BABA:
+      risk: 0.5
       timeframe: H1
       cron:
         day: mon-fri
@@ -89,6 +95,7 @@ backbone.short_ibs.ShortIBS:
         minute: '0'
 
     EURUSD:
+      risk: 1.5
       timeframe: H3
       cron:
         day: mon-fri
@@ -99,7 +106,7 @@ backbone.triple_sma.TripleSMA:
   name: TripleSMA
   metatrader_name: 3SMA
   opt_params: 
-    risk: [1]
+    null
 
   wfo_params:
     use_wfo: False
@@ -108,6 +115,7 @@ backbone.triple_sma.TripleSMA:
 
   instruments_info: 
     NVDA:
+      risk: 0.5
       timeframe: H2
       cron:
         day: mon-fri
@@ -118,7 +126,7 @@ backbone.triple_supertrend.TripleSuperTrend:
   name: TripleST
   metatrader_name: TripleST
   opt_params: 
-    risk: [1]
+    null
 
   wfo_params:
     use_wfo: False
@@ -127,6 +135,7 @@ backbone.triple_supertrend.TripleSuperTrend:
     
   instruments_info: 
     NVDA:
+      risk: 0.5
       timeframe: H4
       cron:
         day: mon-fri
