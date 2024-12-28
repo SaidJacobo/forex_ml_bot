@@ -77,23 +77,32 @@ if __name__ == '__main__':
             os.path.join(root_path, method, f'{ticker}_{interval}', 'equity.csv'), index_col=0
         )
         
-        equity = equity.reset_index().rename(columns={'index':'Date'})
-        equity['month'] = pd.to_datetime(equity['Date'])
-        equity['month'] = equity['month'].dt.to_period('M')
-        equity = equity.groupby(by='month').agg({'Equity':'last'})
+        # Transformar el índice al formato mensual
+        equity = equity.reset_index().rename(columns={'index': 'Date'})
+        equity['month'] = pd.to_datetime(equity['Date']).dt.to_period('M')
+        equity = equity.groupby(by='month').agg({'Equity': 'last'})
         equity['perc_diff'] = (equity['Equity'] - equity['Equity'].shift(1)) / equity['Equity'].shift(1)
         equity.fillna(0, inplace=True)
+
+        # Crear un rango completo de meses con PeriodIndex
+        full_index = pd.period_range(start=equity.index.min(), end=equity.index.max(), freq='M')
+
+        # Reindexar usando el rango completo de PeriodIndex
+        equity = equity.reindex(full_index)
+        equity = equity.fillna(method='ffill')
         
         prices['month'] = pd.to_datetime(prices['Date'])
         prices['month'] = prices['month'].dt.to_period('M')
         prices = prices.groupby(by='month').agg({'Close':'last'})
         prices['perc_diff'] = (prices['Close'] - prices['Close'].shift(1)) / prices['Close'].shift(1)
         prices.fillna(0, inplace=True)
-
+        
+        prices = prices[prices.index.isin(equity.index)]
+        
         # Datos
         x = np.array(prices['perc_diff']).reshape(-1, 1)
         y = equity['perc_diff']
-
+        
         # Ajustar el modelo de regresión lineal
         reg = LinearRegression().fit(x, y)
         determination = reg.score(x, y)
