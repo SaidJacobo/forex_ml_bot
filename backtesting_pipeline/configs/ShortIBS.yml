@@ -10,6 +10,7 @@ get_data:
   out_path: './backtesting_pipeline/get_data'
 
 preliminar_analysis:
+  run_only_in: ['EURUSD_16387']
   strategy_path: 'backbone.short_ibs.ShortIBS'
   date_from: '2021-01-01'
   date_to: '2024-11-01'
@@ -45,7 +46,7 @@ montecarlo:
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
 
 random_test:
-  run_only_in: ['GBPUSD_16385','US2000.cash_16385','USDCHF_16386'] #null
+  run_only_in: null
   date_from: '2021-01-01'
   date_to: '2024-11-01'
   n_iterations: 30
@@ -63,7 +64,7 @@ luck_test:
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/luck_test'
 
 correlation_test:
-  run_only_in: ['GBPUSD_16385','US2000.cash_16385','USDCHF_16386'] #null
+  run_only_in: null
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   data_path: './backtesting_pipeline/get_data'
   root_path: 'backtesting_pipeline/strategies/{strategy_name}'

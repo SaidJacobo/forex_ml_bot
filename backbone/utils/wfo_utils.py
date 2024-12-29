@@ -119,7 +119,41 @@ def run_strategy(
         else:
             bt_train.plot(filename=f"./plots/{ticker}_{interval}.html", resample=False)
     
-    equity_curve = stats._equity_curve["Equity"].values
+    equity_curve = stats._equity_curve
+    trades = stats._trades
+    
+    trades = pd.merge(
+        trades,
+        equity_curve['Equity'],
+        left_on='ExitTime',
+        right_index=True,
+        how='inner'
+    )
+    
+    trades['ReturnPct'] = trades['PnL'] / trades['Equity'].shift(1)
+    if len(trades) > 0:
+        trades.loc[0, 'ReturnPct'] = trades.loc[0, 'PnL'] / initial_cash
+
+    trades['ReturnPct'] = trades['ReturnPct'] * 100
+    trades['Duration'] = pd.to_timedelta(trades['Duration'])
+    trades['Duration'] = trades['Duration'].dt.total_seconds() // 3600 // 24
+      
+    stats._trades = trades
+    
+    winning_trades = trades[trades["PnL"]>=0]
+    losing_trades = trades[trades["PnL"]<0]
+
+    long_trades = trades[trades["Size"] >= 0]
+    short_trades = trades[trades["Size"] < 0]
+    
+    long_winning_trades = long_trades[long_trades["PnL"] >= 0]
+    long_losing_trades = long_trades[long_trades["PnL"] < 0]
+    
+    short_winning_trades = short_trades[short_trades["PnL"] >= 0]
+    short_losing_trades = short_trades[short_trades["PnL"] < 0]
+    
+    equity_curve = equity_curve["Equity"].values
+    
     x = np.arange(len(equity_curve)).reshape(-1, 1)
     reg = LinearRegression().fit(x, equity_curve)
     stability_ratio = reg.score(x, equity_curve)
@@ -130,19 +164,44 @@ def run_strategy(
             "ticker": [ticker],
             "interval": [interval],
             "stability_ratio": [stability_ratio],
+            "trades": [stats["# Trades"]],
             "return": [stats["Return [%]"]],
+            "drawdown": [np.abs(stats["Max. Drawdown [%]"])],
+            "return/dd": [stats["Return [%]"] / np.abs(stats["Max. Drawdown [%]"])],
             "final_eq": [stats["Equity Final [$]"]],
-            "drawdown": [stats["Max. Drawdown [%]"]],
             "drawdown_duration": [stats["Max. Drawdown Duration"]],
             "win_rate": [stats["Win Rate [%]"]],
             "sharpe_ratio": [stats["Sharpe Ratio"]],
-            "trades": [stats["# Trades"]],
-            "avg_trade_percent": [stats["Avg. Trade [%]"]],
             "exposure": [stats["Exposure Time [%]"]],
             "final_equity": [stats["Equity Final [$]"]],
             "Duration": [stats["Duration"]],
+            
+            "MeanWinningReturnPct":[winning_trades.ReturnPct.mean()],
+            "StdWinningReturnPct":[winning_trades.ReturnPct.std()],
+            
+            "MeanLosingReturnPct":[losing_trades.ReturnPct.mean()],
+            "StdLosingReturnPct":[losing_trades.ReturnPct.std()],
+            
+            "MeanTradeDuration":[trades['Duration'].mean()],
+            "StdTradeDuration":[trades['Duration'].std()],
+            
+            "WinLongMeanReturnPct": [long_winning_trades.ReturnPct.mean()],
+            "WinLongStdReturnPct": [long_winning_trades.ReturnPct.std()],
+            
+            "LoseLongMeanReturnPct": [long_losing_trades.ReturnPct.mean()],
+            "LoseLongStdReturnPct": [long_losing_trades.ReturnPct.std()],
+            
+            "WinShortMeanReturnPct": [short_winning_trades.ReturnPct.mean()],
+            "WinShortStdReturnPct": [short_winning_trades.ReturnPct.std()],
+
+            "LoseShortMeanReturnPct": [short_losing_trades.ReturnPct.mean()],
+            "LoseShortStdReturnPct": [short_losing_trades.ReturnPct.std()],
         }
     )
+    
+    df_stats["return/dd"] = df_stats["return"] / df_stats["drawdown"]
+    
+    df_stats["custom_metric"] = (df_stats["return"] / (1 + df_stats.drawdown)) * np.log(1 + df_stats.trades)
 
     return df_stats, stats
 

@@ -4,6 +4,7 @@ import telebot
 from datetime import datetime, timedelta
 from backtesting import Backtest
 import pytz
+import yaml
 from backbone.utils.wfo_utils import get_scaled_symbol_metadata, optimization_function
 
 time_frames = {
@@ -45,7 +46,7 @@ opposite_order_tpyes = {
 class TraderBot:
 
     def __init__(
-        self, name:str, ticker:str, timeframe:str, creds: dict, opt_params:dict, wfo_params:dict, strategy
+        self, name:str, ticker:str, timeframe:str, creds: dict, opt_params:dict, wfo_params:dict, strategy, risk:float
     ):
         if not mt5.initialize():
             print("initialize() failed, error code =", mt5.last_error())
@@ -62,6 +63,9 @@ class TraderBot:
         server = creds["server"]
         account = creds["account"]
         pw = creds["pw"]
+        
+        with open("./configs/leverages.yml", "r") as file_name:
+            self.leverages = yaml.safe_load(file_name)
 
         self.mt5 = mt5
         self.bot = telebot.TeleBot(bot_token)
@@ -69,7 +73,7 @@ class TraderBot:
         self.ticker = ticker
         self.timeframe = timeframe
 
-        self.opt_params = opt_params
+        self.opt_params = opt_params if opt_params != None else {}
         self.wfo_params = wfo_params
         self.strategy = strategy
 
@@ -103,6 +107,7 @@ class TraderBot:
         self.opt_params["contract_volume"] = [self.scaled_contract_volume]
         self.opt_params["trade_tick_value_loss"] = [self.trade_tick_value_loss]
         self.opt_params["volume_step"] = [self.volume_step]
+        self.opt_params["risk"] = [risk]
 
         self.opt_params["maximize"] = optimization_function
         
@@ -246,9 +251,10 @@ class TraderBot:
         avg_price = (symbol_info.bid + symbol_info.ask) / 2
         spread = symbol_info.ask - symbol_info.bid
         commission = round(spread / avg_price, 5)
+        leverage = self.leverages[self.ticker]
         
         bt_train = Backtest(
-            df, self.strategy, commission=commission, cash=15_000, margin=1 / 30
+            df, self.strategy, commission=commission, cash=15_000, margin=1/leverage
         )
 
         stats_training = bt_train.optimize(**self.opt_params)
@@ -259,7 +265,7 @@ class TraderBot:
             if param != "maximize"
         }
 
-        bt = Backtest(df, self.strategy, commission=commission, cash=15_000, margin=1 / 30)
+        bt = Backtest(df, self.strategy, commission=commission, cash=15_000, margin=1/leverage)
         _ = bt.run(**opt_params)
             
         bt._results._strategy.next_live(trader=self)

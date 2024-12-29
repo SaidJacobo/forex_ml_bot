@@ -10,6 +10,7 @@ get_data:
   out_path: './backtesting_pipeline/get_data'
 
 preliminar_analysis:
+  run_only_in: ['NVDA_16387']
   strategy_path: 'backbone.channel_strategy.Channel'
   date_from: '2021-01-01'
   date_to: '2024-11-01'

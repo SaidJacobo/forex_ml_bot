@@ -2,7 +2,7 @@ backbone.bbands_cross_strategy.BbandsCross:
   name: BbandsCross
   metatrader_name: BCross # <-- Nombre para mostrar en las operaciones de metatrader
   opt_params: 
-    risk: [1]
+    null
 
   wfo_params:
     use_wfo: False
@@ -11,6 +11,7 @@ backbone.bbands_cross_strategy.BbandsCross:
 
   instruments_info: 
     GBPUSD:
+      risk: 1.5
       timeframe: H1
       cron:
         day: mon-fri
@@ -18,24 +19,26 @@ backbone.bbands_cross_strategy.BbandsCross:
         minute: '0'
 
     USDCHF:
+      risk: 1.5
       timeframe: H2
       cron:
         day: mon-fri
         hour: '*/2'
         minute: '0'
 
-#     US2000.cash:
-#       timeframe: H1
-#       cron:
-#         day: mon-fri
-#         hour: 13-20/1
-#         minute: '0'
+    US2000.cash:
+      risk: 0.5
+      timeframe: H1
+      cron:
+        day: mon-fri
+        hour: '1-23/1'
+        minute: '0'
 
 backbone.b_percent_strategy.BPercent:
   name: BPercent
   metatrader_name: BPerc
   opt_params: 
-    risk: [1]
+    null
 
   wfo_params:
     use_wfo: False
@@ -44,36 +47,38 @@ backbone.b_percent_strategy.BPercent:
 
   instruments_info:
     EURUSD:
+      risk: 1.5
       timeframe: H2
       cron:
         day: mon-fri
         hour: '*/2'
         minute: '0'
 
-# backbone.channel_strategy.Channel:
-#   name: Channel
-#   metatrader_name: Channel
-#   opt_params: 
-#     risk: [1]
+backbone.channel_strategy.Channel:
+  name: Channel
+  metatrader_name: Channel
+  opt_params: 
+    null
 
-#   wfo_params:
-#     use_wfo: False
-#     look_back_bars: 200
-#     warmup_bars: 200
+  wfo_params:
+    use_wfo: False
+    look_back_bars: 200
+    warmup_bars: 200
 
-#   instruments_info:
-#     NVDA:
-#       timeframe: H3
-#       cron:
-#         day: mon-fri
-#         hour: 13-20/3
-#         minute: '0'
+  instruments_info:
+    NVDA:
+      risk: 0.5
+      timeframe: H3
+      cron:
+        day: mon-fri
+        hour: 17-23/3
+        minute: '0'
 
 backbone.short_ibs.ShortIBS:
   name: ShortIBS
   metatrader_name: ShrtIB
   opt_params: 
-    risk: [1]
+    null
 
   wfo_params:
     use_wfo: False
@@ -82,53 +87,57 @@ backbone.short_ibs.ShortIBS:
 
   instruments_info: 
     BABA:
+      risk: 0.5
       timeframe: H1
       cron:
         day: mon-fri
-        hour: 13-20/1
+        hour: 17-23/1
         minute: '0'
 
     EURUSD:
+      risk: 1.5
       timeframe: H3
       cron:
         day: mon-fri
         hour: '*/3'
         minute: '0'
 
-# backbone.triple_sma.TripleSMA:
-#   name: TripleSMA
-#   metatrader_name: 3SMA
-#   opt_params: 
-#     risk: [1]
+backbone.triple_sma.TripleSMA:
+  name: TripleSMA
+  metatrader_name: 3SMA
+  opt_params: 
+    null
 
-#   wfo_params:
-#     use_wfo: False
-#     look_back_bars: 200
-#     warmup_bars: 200
+  wfo_params:
+    use_wfo: False
+    look_back_bars: 200
+    warmup_bars: 200
 
-#   instruments_info: 
-#     NVDA:
-#       timeframe: H2
-#       cron:
-#         day: mon-fri
-#         hour: 13-20/2
-#         minute: '0'
+  instruments_info: 
+    NVDA:
+      risk: 0.5
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: 17-23/2
+        minute: '0'
 
-# backbone.triple_supertrend.TripleSuperTrend:
-#   name: TripleST
-#   metatrader_name: TripleST
-#   opt_params: 
-#     risk: [1]
+backbone.triple_supertrend.TripleSuperTrend:
+  name: TripleST
+  metatrader_name: TripleST
+  opt_params: 
+    null
 
-#   wfo_params:
-#     use_wfo: False
-#     look_back_bars: 200
-#     warmup_bars: 200
+  wfo_params:
+    use_wfo: False
+    look_back_bars: 200
+    warmup_bars: 200
     
-#   instruments_info: 
-#     NVDA:
-#       timeframe: H4
-#       cron:
-#         day: mon-fri
-#         hour: 13-20/4
-#         minute: '0'
+  instruments_info: 
+    NVDA:
+      risk: 0.5
+      timeframe: H4
+      cron:
+        day: mon-fri
+        hour: 17-23/4
+        minute: '0'

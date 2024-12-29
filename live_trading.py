@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 import yaml
 from backbone.utils.general_purpose import load_function
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -15,7 +15,7 @@ timeframes = {
 }
 
 def siguiente_hora_multiplo(intervalo_horas):
-    now = datetime.now()
+    now = datetime.datetime.now() + datetime.timedelta(hours=2) # <-- FTMO maneja los horarios en GMT + 2 y el servidor esta en utc
     next_hour = (now.hour // intervalo_horas + 1) * intervalo_horas
     if next_hour >= 24:  # Manejar el cambio de día
         next_hour -= 24
@@ -49,12 +49,13 @@ if __name__ == '__main__':
 
             cron = info['cron']
             timeframe = info['timeframe']
+            risk = info['risk']
             
             start_date = siguiente_hora_multiplo(timeframes[timeframe])
 
             strategy = load_function(strategy_name)
             
-            bot = load_function(bot_path)(metatrader_name, ticker, timeframe, creds, opt_params, wfo_params, strategy)
+            bot = load_function(bot_path)(metatrader_name, ticker, timeframe, creds, opt_params, wfo_params, strategy, risk)
 
             scheduler.add_job(
                 bot.run, 
