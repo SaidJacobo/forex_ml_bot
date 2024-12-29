@@ -37,17 +37,31 @@ time_frames = {
 
 cols_to_calculate_mean = [
     'stability_ratio',
-    'return',
-    'final_eq',
-    'drawdown', 
+    "return",
+    "drawdown",
+    "return/dd",
+    "custom_metric",
     'drawdown_duration', 
     'win_rate', 
     'sharpe_ratio',
     'trades', 
-    'avg_trade_percent', 
     'exposure', 
     'final_equity', 
-    'Duration'
+    "Duration",
+    "MeanWinningReturnPct",
+    "StdWinningReturnPct",
+    "MeanLosingReturnPct",
+    "StdLosingReturnPct",
+    "MeanTradeDuration",
+    "StdTradeDuration",
+    "WinLongMeanReturnPct",
+    "WinLongStdReturnPct",
+    "LoseLongMeanReturnPct",
+    "LoseLongStdReturnPct",
+    "WinShortMeanReturnPct",
+    "WinShortStdReturnPct",
+    "LoseShortMeanReturnPct",
+    "LoseShortStdReturnPct",
 ]
 
 ordered_cols = [
@@ -61,7 +75,21 @@ ordered_cols = [
     "return/dd",
     "custom_metric",
     "win_rate",
-    "avg_trade_percent",
+    "Duration",
+    "MeanWinningReturnPct",
+    "StdWinningReturnPct",
+    "MeanLosingReturnPct",
+    "StdLosingReturnPct",
+    "MeanTradeDuration",
+    "StdTradeDuration",
+    "WinLongMeanReturnPct",
+    "WinLongStdReturnPct",
+    "LoseLongMeanReturnPct",
+    "LoseLongStdReturnPct",
+    "WinShortMeanReturnPct",
+    "WinShortStdReturnPct",
+    "LoseShortMeanReturnPct",
+    "LoseShortStdReturnPct",
 ]
 
 if __name__ == '__main__':
@@ -176,7 +204,6 @@ if __name__ == '__main__':
             
             mean_performance = pd.DataFrame()
             
-            
             for i in range(0, n_iterations):
                 first = i == 0
                 
@@ -203,17 +230,11 @@ if __name__ == '__main__':
         
         except Exception as e:
             print(f"hubo un problema con {ticker} {interval}: {e}")
-            
-    performance["return/dd"] = performance["return"] / -performance["drawdown"]
-    performance["drawdown"] = -performance["drawdown"]
     
-    performance["custom_metric"] = (
-        performance["return"] / (1 + performance.drawdown)
-    ) * np.log(1 + performance.trades)
-
-    performance = performance.sort_values(
-        by=["ticker", "interval"], ascending=[True, True]
-    )[ordered_cols]
+    if performance.size > 0:
+        performance = performance.sort_values(
+            by=["ticker", "interval"], ascending=[True, True]
+        )[ordered_cols]
 
     performance.to_csv(os.path.join(out_path, "random_test_mean_performance.csv"), index=False)
     

@@ -94,7 +94,7 @@ if __name__ == "__main__":
             
             symbols[ticker][interval] = prices
 
-            print(ticker, interval)
+            print(f'{ticker}_{interval}')
 
             commission = commissions[ticker]
             leverage = leverages[ticker]
@@ -166,7 +166,15 @@ if __name__ == "__main__":
             "MeanLosingReturnPct",
             "StdLosingReturnPct",
             "MeanTradeDuration",
-            "StdTradeDuration"
+            "StdTradeDuration",
+            "WinLongMeanReturnPct",
+            "WinLongStdReturnPct",
+            "LoseLongMeanReturnPct",
+            "LoseLongStdReturnPct",
+            "WinShortMeanReturnPct",
+            "WinShortStdReturnPct",
+            "LoseShortMeanReturnPct",
+            "LoseShortStdReturnPct",
         ]
     ].sort_values(by='custom_metric', ascending=False).drop_duplicates(subset=['ticker'])
 

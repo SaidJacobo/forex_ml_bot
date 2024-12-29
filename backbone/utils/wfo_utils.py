@@ -137,11 +137,20 @@ def run_strategy(
     trades['ReturnPct'] = trades['ReturnPct'] * 100
     trades['Duration'] = pd.to_timedelta(trades['Duration'])
     trades['Duration'] = trades['Duration'].dt.total_seconds() // 3600 // 24
-    
+      
     stats._trades = trades
     
     winning_trades = trades[trades["PnL"]>=0]
     losing_trades = trades[trades["PnL"]<0]
+
+    long_trades = trades[trades["Size"] >= 0]
+    short_trades = trades[trades["Size"] < 0]
+    
+    long_winning_trades = long_trades[long_trades["PnL"] >= 0]
+    long_losing_trades = long_trades[long_trades["PnL"] < 0]
+    
+    short_winning_trades = short_trades[short_trades["PnL"] >= 0]
+    short_losing_trades = short_trades[short_trades["PnL"] < 0]
     
     equity_curve = equity_curve["Equity"].values
     
@@ -174,7 +183,19 @@ def run_strategy(
             "StdLosingReturnPct":[losing_trades.ReturnPct.std()],
             
             "MeanTradeDuration":[trades['Duration'].mean()],
-            "StdTradeDuration":[trades['Duration'].std()]
+            "StdTradeDuration":[trades['Duration'].std()],
+            
+            "WinLongMeanReturnPct": [long_winning_trades.ReturnPct.mean()],
+            "WinLongStdReturnPct": [long_winning_trades.ReturnPct.std()],
+            
+            "LoseLongMeanReturnPct": [long_losing_trades.ReturnPct.mean()],
+            "LoseLongStdReturnPct": [long_losing_trades.ReturnPct.std()],
+            
+            "WinShortMeanReturnPct": [short_winning_trades.ReturnPct.mean()],
+            "WinShortStdReturnPct": [short_winning_trades.ReturnPct.std()],
+
+            "LoseShortMeanReturnPct": [short_losing_trades.ReturnPct.mean()],
+            "LoseShortStdReturnPct": [short_losing_trades.ReturnPct.std()],
         }
     )
     

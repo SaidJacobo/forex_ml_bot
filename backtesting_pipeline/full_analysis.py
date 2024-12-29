@@ -251,8 +251,21 @@ if __name__ == "__main__":
             "return/dd",
             "custom_metric",
             "win_rate",
-            "avg_trade_percent",
             "Duration",
+            "MeanWinningReturnPct",
+            "StdWinningReturnPct",
+            "MeanLosingReturnPct",
+            "StdLosingReturnPct",
+            "MeanTradeDuration",
+            "StdTradeDuration",
+            "WinLongMeanReturnPct",
+            "WinLongStdReturnPct",
+            "LoseLongMeanReturnPct",
+            "LoseLongStdReturnPct",
+            "WinShortMeanReturnPct",
+            "WinShortStdReturnPct",
+            "LoseShortMeanReturnPct",
+            "LoseShortStdReturnPct",
         ]
     ]
 
