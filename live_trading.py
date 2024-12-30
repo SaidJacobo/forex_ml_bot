@@ -5,6 +5,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import numpy as np
 import logging
 from pytz import timezone
+from apscheduler.executors.pool import ProcessPoolExecutor
 
 
 np.seterr(divide='ignore')
@@ -38,6 +39,7 @@ def siguiente_hora_multiplo(intervalo_horas, tz):
         next_run = now.replace(hour=next_hour, minute=0, second=0, microsecond=0)
     return next_run
 
+
 if __name__ == '__main__':
     logger = logging.getLogger("live_trading")
 
@@ -50,9 +52,14 @@ if __name__ == '__main__':
         creds = yaml.safe_load(file)
 
     tz = timezone('Etc/GMT-2')
-    scheduler = BlockingScheduler(timezone=tz)
+
+    executors = {
+        'default': ProcessPoolExecutor(max_workers=4)
+    }
+    scheduler = BlockingScheduler(timezone=tz, executors=executors)
 
     bot_path = 'backbone.trader_bot.TraderBot'
+
 
     for strategy_name, configs in strategies.items():
         instruments_info = configs['instruments_info']

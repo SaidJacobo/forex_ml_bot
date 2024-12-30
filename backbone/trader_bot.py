@@ -136,7 +136,6 @@ class TraderBot:
         logger.info(f'{self.metatrader_name}: Inicializacion completada :)')
         
     def get_data(self, n_bars=None):
-        logger.info(f'{self.metatrader_name}: Obteniendo datos historicos')
         rates = self.mt5.copy_rates_from_pos(
             self.ticker, time_frames[self.timeframe], 1, n_bars
         )
@@ -154,8 +153,6 @@ class TraderBot:
                 "tick_volume": "Volume",
             }
         ).set_index("Date")
-
-        logger.info(f'{self.metatrader_name}: Datos historicos obtenidos correctamente')
 
         return historical_prices
 
