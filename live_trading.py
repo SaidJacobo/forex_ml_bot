@@ -5,7 +5,6 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import numpy as np
 import logging
 from pytz import timezone
-from apscheduler.executors.pool import ProcessPoolExecutor
 
 
 np.seterr(divide='ignore')
@@ -53,13 +52,9 @@ if __name__ == '__main__':
 
     tz = timezone('Etc/GMT-2')
 
-    executors = {
-        'default': ProcessPoolExecutor(max_workers=4)
-    }
-    scheduler = BlockingScheduler(timezone=tz, executors=executors)
+    scheduler = BlockingScheduler(timezone=tz)
 
     bot_path = 'backbone.trader_bot.TraderBot'
-
 
     for strategy_name, configs in strategies.items():
         instruments_info = configs['instruments_info']
