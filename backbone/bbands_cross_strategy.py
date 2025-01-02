@@ -182,7 +182,9 @@ class BbandsCross(Strategy):
                     return_lots=True, 
                     contract_volume=self.contract_volume,
                     trade_tick_value_loss=self.trade_tick_value_loss,
-                    volume_step = trader.volume_step
+                    volume_step = trader.volume_step,
+                    verbose=True
+
                 )
                 
                 trader.open_order(

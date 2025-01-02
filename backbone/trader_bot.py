@@ -350,3 +350,6 @@ class TraderBot:
         logger.info(f'{self.metatrader_name}: Ejecutando funcion next_live') 
         bt._results._strategy.next_live(trader=self)
         
+        logger.info(f'{self.metatrader_name}: Ejecucion completada') 
+        
+        
