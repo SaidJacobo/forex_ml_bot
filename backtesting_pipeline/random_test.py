@@ -48,20 +48,6 @@ cols_to_calculate_mean = [
     'exposure', 
     'final_equity', 
     "Duration",
-    "MeanWinningReturnPct",
-    "StdWinningReturnPct",
-    "MeanLosingReturnPct",
-    "StdLosingReturnPct",
-    "MeanTradeDuration",
-    "StdTradeDuration",
-    "WinLongMeanReturnPct",
-    "WinLongStdReturnPct",
-    "LoseLongMeanReturnPct",
-    "LoseLongStdReturnPct",
-    "WinShortMeanReturnPct",
-    "WinShortStdReturnPct",
-    "LoseShortMeanReturnPct",
-    "LoseShortStdReturnPct",
 ]
 
 ordered_cols = [
@@ -76,20 +62,6 @@ ordered_cols = [
     "custom_metric",
     "win_rate",
     "Duration",
-    "MeanWinningReturnPct",
-    "StdWinningReturnPct",
-    "MeanLosingReturnPct",
-    "StdLosingReturnPct",
-    "MeanTradeDuration",
-    "StdTradeDuration",
-    "WinLongMeanReturnPct",
-    "WinLongStdReturnPct",
-    "LoseLongMeanReturnPct",
-    "LoseLongStdReturnPct",
-    "WinShortMeanReturnPct",
-    "WinShortStdReturnPct",
-    "LoseShortMeanReturnPct",
-    "LoseShortStdReturnPct",
 ]
 
 if __name__ == '__main__':
@@ -144,6 +116,7 @@ if __name__ == '__main__':
     strategy = load_function(strategy_path)
 
     performance = pd.DataFrame()
+    trade_performance = pd.DataFrame()
     all_opt_params = {}
 
     symbols = {}
@@ -203,11 +176,12 @@ if __name__ == '__main__':
                 stats_per_symbol[ticker] = {}
             
             mean_performance = pd.DataFrame()
+            mean_trade_performance = pd.DataFrame()
             
             for i in range(0, n_iterations):
                 first = i == 0
                 
-                df_stats, wfo_stats = run_strategy(
+                df_stats, strategy_trade_performance, stats = run_strategy(
                     strategy=strategy,
                     ticker=ticker,
                     interval=interval,
@@ -221,12 +195,16 @@ if __name__ == '__main__':
                 )
 
                 mean_performance = pd.concat([mean_performance, df_stats])
+                mean_trade_performance = pd.concat([mean_trade_performance, strategy_trade_performance])
                 
                 if i == 0:
-                    stats_per_symbol[ticker][interval] = wfo_stats
+                    stats_per_symbol[ticker][interval] = stats
 
             mean_performance = mean_performance.groupby(by=['strategy','ticker','interval'])[cols_to_calculate_mean].mean().reset_index()
+            mean_trade_performance = mean_trade_performance.groupby(by=['strategy','ticker','interval']).mean().reset_index()
+            
             performance = pd.concat([performance, mean_performance])
+            trade_performance = pd.concat([trade_performance, mean_trade_performance])
         
         except Exception as e:
             print(f"hubo un problema con {ticker} {interval}: {e}")
@@ -237,6 +215,7 @@ if __name__ == '__main__':
         )[ordered_cols]
 
     performance.to_csv(os.path.join(out_path, "random_test_mean_performance.csv"), index=False)
+    trade_performance.to_csv(os.path.join(out_path, "random_test_trade_mean_performance.csv"), index=False)
     
     for index, row in filter_performance.iterrows():
         ticker = row.ticker

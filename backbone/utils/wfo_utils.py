@@ -175,35 +175,37 @@ def run_strategy(
             "exposure": [stats["Exposure Time [%]"]],
             "final_equity": [stats["Equity Final [$]"]],
             "Duration": [stats["Duration"]],
-            
+        }
+    )
+    
+    trade_performance = pd.DataFrame(
+        {
+           "strategy": [strategy.__name__],
+            "ticker": [ticker],
+            "interval": [interval],
             "MeanWinningReturnPct":[winning_trades.ReturnPct.mean()],
             "StdWinningReturnPct":[winning_trades.ReturnPct.std()],
-            
             "MeanLosingReturnPct":[losing_trades.ReturnPct.mean()],
             "StdLosingReturnPct":[losing_trades.ReturnPct.std()],
-            
             "MeanTradeDuration":[trades['Duration'].mean()],
             "StdTradeDuration":[trades['Duration'].std()],
-            
+            "long_winrate": [long_winning_trades.size / long_trades.size],
             "WinLongMeanReturnPct": [long_winning_trades.ReturnPct.mean()],
             "WinLongStdReturnPct": [long_winning_trades.ReturnPct.std()],
-            
             "LoseLongMeanReturnPct": [long_losing_trades.ReturnPct.mean()],
             "LoseLongStdReturnPct": [long_losing_trades.ReturnPct.std()],
-            
+            "short_winrate": [short_winning_trades.size / short_trades.size],
             "WinShortMeanReturnPct": [short_winning_trades.ReturnPct.mean()],
             "WinShortStdReturnPct": [short_winning_trades.ReturnPct.std()],
-
             "LoseShortMeanReturnPct": [short_losing_trades.ReturnPct.mean()],
             "LoseShortStdReturnPct": [short_losing_trades.ReturnPct.std()],
         }
     )
     
     df_stats["return/dd"] = df_stats["return"] / df_stats["drawdown"]
-    
     df_stats["custom_metric"] = (df_stats["return"] / (1 + df_stats.drawdown)) * np.log(1 + df_stats.trades)
 
-    return df_stats, stats
+    return df_stats, trade_performance, stats
 
 
 def walk_forward(
