@@ -1,13 +1,15 @@
 from importlib import import_module
 import itertools
+import logging
+
+logger = logging.getLogger("general_purpose")
+
 
 def load_function(dotpath: str):
     """Carga una función desde un módulo."""
     module_, func = dotpath.rsplit(".", maxsplit=1)
     m = import_module(module_)
     return getattr(m, func)
-
-
 
 screener_columns = [
     'industry',
@@ -48,12 +50,22 @@ def calculate_units_size(
     return_lots=False,
     contract_volume=None,
     trade_tick_value_loss=None,
-    volume_step=None
-    
+    volume_step=None,
+    verbose=False
     ):
     
     account_currency_risk = account_size * (risk_percentage / 100)
     lots = account_currency_risk / (trade_tick_value_loss * stop_loss_pips)
+    
+    if verbose:
+        logger.info(f'''
+            account_currency_risk: {account_currency_risk}, 
+            trade_tick_value_loss: {trade_tick_value_loss},
+            stop_loss_pips: {stop_loss_pips},
+            lots: {lots},
+        ''')
+        
+    
     lots = int(lots * 100) / 100
     
     lots = max(lots, minimum_lot)

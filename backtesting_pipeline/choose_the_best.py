@@ -6,9 +6,6 @@ root_dir = os.path.abspath(os.path.join(current_dir, ".."))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-import numpy as np
-from backbone.utils.general_purpose import load_function
-from backbone.utils.wfo_utils import optimization_function, run_strategy, run_wfo
 import os
 import pandas as pd
 import yaml

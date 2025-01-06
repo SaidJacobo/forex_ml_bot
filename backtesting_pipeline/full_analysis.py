@@ -5,14 +5,12 @@ current_dir = os.path.abspath(os.path.dirname(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, ".."))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
-import numpy as np
+
 from backbone.utils.general_purpose import load_function
 from backbone.utils.wfo_utils import optimization_function, run_strategy, run_wfo
 import os
 import pandas as pd
 import yaml
-
-
 import os
 import re
 
@@ -140,26 +138,10 @@ if __name__ == "__main__":
             all_wfo_performances = pd.concat([all_wfo_performances, df_stats])
         except Exception as e:
             print(f"No se pudo ejecutar para el ticker {ticker}: {e}")
-            
-    all_wfo_performances["return/dd"] = (
-        all_wfo_performances["return"] / -all_wfo_performances["drawdown"]
-    )
-    
-    all_wfo_performances["drawdown"] = -all_wfo_performances["drawdown"]
-    
-    all_wfo_performances["custom_metric"] = (
-        all_wfo_performances["return"] / (1 + all_wfo_performances.drawdown)
-    ) * np.log(1 + all_wfo_performances.trades)
 
-    all_wfo_performances.drawdown_duration = pd.to_timedelta(
-        all_wfo_performances.drawdown_duration
-    )
-    
-    all_wfo_performances.drawdown_duration = (
-        all_wfo_performances.drawdown_duration.dt.days
-    )
 
     performance = pd.DataFrame()
+    trade_performances = pd.DataFrame()
 
     wfo_stats_per_symbol = {}
 
@@ -184,7 +166,7 @@ if __name__ == "__main__":
             if ticker not in wfo_stats_per_symbol.keys():
                 wfo_stats_per_symbol[ticker] = {}
                 
-            df_stats, wfo_stats = run_strategy(
+            df_stats, strategy_trade_performance, wfo_stats = run_strategy(
                 strategy=strategy,
                 ticker=ticker,
                 interval=interval,
@@ -200,82 +182,16 @@ if __name__ == "__main__":
             wfo_stats_per_symbol[ticker][interval] = wfo_stats
 
             performance = pd.concat([performance, df_stats])
+            trade_performances = pd.concat([trade_performances, strategy_trade_performance])
+       
         except Exception as e:
             print(f"hubo un problema con {ticker} {interval}: {e}")
-    
-    performance["return/dd"] = performance["return"] / -performance["drawdown"]
-    performance["drawdown"] = -performance["drawdown"]
-    performance["custom_metric"] = (
-        performance["return"] / (1 + performance.drawdown)
-    ) * np.log(1 + performance.trades)
 
-    performance.to_csv(os.path.join(out_path, "performance.csv"), index=False)
+    performance['method'] = 'wfo'
+    performance.to_csv(os.path.join(out_path, "filter_performance.csv"), index=False)
+    trade_performances.to_csv(os.path.join(out_path, "trade_performances.csv"), index=False)
 
-    rob_test = performance.groupby(["strategy", "ticker"]).agg(
-        {
-            "return/dd": ["mean", "std"],
-            "stability_ratio": ["mean", "std"],
-            "trades": ["mean", "std"],
-        }
-    )
-
-    rob_test["return_dd_mean_std"] = (
-        rob_test[("return/dd", "mean")] / rob_test[("return/dd", "std")]
-    )
-    rob_test.to_csv(os.path.join(out_path, "rob_test.csv"))
-    rob_test = rob_test[
-        (rob_test[("return/dd", "mean")] > 1) & (rob_test[("trades", "mean")] > 10)
-    ].sort_values(by="return_dd_mean_std", ascending=False)
-
-    average_positive_tickers = rob_test.reset_index().ticker.tolist()
-
-    filter_performance = performance[
-        performance["ticker"].isin(average_positive_tickers)
-    ]
-
-    portfolio = filter_performance.ticker.values.tolist()
-
-    intervals = filter_performance.interval.values.tolist()
-
-    filter_performance = filter_performance.sort_values(
-        by=["ticker", "interval"], ascending=[True, True]
-    )[
-        [
-            "strategy",
-            "ticker",
-            "interval",
-            "stability_ratio",
-            "trades",
-            "return",
-            "drawdown",
-            "return/dd",
-            "custom_metric",
-            "win_rate",
-            "Duration",
-            "MeanWinningReturnPct",
-            "StdWinningReturnPct",
-            "MeanLosingReturnPct",
-            "StdLosingReturnPct",
-            "MeanTradeDuration",
-            "StdTradeDuration",
-            "WinLongMeanReturnPct",
-            "WinLongStdReturnPct",
-            "LoseLongMeanReturnPct",
-            "LoseLongStdReturnPct",
-            "WinShortMeanReturnPct",
-            "WinShortStdReturnPct",
-            "LoseShortMeanReturnPct",
-            "LoseShortStdReturnPct",
-        ]
-    ]
-
-    filter_performance['method'] = 'wfo'
-
-    filter_performance.to_csv(
-        os.path.join(out_path, "filter_performance.csv"), index=False
-    )
-
-    for index, row in filter_performance.iterrows():
+    for index, row in performance.iterrows():
         ticker = row.ticker
         interval = row.interval
 

@@ -70,6 +70,7 @@ if __name__ == "__main__":
     limited_testing_end_date = Timestamp(date_to, tz="UTC")
 
     performance = pd.DataFrame()
+    trade_performances = pd.DataFrame()
     stats_per_symbol = {}
     symbols = {}
 
@@ -103,7 +104,7 @@ if __name__ == "__main__":
             if ticker not in stats_per_symbol.keys():
                 stats_per_symbol[ticker] = {}
                 
-            df_stats, stats = run_strategy(
+            df_stats, strategy_trade_performance, stats = run_strategy(
                 strategy=strategy,
                 ticker=ticker,
                 interval=interval,
@@ -115,6 +116,7 @@ if __name__ == "__main__":
             )
 
             performance = pd.concat([performance, df_stats])
+            trade_performances = pd.concat([trade_performances, strategy_trade_performance])
             stats_per_symbol[ticker][interval] = stats
             
         except Exception as e:
@@ -130,13 +132,9 @@ if __name__ == "__main__":
         }
     )
 
-    rob_test["return_dd_mean_std"] = (
-        rob_test[("return/dd", "mean")] / rob_test[("return/dd", "std")]
-    )
-    
     rob_test = rob_test[
         (rob_test[("return/dd", "mean")] >= 1) & (rob_test[("trades", "mean")] > 10)
-    ].sort_values(by="return_dd_mean_std", ascending=False)
+    ]
     
     rob_test.to_csv(os.path.join(out_path, "rob_test.csv"))
 
@@ -161,20 +159,6 @@ if __name__ == "__main__":
             "custom_metric",
             "win_rate",
             "Duration",
-            "MeanWinningReturnPct",
-            "StdWinningReturnPct",
-            "MeanLosingReturnPct",
-            "StdLosingReturnPct",
-            "MeanTradeDuration",
-            "StdTradeDuration",
-            "WinLongMeanReturnPct",
-            "WinLongStdReturnPct",
-            "LoseLongMeanReturnPct",
-            "LoseLongStdReturnPct",
-            "WinShortMeanReturnPct",
-            "WinShortStdReturnPct",
-            "LoseShortMeanReturnPct",
-            "LoseShortStdReturnPct",
         ]
     ].sort_values(by='custom_metric', ascending=False).drop_duplicates(subset=['ticker'])
 
@@ -183,28 +167,20 @@ if __name__ == "__main__":
     filter_performance.to_csv(
         os.path.join(out_path, "filter_performance.csv"), index=False
     )
+    
+    trade_performances = trade_performances.merge(
+        filter_performance[['ticker', 'interval']],
+        on=['ticker', 'interval'],
+        how='inner'
+    )
+    
+    trade_performances.to_csv(
+        os.path.join(out_path, "trade_performance.csv"), index=False
+    )
         
     for index, row in filter_performance.iterrows():
         ticker = row.ticker
         interval = row.interval
-
-        prices = symbols[ticker][interval]
-        
-        commission = commissions[ticker]
-        leverage = leverages[ticker]
-        margin = 1 / leverage
-
-        df_stats, stats = run_strategy(
-            strategy=strategy,
-            ticker=ticker,
-            interval=interval,
-            commission=commission,
-            prices=prices,
-            initial_cash=initial_cash,
-            margin=margin,
-            plot=True,
-            plot_path=plot_path,
-        )
 
         path = os.path.join(out_path, f"{ticker}_{interval}")
 
@@ -215,10 +191,6 @@ if __name__ == "__main__":
             os.path.join(path, "trades.csv"), index=False
         )
         
-        stats_per_symbol[ticker][interval]._equity_curve.index.name = None # <-- ???
-
         stats_per_symbol[ticker][interval]._equity_curve.to_csv(
             os.path.join(path, "equity.csv"),
         )
-        
-        
