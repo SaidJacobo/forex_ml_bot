@@ -14,7 +14,7 @@ preliminar_analysis:
   date_from: '2021-01-01'
   date_to: '2024-11-01'
   in_path: './backtesting_pipeline/get_data'
-  out_path: 'backtesting_pipeline/AdxDi/preliminar_analysis'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
 
 full_analysis:
   date_from: '2021-01-01'
@@ -36,9 +36,10 @@ choose_the_best:
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
 
 random_test:
-  run_only_in: ['GBPUSD_16385'] #null
+  run_only_in: null
   date_from: '2021-01-01'
   date_to: '2024-11-01'
+  n_iterations: 10
   strategy_path: 'backbone.random_trader.RandomTrader'
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   data_path: './backtesting_pipeline/get_data'
@@ -46,7 +47,7 @@ random_test:
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/random_test'
 
 montecarlo:
-  run_only_in: ['GBPUSD_16385'] #null
+  run_only_in: null #['GBPUSD_16385'] #null
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   strategy_path: 'backtesting_pipeline/strategies/{strategy_name}'
   root_path: 'backtesting_pipeline/strategies/{strategy_name}'
@@ -55,14 +56,14 @@ montecarlo:
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
 
 luck_test:
-  run_only_in: ['GBPUSD_16385'] #null
+  run_only_in: null
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   root_path: 'backtesting_pipeline/strategies/{strategy_name}'
   trades_percent_to_remove: 3
   out_path: 'backtesting_pipeline/strategies/{strategy_name}/luck_test'
 
 correlation_test:
-  run_only_in: ['GBPUSD_16385','US2000.cash_16385','USDCHF_16386'] #null
+  run_only_in: null
   in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
   data_path: './backtesting_pipeline/get_data'
   root_path: 'backtesting_pipeline/strategies/{strategy_name}'
