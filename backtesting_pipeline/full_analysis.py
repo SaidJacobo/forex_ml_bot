@@ -14,7 +14,6 @@ import yaml
 import os
 import re
 
-
 def find_matching_files(directory, ticker, interval):
     pattern = rf"^{ticker}_{interval}_.+_.+\.csv$"
     all_files = os.listdir(directory)
@@ -22,11 +21,11 @@ def find_matching_files(directory, ticker, interval):
 
     return matching_files
 
-def replace_strategy_name(obj, name):
+def replace_in_document(obj, element_to_replace, element):
     if isinstance(obj, dict):
-        return {k: replace_strategy_name(v, name) for k, v in obj.items()}
+        return {k: replace_in_document(v, element_to_replace, element) for k, v in obj.items()}
     elif isinstance(obj, str):
-        return obj.replace("{strategy_name}", name)
+        return obj.replace(element_to_replace, element)
     return obj
 
 lookback_bars_per_interval = {
@@ -46,8 +45,8 @@ if __name__ == "__main__":
         bt_params = yaml.safe_load(file_name)
 
     initial_cash = bt_params["initial_cash"]
-    
     config_path = bt_params['config_path']
+    risk = bt_params["risk"]
         
     with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
@@ -56,7 +55,8 @@ if __name__ == "__main__":
             leverages = yaml.safe_load(file_name)
 
     strategy_name = bt_params["strategy_name"]
-    configs = replace_strategy_name(obj=configs, name=strategy_name)
+    configs = replace_in_document(obj=configs, element_to_replace="{strategy_name}", element=strategy_name)
+    configs = replace_in_document(obj=configs, element_to_replace="{risk}", element=str(risk))
  
     configs = configs["full_analysis"]
     date_from = configs["date_from"]
@@ -129,6 +129,7 @@ if __name__ == "__main__":
                 warmup_bars=warmup_bars,
                 validation_bars=validation_bars,
                 plot=False,
+                risk=risk
             )
 
             if ticker not in all_opt_params.keys():
@@ -138,7 +139,6 @@ if __name__ == "__main__":
             all_wfo_performances = pd.concat([all_wfo_performances, df_stats])
         except Exception as e:
             print(f"No se pudo ejecutar para el ticker {ticker}: {e}")
-
 
     performance = pd.DataFrame()
     trade_performances = pd.DataFrame()
@@ -174,6 +174,7 @@ if __name__ == "__main__":
                 prices=prices,
                 initial_cash=initial_cash,
                 margin=margin,
+                risk=risk,
                 opt_params=params,
                 plot=True,
                 plot_path=plot_path,

@@ -76,6 +76,7 @@ def run_strategy(
     initial_cash: float,
     commission: float,
     margin: float,
+    risk=None,
     plot=False,
     plot_path=None,
     opt_params=None,
@@ -107,6 +108,7 @@ def run_strategy(
         contract_volume=scaled_contract_volume,
         trade_tick_value_loss=trade_tick_value_loss,
         volume_step=volume_step,
+        risk=risk,
         opt_params=opt_params,
     )
 
@@ -134,7 +136,6 @@ def run_strategy(
     if len(trades) > 0:
         trades.loc[0, 'ReturnPct'] = trades.loc[0, 'PnL'] / initial_cash
 
-    trades['ReturnPct'] = trades['ReturnPct'] * 100
     trades['Duration'] = pd.to_timedelta(trades['Duration'])
     trades['Duration'] = trades['Duration'].dt.total_seconds() // 3600 // 24
       
@@ -178,6 +179,10 @@ def run_strategy(
         }
     )
     
+    df_stats["return/dd"] = df_stats["return"] / df_stats["drawdown"]
+    df_stats["custom_metric"] = (df_stats["return"] / (1 + df_stats.drawdown)) * np.log(1 + df_stats.trades)
+    df_stats = df_stats.round(3)
+    
     trade_performance = pd.DataFrame(
         {
            "strategy": [strategy.__name__],
@@ -200,10 +205,8 @@ def run_strategy(
             "LoseShortMeanReturnPct": [short_losing_trades.ReturnPct.mean()],
             "LoseShortStdReturnPct": [short_losing_trades.ReturnPct.std()],
         }
-    )
+    ).round(3)
     
-    df_stats["return/dd"] = df_stats["return"] / df_stats["drawdown"]
-    df_stats["custom_metric"] = (df_stats["return"] / (1 + df_stats.drawdown)) * np.log(1 + df_stats.trades)
 
     return df_stats, trade_performance, stats
 
@@ -338,6 +341,7 @@ def run_wfo(
     warmup_bars: int,
     validation_bars: int,
     plot=True,
+    risk:None=float,
 ):
 
     (
@@ -361,6 +365,7 @@ def run_wfo(
     params["pip_value"] = [scaled_pip_value]
     params["trade_tick_value_loss"] = [trade_tick_value_loss]
     params["volume_step"] = [volume_step]
+    params["risk"] = [risk]
 
     params["maximize"] = optim_func
 

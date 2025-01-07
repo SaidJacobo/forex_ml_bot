@@ -1,4 +1,5 @@
-config_path: ./backtesting_pipeline/configs/Bpercent.yml
-strategy_name: Bpercent
+config_path: ./backtesting_pipeline/configs/BPercent.yml
+strategy_name: BPercent
 
 initial_cash: 10_000
+risk: 1

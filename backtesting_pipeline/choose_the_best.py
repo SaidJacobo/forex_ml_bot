@@ -11,27 +11,27 @@ import pandas as pd
 import yaml
 import os
 
-
-def replace_strategy_name(obj, name):
+def replace_in_document(obj, element_to_replace, element):
     if isinstance(obj, dict):
-        return {k: replace_strategy_name(v, name) for k, v in obj.items()}
+        return {k: replace_in_document(v, element_to_replace, element) for k, v in obj.items()}
     elif isinstance(obj, str):
-        return obj.replace("{strategy_name}", name)
+        return obj.replace(element_to_replace, element)
     return obj
 
 if __name__ == "__main__":
     with open("./backtesting_pipeline/configs/backtest_params.yml", "r") as file_name:
         bt_params = yaml.safe_load(file_name)
 
-    
     config_path = bt_params['config_path']
-        
+    risk = bt_params["risk"]
+
     with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
  
     strategy_name = bt_params["strategy_name"]
-    configs = replace_strategy_name(obj=configs, name=strategy_name)
-        
+    configs = replace_in_document(obj=configs, element_to_replace="{strategy_name}", element=strategy_name)
+    configs = replace_in_document(obj=configs, element_to_replace="{risk}", element=str(risk))
+            
     configs = configs["choose_the_best"]
     
     pa_path = configs["preliminar_analysis_path"]

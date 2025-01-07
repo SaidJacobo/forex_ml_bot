@@ -13,11 +13,11 @@ import yaml
 from backbone.utils.general_purpose import load_function
 from backbone.utils.wfo_utils import run_strategy
 
-def replace_strategy_name(obj, name):
+def replace_in_document(obj, element_to_replace, element):
     if isinstance(obj, dict):
-        return {k: replace_strategy_name(v, name) for k, v in obj.items()}
+        return {k: replace_in_document(v, element_to_replace, element) for k, v in obj.items()}
     elif isinstance(obj, str):
-        return obj.replace("{strategy_name}", name)
+        return obj.replace(element_to_replace, element)
     return obj
 
 if __name__ == "__main__":
@@ -27,6 +27,7 @@ if __name__ == "__main__":
     
     initial_cash = bt_params["initial_cash"]
     config_path = bt_params['config_path']
+    risk = bt_params["risk"]
         
     with open("./configs/leverages.yml", "r") as file_name:
         leverages = yaml.safe_load(file_name)
@@ -35,7 +36,8 @@ if __name__ == "__main__":
         configs = yaml.safe_load(file_name)
     
     strategy_name = bt_params["strategy_name"]
-    configs = replace_strategy_name(obj=configs, name=strategy_name)
+    configs = replace_in_document(obj=configs, element_to_replace="{strategy_name}", element=strategy_name)
+    configs = replace_in_document(obj=configs, element_to_replace="{risk}", element=str(risk))
      
     configs = configs["preliminar_analysis"]
 
@@ -112,6 +114,7 @@ if __name__ == "__main__":
                 prices=prices,
                 initial_cash=initial_cash,
                 margin=margin,
+                risk=risk,
                 plot=False,  # enviar ruta de donde quiero que se guarde
             )
 
@@ -181,6 +184,25 @@ if __name__ == "__main__":
     for index, row in filter_performance.iterrows():
         ticker = row.ticker
         interval = row.interval
+        
+        prices = symbols[ticker][interval]
+        
+        commission = commissions[ticker]
+        leverage = leverages[ticker]
+        margin = 1 / leverage
+
+        _, _, _ = run_strategy(
+            strategy=strategy,
+            ticker=ticker,
+            interval=interval,
+            commission=commission,
+            prices=prices,
+            initial_cash=initial_cash,
+            margin=margin,
+            risk=risk,
+            plot=True,
+            plot_path=plot_path,
+        )
 
         path = os.path.join(out_path, f"{ticker}_{interval}")
 
