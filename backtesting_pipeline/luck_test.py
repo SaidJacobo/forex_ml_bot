@@ -25,25 +25,27 @@ def find_matching_files(directory, ticker, interval):
 
     return matching_files
 
-def replace_strategy_name(obj, name):
+def replace_in_document(obj, element_to_replace, element):
     if isinstance(obj, dict):
-        return {k: replace_strategy_name(v, name) for k, v in obj.items()}
+        return {k: replace_in_document(v, element_to_replace, element) for k, v in obj.items()}
     elif isinstance(obj, str):
-        return obj.replace("{strategy_name}", name)
+        return obj.replace(element_to_replace, element)
     return obj
 
 if __name__ == '__main__':
     with open("./backtesting_pipeline/configs/backtest_params.yml", "r") as file_name:
         bt_params = yaml.safe_load(file_name)
     
-    initial_cash = bt_params["initial_cash"]
     config_path = bt_params['config_path']
+    initial_cash = bt_params["initial_cash"]
+    risk = bt_params["risk"]
     
     with open(config_path, "r") as file_name:
         configs = yaml.safe_load(file_name)
 
     strategy_name = bt_params["strategy_name"]
-    configs = replace_strategy_name(obj=configs, name=strategy_name)
+    configs = replace_in_document(obj=configs, element_to_replace="{strategy_name}", element=strategy_name)
+    configs = replace_in_document(obj=configs, element_to_replace="{risk}", element=str(risk))
           
     configs = configs["luck_test"]
 
@@ -52,7 +54,6 @@ if __name__ == '__main__':
     trades_percent_to_remove = configs['trades_percent_to_remove']
     out_path = configs['out_path']
     run_only_in = configs['run_only_in']
-    
     
     if not os.path.exists(out_path):
         os.makedirs(out_path)
@@ -78,25 +79,11 @@ if __name__ == '__main__':
         trades = pd.read_csv(
             os.path.join(root_path, method, f'{ticker}_{interval}', 'trades.csv')
         )
-        
-        equity = pd.read_csv(
-            os.path.join(root_path, method, f'{ticker}_{interval}', 'equity.csv'), index_col=0
-        )
+
+        trades['id'] = [uuid.uuid4() for _ in range(len(trades.index))]
 
         trades_to_remove = round((trades_percent_to_remove/100) * trades.shape[0])
         
-        trades = pd.merge(
-            trades,
-            equity,
-            left_on='ExitTime',
-            right_index=True,
-            how='inner'
-        )
-        
-
-        trades['ReturnPct'] = trades['PnL'] / trades['Equity'].shift(1)
-        trades['id'] = [uuid.uuid4() for _ in range(len(trades.index))]
-
         top_best_trades = trades.sort_values(by='ReturnPct', ascending=False).head(trades_to_remove)
         top_worst_trades = trades.sort_values(by='ReturnPct', ascending=False).tail(trades_to_remove)
         
@@ -108,14 +95,13 @@ if __name__ == '__main__':
             & (~trades['ReturnPct'].isna())
         ].sort_values(by='ExitTime')
 
-
+        filtered_trades['Equity'] = 0
         filtered_trades['Equity'] = initial_cash * (1 + filtered_trades.ReturnPct).cumprod()
         
         dd = -1 * max_drawdown(filtered_trades['Equity'])
         ret = ((filtered_trades.iloc[-1]['Equity'] - filtered_trades.iloc[0]['Equity']) / filtered_trades.iloc[0]['Equity']) * 100
         ret_dd = ret / dd
         custom_metric = (ret / (1 + dd)) * np.log(1 + filtered_trades.shape[0])  
-        
         
         x = np.arange(filtered_trades.shape[0]).reshape(-1, 1)
         reg = LinearRegression().fit(x, filtered_trades['Equity'])

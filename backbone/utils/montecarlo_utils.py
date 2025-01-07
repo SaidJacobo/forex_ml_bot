@@ -132,15 +132,6 @@ def monte_carlo_simulation_v2(
         dict: Resultados estadísticos de las simulaciones, incluyendo drawdowns y retornos.
     """
     # Filtrar trades por tipo y resultados
-    trade_history = pd.merge(
-        trade_history,
-        equity_curve,
-        left_on='ExitTime',
-        right_index=True,
-        how='inner'
-    )
-    
-    trade_history['ReturnPct'] = trade_history['PnL'] / trade_history['Equity'].shift(1)
     
     long_trades = trade_history[trade_history['Size'] > 0]
     short_trades = trade_history[trade_history['Size'] < 0]
