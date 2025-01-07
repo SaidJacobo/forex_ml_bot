@@ -18,7 +18,7 @@ class RandomTrader(Strategy):
     trade_tick_value_loss = None
     opt_params = None
     volume_step = None
-    risk=1
+    risk=None
     
     prob_trade = 0.5
     prob_long = 0.5

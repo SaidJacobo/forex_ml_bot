@@ -11,7 +11,7 @@ np.seterr(divide='ignore')
 
 
 class EndOfMonth(Strategy):
-    risk=1
+    risk=None
     n=10
     day_to_buy = 25
     

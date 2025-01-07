@@ -16,7 +16,7 @@ class DayPerWeek(Strategy):
     trade_tick_value_loss = None
     opt_params = None
     volume_step = None
-    risk=1
+    risk=None
     
     day_to_buy = 3
     percentage_price_sl = 5

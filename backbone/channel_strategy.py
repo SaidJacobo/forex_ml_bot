@@ -17,7 +17,7 @@ class Channel(Strategy):
     trade_tick_value_loss = None
     opt_params = None
     volume_step = None
-    risk=1
+    risk=None
     
     sma_period = 26
     atr_multiplier = 1.5

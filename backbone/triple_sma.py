@@ -18,7 +18,7 @@ class TripleSMA(Strategy):
     trade_tick_value_loss = None
     opt_params = None
     volume_step = None
-    risk=1
+    risk=None
     
     atr_multiplier = 2
 

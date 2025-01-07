@@ -18,7 +18,7 @@ class BbandsCross(Strategy):
     trade_tick_value_loss = None
     opt_params = None
     volume_step = None
-    risk=1
+    risk=None
     
     bbands_timeperiod = 50
     bband_std = 1.5

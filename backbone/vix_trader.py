@@ -35,7 +35,7 @@ class VixRsi(Strategy):
     sma_period = 200
     vix_sma_period = 10
     rsi_period = 2
-    risk=1
+    risk=None
     atr_multiplier = 1.5
     pip_value = 0.1
     

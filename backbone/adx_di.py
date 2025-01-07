@@ -18,7 +18,7 @@ class AdxDi(Strategy):
     trade_tick_value_loss = None
     opt_params = None
     volume_step = None
-    risk=1
+    risk=None
     
     adx_threshold = 25
     atr_multiplier = 2

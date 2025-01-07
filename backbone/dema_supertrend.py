@@ -26,7 +26,7 @@ class DemaSuperTrend2(Strategy):
     trade_tick_value_loss = None
     opt_params = None
     volume_step = None
-    risk=1
+    risk=None
     
     dema_period = 200
     atr_multiplier = 1.5
