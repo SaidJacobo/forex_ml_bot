@@ -15,7 +15,7 @@ preliminar_analysis:
   date_from: '2021-01-01'
   date_to: '2024-11-01'
   in_path: './backtesting_pipeline/get_data'
-  out_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/preliminar_analysis'
 
 full_analysis:
   date_from: '2021-01-01'
@@ -29,22 +29,22 @@ full_analysis:
   warmup_bars: 200
   validation_bars: 200
   data_path: './backtesting_pipeline/get_data'
-  in_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
-  out_path: 'backtesting_pipeline/strategies/{strategy_name}/wfo'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/preliminar_analysis'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/wfo'
 
 choose_the_best:
-  preliminar_analysis_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
-  full_analysis_path: 'backtesting_pipeline/strategies/{strategy_name}/wfo'
-  out_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+  preliminar_analysis_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/preliminar_analysis'
+  full_analysis_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/wfo'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/choose_the_best'
 
 montecarlo:
   run_only_in: null
-  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
-  strategy_path: 'backtesting_pipeline/strategies/{strategy_name}'
-  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/choose_the_best'
+  strategy_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}'
   n_simulations: 1000
   threshold_ruin: 0.9
-  out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/montecarlo'
 
 random_test:
   run_only_in: null
@@ -52,23 +52,23 @@ random_test:
   date_to: '2024-11-01'
   n_iterations: 10
   strategy_path: 'backbone.random_trader.RandomTrader'
-  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/choose_the_best'
   data_path: './backtesting_pipeline/get_data'
-  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
-  out_path: 'backtesting_pipeline/strategies/{strategy_name}/random_test'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/random_test'
 
 luck_test:
   run_only_in: null
-  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
-  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/choose_the_best'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}'
   trades_percent_to_remove: 3
-  out_path: 'backtesting_pipeline/strategies/{strategy_name}/luck_test'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/luck_test'
 
 correlation_test:
   run_only_in: null
-  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/choose_the_best'
   data_path: './backtesting_pipeline/get_data'
-  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
-  out_path: 'backtesting_pipeline/strategies/{strategy_name}/correlation_test'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/{risk}/correlation_test'
   show: True
 
