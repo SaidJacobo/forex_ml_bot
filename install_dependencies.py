@@ -9,8 +9,8 @@ def install_talib():
     try:
         if system == "Windows":
             # RUTA a la versión .whl de Windows (modifícala según tus necesidades)
-            wheel_path = "./libs/TA_Lib-0.4.24-cp38-cp38-win_amd64.whl"
-            subprocess.check_call([sys.executable, "-m", "pip", "install", wheel_path])
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "./libs/ta_lib-0.6.0-cp312-cp312-win_amd64.whl"])
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "./libs/psycopg2-2.9.10-cp312-cp312-win_amd64.whl"])
         
         elif system == "Linux":
             # Instalar dependencias de TA-Lib en Linux
