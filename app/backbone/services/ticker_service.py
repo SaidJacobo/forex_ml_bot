@@ -69,45 +69,18 @@ class TickerService:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
                        
-    # def delete(self, id) -> OperationResult:
-        
-    #    with self.db_service.get_database() as db:
+    def get_tickers_by_category( self, category_id:UUID) -> OperationResult:
+        with self.db_service.get_database() as db:
             
-    #         try:
-    #             strategy = self.db_service.delete(db, id)
-    #             result = OperationResult(ok=True, message='', item=strategy)
-    #             return result
-            
-    #         except Exception as e:
-    #             result = OperationResult(ok=False, message=e, item=None)
-    #             return result
-       
-    # def get_by_id(self, id) -> OperationResult:
-    #     with self.db_service.get_database() as db:
-            
-    #         try:
-    #             strategy = self.db_service.get_by_id(db, id)
-    #             result = OperationResult(ok=True, message='', item=strategy)
-    #             return result
-            
-    #         except Exception as e:
-    #             result = OperationResult(ok=False, message=e, item=None)
-    #             return result
-        
-    # def update(self, id:UUID, name:str, description:str) -> OperationResult:
-        
-    #     with self.db_service.get_database() as db:
-    #         try:
-    #             new_strategy = Strategy(id=id, Name=name, Description=description)
+            try:
+                tickers = self.db_service.get_many_by_filter(db, Ticker, CategoryId=category_id)
+                result = OperationResult(ok=True, message='', item=tickers)
                 
-    #             strategy = self.db_service.update(db, new_strategy)
-                
-    #             result = OperationResult(ok=True, message='', item=strategy)
-    #             return result
-                
-    #         except Exception as e:
-    #             result = OperationResult(ok=False, message=e, item=None)
-    #             return result
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
             
         
         

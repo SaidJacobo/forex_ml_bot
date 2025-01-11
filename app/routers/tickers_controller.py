@@ -35,7 +35,6 @@ async def categories(request: Request):
     
     if result.ok:
 
-        # categories_vm = [CategoriesVM.model_validate(category) for category in result.item]
         categories_vm = []
         for category in result.item:
             category_vm = CategoriesVM.model_validate(category)
@@ -43,8 +42,25 @@ async def categories(request: Request):
             
             categories_vm.append(category_vm)
         
-        return templates.TemplateResponse("/tickers/index.html", {"request": request, "categories": categories_vm})
+        return templates.TemplateResponse("/tickers/categories.html", {"request": request, "categories": categories_vm})
 
+    else:
+        return {
+            "message": "Error",
+            "data": result.message
+        }
+        
+        
+@router.get('/categories/{category_id}/tickers')
+def category_tickers(request: Request, category_id: UUID):
+    
+    print('id de la categoria:', category_id)
+    result = ticker_service.get_tickers_by_category(category_id=category_id)
+
+    if result.ok:
+        tickers = [TickerVM.model_validate(ticker) for ticker in result.item]
+        print(tickers)
+        return templates.TemplateResponse("/tickers/tickers.html", {"request": request, "tickers": tickers})
     else:
         return {
             "message": "Error",
@@ -53,8 +69,7 @@ async def categories(request: Request):
 
 
 
-
-@router.post("/tickers/update_commissions")
+@router.post("/categories/update_commissions")
 async def update_commissions():
     
     result = ticker_service.create()
