@@ -1,22 +1,22 @@
 from sqlalchemy import UUID
-from backbone.database.crud import CRUDBase
+from backbone.database.db_service import DbService
 from backbone.entities.strategy import Strategy
 from backbone.services.operation_result import OperationResult
 
 class StrategyService:
     def __init__(self):
-        self.crud = CRUDBase(Strategy)
+        self.db_service = DbService()
         
     def create( self, name:str, description:str) -> OperationResult:
-        with self.crud.get_database() as db:
+        with self.db_service.get_database() as db:
             
-            strategy_by_filter = self.crud.get_by_filter(db, Name=name)
+            strategy_by_filter = self.db_service.get_by_filter(db, Strategy, Name=name)
             
             if strategy_by_filter is None:
                 
                 new_strategy = Strategy(Name=name, Description=description)
                 
-                strategy = self.crud.create(db, new_strategy)
+                strategy = self.db_service.create(db, new_strategy)
 
                 result = OperationResult(ok=True, message='', item=strategy)
                 
@@ -25,11 +25,11 @@ class StrategyService:
             result = OperationResult(ok=False, message='El item ya esta cargado en la BD', item=None)
             return result
     
-    def get_all(self):
-        with self.crud.get_database() as db:
+    def get_all(self) -> OperationResult:
+        with self.db_service.get_database() as db:
             
             try:
-                all_strategies = self.crud.get_all(db)
+                all_strategies = self.db_service.get_all(db, Strategy)
                 result = OperationResult(ok=True, message='', item=all_strategies)
                 return result
             
@@ -37,12 +37,12 @@ class StrategyService:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
                        
-    def delete(self, id):
+    def delete(self, id) -> OperationResult:
         
-       with self.crud.get_database() as db:
+       with self.db_service.get_database() as db:
             
             try:
-                strategy = self.crud.delete(db, id)
+                strategy = self.db_service.delete(db, Strategy, id)
                 result = OperationResult(ok=True, message='', item=strategy)
                 return result
             
@@ -50,11 +50,11 @@ class StrategyService:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
        
-    def get_by_id(self, id):
-        with self.crud.get_database() as db:
+    def get_by_id(self, id) -> OperationResult:
+        with self.db_service.get_database() as db:
             
             try:
-                strategy = self.crud.get_by_id(db, id)
+                strategy = self.db_service.get_by_id(db, Strategy, id)
                 result = OperationResult(ok=True, message='', item=strategy)
                 return result
             
@@ -64,11 +64,11 @@ class StrategyService:
         
     def update(self, id:UUID, name:str, description:str) -> OperationResult:
         
-        with self.crud.get_database() as db:
+        with self.db_service.get_database() as db:
             try:
-                new_strategy = Strategy(id=id, Name=name, Description=description)
+                new_strategy = Strategy(Id=id, Name=name, Description=description)
                 
-                strategy = self.crud.update(db, new_strategy)
+                strategy = self.db_service.update(db, Strategy, new_strategy)
                 
                 result = OperationResult(ok=True, message='', item=strategy)
                 return result

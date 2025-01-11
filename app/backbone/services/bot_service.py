@@ -1,7 +1,7 @@
-from backbone.database.crud import CRUDBase
+from app.backbone.database.db_service import DbService
 from backbone.entities.bot import Bot
 from backbone.services.operation_result import OperationResult
-bot_crud = CRUDBase(Bot)
+bot_crud = DbService(Bot)
 
 def create_bot(
     strategy_name:str,

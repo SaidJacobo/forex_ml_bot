@@ -5,9 +5,11 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from backbone.entities import Base
-from backbone.entities.bot import Bot
-from backbone.entities.strategy import Strategy
+from app.backbone.entities import Base
+from app.backbone.entities.bot import Bot
+from app.backbone.entities.strategy import Strategy
+from app.backbone.entities.ticker import Ticker
+from app.backbone.entities.category import Category
 
 
 # this is the Alembic Config object, which provides

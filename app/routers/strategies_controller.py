@@ -16,7 +16,7 @@ strategy_service = StrategyService()
 
 class StrategyVM(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id:UUID
+    Id:UUID
     Name: str
     Description: str
 
@@ -24,7 +24,6 @@ class StrategyVM(BaseModel):
 # Ruta GET: muestra el formulario
 @router.get("/strategies/", response_class=HTMLResponse)
 async def form_page(request: Request):
-    
     result = strategy_service.get_all()
     
     if result.ok:
@@ -91,6 +90,7 @@ async def update_post(
     name: str = Form(...),
     description: str = Form(...),
 ):
+    print(id, name, description)
     result = strategy_service.update(id=id, name=name, description=description)
 
     if result.ok:
