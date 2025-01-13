@@ -34,6 +34,11 @@ class DbService:
         if obj:
             db.delete(obj)
         return obj
+    
+    def delete_all(self, db: Session, model):
+        db.query(model).delete()
+
+
 
     def save(self, db: Session):
         try:

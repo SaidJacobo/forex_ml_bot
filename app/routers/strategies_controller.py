@@ -1,25 +1,18 @@
+from uuid import UUID
 from fastapi import APIRouter
 from fastapi import Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
-from pydantic import BaseModel, ConfigDict
+from app.view_models.strategy_vm import StrategyVM
 from backbone.services.strategy_service import StrategyService
-from uuid import UUID
 
 
 router = APIRouter()
 
-templates = Jinja2Templates(directory="./templates")
+templates = Jinja2Templates(directory="./app/templates")
 
 strategy_service = StrategyService()
-
-class StrategyVM(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    Id:UUID
-    Name: str
-    Description: str
-
 
 # Ruta GET: muestra el formulario
 @router.get("/strategies/", response_class=HTMLResponse)
@@ -28,9 +21,9 @@ async def form_page(request: Request):
     
     if result.ok:
         strategies = [StrategyVM.model_validate(strategy) for strategy in result.item]
-        
         return templates.TemplateResponse("/strategies/index.html", {"request": request, "strategies": strategies})
     else:
+        print(result)
         return {
             "message": "Error",
             "data": result.message

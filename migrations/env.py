@@ -10,6 +10,7 @@ from app.backbone.entities.bot import Bot
 from app.backbone.entities.strategy import Strategy
 from app.backbone.entities.ticker import Ticker
 from app.backbone.entities.category import Category
+from app.backbone.entities.timeframes import Timeframe
 
 
 # this is the Alembic Config object, which provides

@@ -1,5 +1,6 @@
 import time
 from sqlalchemy import UUID
+from app.backbone.entities.timeframes import Timeframe
 from backbone.database.db_service import DbService
 from backbone.services.operation_result import OperationResult
 from backbone.entities.ticker import Ticker
@@ -30,9 +31,15 @@ class TickerService:
            
         
         with self.db_service.get_database() as db:
+            
+            self.db_service.delete_all(db, Ticker)
+            self.db_service.delete_all(db, Category)
+            
             for category_name in categories_tickers.keys():
                 
                 category = Category(Name=category_name)
+                
+                
                 self.db_service.create(db, category)
                 
                 for ticker_name in categories_tickers[category_name]:
@@ -56,7 +63,6 @@ class TickerService:
         
         return OperationResult(ok=True, message='', item=None)
 
-
     def get_all(self) -> OperationResult:
         with self.db_service.get_database() as db:
             
@@ -69,7 +75,7 @@ class TickerService:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
                        
-    def get_tickers_by_category( self, category_id:UUID) -> OperationResult:
+    def get_tickers_by_category(self, category_id:UUID) -> OperationResult:
         with self.db_service.get_database() as db:
             
             try:
@@ -81,6 +87,29 @@ class TickerService:
             except Exception as e:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
+
+    def get_all_categories(self) -> OperationResult:
+        with self.db_service.get_database() as db:
             
-        
-        
+            try:
+                categories = self.db_service.get_all(db, Category)
+                result = OperationResult(ok=True, message='', item=categories)
+                
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
+             
+    def get_all_timeframes(self) -> OperationResult:
+        with self.db_service.get_database() as db:
+            
+            try:
+                timeframes = self.db_service.get_all(db, Timeframe)
+                result = OperationResult(ok=True, message='', item=timeframes)
+                
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
