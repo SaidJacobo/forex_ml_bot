@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter
 from fastapi import Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -41,11 +42,18 @@ async def create_get(request: Request):
     
     if result_categories.ok and result_strategies.ok and result_timeframes.ok:
         vm = BacktestCreateVM()
-        vm.Categories = [CategoryVM.model_validate(category) for category in result_categories.item]
         vm.Strategies = [StrategyVM.model_validate(strategy) for strategy in result_strategies.item]
         vm.Timeframes = [TimeframeVM.model_validate(timeframe) for timeframe in result_timeframes.item]
+        vm.Categories = [CategoryVM.model_validate(category) for category in result_categories.item]
         
         return templates.TemplateResponse("/backtest/create.html", {"request": request, "model": vm})
+    
+    else:
+        print([result_categories.message, result_strategies.message, result_timeframes.message])
+        return {
+            'error': [result_categories.message, result_strategies.message, result_timeframes.message]
+        }
+        
 
 
 
@@ -54,48 +62,69 @@ async def create_get(request: Request):
 # Ruta POST: Procesa datos del formulario
 @router.post("/backtest/create")
 async def create_post(
-    strategy: str = Form(...),
-    category: str = Form(...),
-    ticker: str = Form(...),
-    timeframe: str = Form(...),
-    datefrom: str = Form(...),
-    dateto: str = Form(...),
-    risk: str = Form(...),
+    strategy_id: UUID = Form(...),
+    category_id: Optional[str] = Form(None),
+    ticker_id: Optional[str] = Form(None),
+    timeframe_id: Optional[str] = Form(None),
+    date_from: str = Form(...),
+    date_to: str = Form(...),
+    risk: float = Form(...),
 ):
+       
+    print(strategy_id)
+    print(category_id)
+    print(ticker_id)
+    print(timeframe_id)
+    print(date_from)
+    print(date_to)
+    print(risk)
+       
+    category_id = UUID(category_id) if category_id else None
+    ticker_id = UUID(ticker_id) if ticker_id else None
+    timeframe_id = UUID(timeframe_id) if timeframe_id else None
     
-    print('strategy: ', strategy)
-    print('category: ', category)
-    print('ticker: ', ticker)
-    print('timeframe: ', timeframe)
-    print('datefrom: ', datefrom)
-    print('dateto: ', dateto)
-    print('risk: ', risk)
     
-            
-    try:
+    # try:
 
-        result = backtest_service.run(
-            strategy,
-            category,
-            ticker,
-            datefrom,
-            dateto,
-            risk,
-        )
+    strategy = strategy_service.get_by_id(id=strategy_id)
+    
+    if category_id is None:
+        tickers = ticker_service.get_all_categories()
+    
+    elif category_id is not None and ticker_id is None:
+        tickers = ticker_service.get_tickers_by_category(category_id=category_id)
+    
+    elif category_id is not None and ticker_id is not None:
+        tickers = [ticker_service.get_ticker_by_id(id=ticker_id)]
         
-        if result.ok:
-            strategy_vm = StrategyVM.model_validate(result.item)
-            return RedirectResponse(url="/strategies/", status_code=303)
+    
+    if timeframe_id is None:
+        timeframes = ticker_service.get_all_timeframes()
+    else:
+        timeframes = [ticker_service.get_timeframe_by_id(timeframe_id)]
+            
+    result = backtest_service.run(
+        strategy,
+        tickers,
+        timeframes,
+        date_from,
+        date_to,
+        risk,
+    )
+    
+    #     if result.ok:
+    #         strategy_vm = StrategyVM.model_validate(result.item)
+    #         return RedirectResponse(url="/strategies/", status_code=303)
 
-        else:
-            return {
-                "message": "Error",
-                "data": result.message
-            }
+    #     else:
+    #         return {
+    #             "message": "Error",
+    #             "data": result.message
+    #         }
             
 
-    except ValidationError as e:
-        return {"error": e.errors()}
+    # except ValidationError as e:
+    #     return {"error": e.errors()}
     
     
 # @router.post("/strategies/delete/{strategy_id}")

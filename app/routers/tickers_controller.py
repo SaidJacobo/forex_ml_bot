@@ -17,7 +17,7 @@ ticker_service = TickerService()
 
 @router.get("/categories/", response_class=HTMLResponse)
 async def categories(request: Request):
-    result = ticker_service.get_all()
+    result = ticker_service.get_all_categories()
     
     if result.ok:
 

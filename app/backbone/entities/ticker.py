@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy import UUID, Column, ForeignKey, Integer, Float, String, Date
 from sqlalchemy.orm import relationship
+
 from . import Base
 
 # Clase que representa una tabla en la base de datos

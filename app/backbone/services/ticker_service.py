@@ -1,6 +1,6 @@
 import time
 from sqlalchemy import UUID
-from app.backbone.entities.timeframes import Timeframe
+from app.backbone.entities.timeframe import Timeframe
 from backbone.database.db_service import DbService
 from backbone.services.operation_result import OperationResult
 from backbone.entities.ticker import Ticker
@@ -63,7 +63,7 @@ class TickerService:
         
         return OperationResult(ok=True, message='', item=None)
 
-    def get_all(self) -> OperationResult:
+    def get_all_categories(self) -> OperationResult:
         with self.db_service.get_database() as db:
             
             try:
@@ -108,6 +108,42 @@ class TickerService:
                 timeframes = self.db_service.get_all(db, Timeframe)
                 result = OperationResult(ok=True, message='', item=timeframes)
                 
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
+            
+    def get_ticker_by_id(self, id) -> OperationResult:
+        with self.db_service.get_database() as db:
+            
+            try:
+                strategy = self.db_service.get_by_id(db, Ticker, id)
+                result = OperationResult(ok=True, message='', item=strategy)
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
+            
+    def get_all_timeframes(self) -> OperationResult:
+        with self.db_service.get_database() as db:
+            
+            try:
+                categories = self.db_service.get_all(db, Timeframe)
+                result = OperationResult(ok=True, message='', item=categories)
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
+
+    def get_timeframe_by_id(self, id) -> OperationResult:
+        with self.db_service.get_database() as db:
+            
+            try:
+                strategy = self.db_service.get_by_id(db, Timeframe, id)
+                result = OperationResult(ok=True, message='', item=strategy)
                 return result
             
             except Exception as e:
