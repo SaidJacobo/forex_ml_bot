@@ -10,8 +10,8 @@ import pandas as pd
 from pandas import Timestamp
 import pytz
 import yaml
-from backbone.utils.general_purpose import load_function
-from backbone.utils.wfo_utils import run_strategy
+from app.backbone.utils.general_purpose import load_function
+from app.backbone.utils.wfo_utils import run_strategy
 
 def replace_in_document(obj, element_to_replace, element):
     if isinstance(obj, dict):

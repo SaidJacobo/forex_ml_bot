@@ -3,8 +3,10 @@ from fastapi import APIRouter
 from fastapi import Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pandas import Timestamp
 from pydantic import ValidationError
 from pydantic import BaseModel, ConfigDict
+import pytz
 from app.backbone.services.strategy_service import StrategyService
 from app.view_models.backtest_vm import BacktestCreateVM
 from app.view_models.category_vm import CategoryVM
@@ -71,39 +73,35 @@ async def create_post(
     risk: float = Form(...),
 ):
        
-    print(strategy_id)
-    print(category_id)
-    print(ticker_id)
-    print(timeframe_id)
-    print(date_from)
-    print(date_to)
-    print(risk)
-       
     category_id = UUID(category_id) if category_id else None
     ticker_id = UUID(ticker_id) if ticker_id else None
     timeframe_id = UUID(timeframe_id) if timeframe_id else None
     
+    date_from = Timestamp(date_from, tz="UTC")
+    date_to = Timestamp(date_to, tz="UTC")
+    
     
     # try:
 
-    strategy = strategy_service.get_by_id(id=strategy_id)
+    strategy = strategy_service.get_by_id(id=strategy_id).item
     
     if category_id is None:
-        tickers = ticker_service.get_all_categories()
+        tickers = ticker_service.get_all_tickers().item
     
     elif category_id is not None and ticker_id is None:
-        tickers = ticker_service.get_tickers_by_category(category_id=category_id)
+        tickers = ticker_service.get_tickers_by_category(category_id=category_id).item
     
     elif category_id is not None and ticker_id is not None:
-        tickers = [ticker_service.get_ticker_by_id(id=ticker_id)]
+        tickers = [ticker_service.get_ticker_by_id(id=ticker_id).item]
         
     
     if timeframe_id is None:
-        timeframes = ticker_service.get_all_timeframes()
+        timeframes = ticker_service.get_all_timeframes().item
     else:
-        timeframes = [ticker_service.get_timeframe_by_id(timeframe_id)]
-            
+        timeframes = [ticker_service.get_timeframe_by_id(timeframe_id).item]
+    
     result = backtest_service.run(
+        10_000, # viene del front
         strategy,
         tickers,
         timeframes,

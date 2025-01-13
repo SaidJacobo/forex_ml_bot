@@ -118,8 +118,8 @@ class TickerService:
         with self.db_service.get_database() as db:
             
             try:
-                strategy = self.db_service.get_by_id(db, Ticker, id)
-                result = OperationResult(ok=True, message='', item=strategy)
+                ticker = self.db_service.get_by_id(db, Ticker, id)
+                result = OperationResult(ok=True, message='', item=ticker)
                 return result
             
             except Exception as e:
@@ -144,6 +144,18 @@ class TickerService:
             try:
                 strategy = self.db_service.get_by_id(db, Timeframe, id)
                 result = OperationResult(ok=True, message='', item=strategy)
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
+            
+    def get_all_tickers(self) -> OperationResult:
+        with self.db_service.get_database() as db:
+            
+            try:
+                tickers = self.db_service.get_all(db, Ticker)
+                result = OperationResult(ok=True, message='', item=tickers)
                 return result
             
             except Exception as e:
