@@ -7,4 +7,5 @@ from .category import Category
 from .strategy import Strategy
 from .timeframe import Timeframe
 from .bot_performance import BotPerformance
+from .bot_trade_performance import BotTradePerformance
 from .bot import Bot
