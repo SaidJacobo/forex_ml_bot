@@ -137,7 +137,7 @@ def run_strategy(
         trades.loc[0, 'ReturnPct'] = trades.loc[0, 'PnL'] / initial_cash
 
     trades['Duration'] = pd.to_timedelta(trades['Duration'])
-    trades['Duration'] = trades['Duration'].dt.total_seconds() // 3600 // 24
+    trades['Duration'] = (trades['Duration'].dt.total_seconds() // 3600 // 24).astype(int)
       
     stats._trades = trades
     
@@ -159,28 +159,21 @@ def run_strategy(
     reg = LinearRegression().fit(x, equity_curve)
     stability_ratio = reg.score(x, equity_curve)
 
+    stats["Duration"] = pd.to_timedelta(stats["Duration"])
+
     df_stats = pd.DataFrame(
         {
-            "strategy": [strategy.__name__],
-            "ticker": [ticker],
-            "interval": [interval],
-            "stability_ratio": [stability_ratio],
-            "trades": [stats["# Trades"]],
-            "return": [stats["Return [%]"]],
-            "drawdown": [np.abs(stats["Max. Drawdown [%]"])],
-            "return/dd": [stats["Return [%]"] / np.abs(stats["Max. Drawdown [%]"])],
-            "final_eq": [stats["Equity Final [$]"]],
-            "drawdown_duration": [stats["Max. Drawdown Duration"]],
-            "win_rate": [stats["Win Rate [%]"]],
-            "sharpe_ratio": [stats["Sharpe Ratio"]],
-            "exposure": [stats["Exposure Time [%]"]],
-            "final_equity": [stats["Equity Final [$]"]],
-            "Duration": [stats["Duration"]],
+            "StabilityRatio": [stability_ratio],
+            "Trades": [stats["# Trades"]],
+            "Return": [stats["Return [%]"]],
+            "Drawdown": [np.abs(stats["Max. Drawdown [%]"])],
+            "RreturnDd": [stats["Return [%]"] / np.abs(stats["Max. Drawdown [%]"])],
+            "WinRate": [stats["Win Rate [%]"]],
+            "Duration": [stats["Duration"].days],
         }
     )
     
-    df_stats["return/dd"] = df_stats["return"] / df_stats["drawdown"]
-    df_stats["custom_metric"] = (df_stats["return"] / (1 + df_stats.drawdown)) * np.log(1 + df_stats.trades)
+    df_stats["CustomMetric"] = (df_stats["Return"] / (1 + df_stats["Drawdown"])) * np.log(1 + df_stats["Trades"])
     df_stats = df_stats.round(3)
     
     trade_performance = pd.DataFrame(

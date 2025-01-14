@@ -14,23 +14,21 @@ class BotPerformance(Base):
     Method = Column(String, nullable=False) 
     
     StabilityRatio = Column(Float, nullable=False)
-    Trades = Column(Float, nullable=False)	
+    Trades = Column(Integer, nullable=False)	
     Return = Column(Float, nullable=False)	
     Drawdown = Column(Float, nullable=False)	
     RreturnDd = Column(Float, nullable=False)	
     CustomMetric = Column(Float, nullable=False)
     WinRate = Column(Float, nullable=False)
-    Duration = Column(Float, nullable=False)
+    Duration = Column(Integer, nullable=False)
 
-    Robust = Column(Boolean, nullable=False)
+    Robust = Column(Boolean, nullable=True)
     
     Bot = relationship('Bot', back_populates='BotPerformance', lazy='joined')
 
 
-
-
     def __repr__(self):
-        return f"<Timeframe(id={self.Id}, Name='{self.Name}', MetaTraderNumber={self.MetaTraderNumber})>"
+        return f"<Timeframe(Id={self.Id}, Trades={self.Trades}, Return={self.Return}, Drawdown={self.Drawdown})>"
     
 
 

@@ -5,6 +5,8 @@ from typing import List
 
 import yaml
 from app.backbone.database.db_service import DbService
+from app.backbone.entities.bot import Bot
+from app.backbone.entities.bot_performance import BotPerformance
 from app.backbone.entities.strategy import Strategy
 from app.backbone.entities.ticker import Ticker
 from app.backbone.entities.timeframe import Timeframe
@@ -28,17 +30,17 @@ class BacktestService:
         timeframes: List[Timeframe],
         date_from: Timestamp,
         date_to: Timestamp,
+        method: str,
+        metatrader_name: str,
         risk: float,
     ):
         
         strategy_path = 'app.backbone.strategies.' + strategy.Name
-        strategy = load_function(strategy_path)
+        strategy_func = load_function(strategy_path)
         
         with open("./configs/leverages.yml", "r") as file_name:
             leverages = yaml.safe_load(file_name)
         
-        performance = pd.DataFrame()
-        trade_performances = pd.DataFrame()
         symbols = {}
         stats_per_symbol = {}
         
@@ -57,13 +59,13 @@ class BacktestService:
                 
                 symbols[ticker][timeframe.Name] = prices
 
-                print(f'{ticker}_{timeframe.Name}')
+                print(f'{ticker.Name}_{timeframe.Name}_{timeframe.Name}')
                 
                 if ticker not in stats_per_symbol.keys():
                     stats_per_symbol[ticker] = {}
                     
-                df_stats, strategy_trade_performance, stats = run_strategy(
-                    strategy=strategy,
+                performance, trade_performance, stats = run_strategy(
+                    strategy=strategy_func,
                     ticker=ticker.Name,
                     interval=timeframe.Name,
                     commission=ticker.Commission,
@@ -74,10 +76,29 @@ class BacktestService:
                     plot=False,  # enviar ruta de donde quiero que se guarde
                 )
 
-                performance = pd.concat([performance, df_stats])
-                trade_performances = pd.concat([trade_performances, strategy_trade_performance])
+                trade_performance
                 stats_per_symbol[ticker][ticker.Name] = stats
         
-        print(performance)
+                bot = Bot(
+                    Name = f'{strategy.Name.split(".")[1]}_{ticker.Name}_{timeframe.Name}',
+                    StrategyId = strategy.Id,
+                    TickerId = ticker.Id,
+                    TimeframeId = timeframe.Id,
+                    MetaTraderName = metatrader_name,
+                )
+        
+                performance_obj = [BotPerformance(**row) for _, row in performance.iterrows()].pop()
+                performance_obj.DateFrom = date_from
+                performance_obj.DateTo = date_to
+                performance_obj.Risk = risk
+                performance_obj.Method = method
+                performance_obj.Bot = bot
+                
+                with self.db_service.get_database() as db:
+                    self.db_service.create(db, bot)
+                    self.db_service.create(db, performance_obj)
+                    
+                
+                
         
         

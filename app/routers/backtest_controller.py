@@ -100,40 +100,17 @@ async def create_post(
     else:
         timeframes = [ticker_service.get_timeframe_by_id(timeframe_id).item]
     
-    result = backtest_service.run(
+    backtest_service.run(
         10_000, # viene del front
         strategy,
         tickers,
         timeframes,
         date_from,
         date_to,
+        'pa',
+        'bbands',
         risk,
     )
     
-    #     if result.ok:
-    #         strategy_vm = StrategyVM.model_validate(result.item)
-    #         return RedirectResponse(url="/strategies/", status_code=303)
-
-    #     else:
-    #         return {
-    #             "message": "Error",
-    #             "data": result.message
-    #         }
-            
-
-    # except ValidationError as e:
-    #     return {"error": e.errors()}
+    return RedirectResponse(url="/backtest/", status_code=303)
     
-    
-# @router.post("/strategies/delete/{strategy_id}")
-# async def delete(strategy_id: UUID):
-#     result = strategy_service.delete(id=strategy_id)
-    
-#     if result.ok:
-#         return RedirectResponse(url="/strategies/", status_code=303)
-
-#     else:
-#         return {
-#             "message": "Error",
-#             "data": result.message
-#         }
