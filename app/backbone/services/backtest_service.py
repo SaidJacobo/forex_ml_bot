@@ -12,6 +12,7 @@ from app.backbone.entities.strategy import Strategy
 from app.backbone.entities.ticker import Ticker
 from app.backbone.entities.timeframe import Timeframe
 from pandas import Timestamp
+from app.backbone.services.operation_result import OperationResult
 from app.backbone.utils.get_data import get_data
 from app.backbone.utils.general_purpose import load_function
 from app.backbone.utils.wfo_utils import run_strategy
@@ -31,7 +32,6 @@ def _performance_from_df_to_obj(df_performance: DataFrame, date_from, date_to, r
 class BacktestService:
     def __init__(self):
         self.db_service = DbService()
-    
     
     def run(
         self,
@@ -104,12 +104,40 @@ class BacktestService:
                 trade_performance_for_db = [BotTradePerformance(**row) for _, row in trade_performance.iterrows()].pop()
                 trade_performance_for_db.BotPerformance = performance_for_db # Clave foranea con BotPerformance
                 
-                with self.db_service.get_database() as db:
+                with self.db_service.get_database() as db: # se crea todo de un saque para que haya un unico commit
                     self.db_service.create(db, bot)
                     self.db_service.create(db, performance_for_db)
                     self.db_service.create(db, trade_performance_for_db)
                     
+    def get_all_bots(self) -> OperationResult:
+        with self.db_service.get_database() as db:
+            
+            try:
+                all_bots = self.db_service.get_all(db, Bot)
+                result = OperationResult(ok=True, message='', item=all_bots)
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
+                       
+    def get_bot_performances(self, strategy_id, ticker_id) -> OperationResult:
+        with self.db_service.get_database() as db:
+            
+            try:
+                bot_performances = (
+                    db.query(BotPerformance)
+                    .join(Bot, Bot.Id == BotPerformance.BotId)  # Unimos Bot y BotPerformance
+                    .filter(Bot.TickerId == ticker_id)  # Filtramos por ticker_id
+                    .filter(Bot.StrategyId == strategy_id)  # Filtramos por strategy_id
+                    .all()  # Traemos todos los resultados
+                )
                 
-                
+                result = OperationResult(ok=True, message='', item=bot_performances)
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
         
         

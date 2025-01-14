@@ -15,7 +15,7 @@ templates = Jinja2Templates(directory="./app/templates")
 strategy_service = StrategyService()
 
 # Ruta GET: muestra el formulario
-@router.get("/strategies/", response_class=HTMLResponse)
+@router.get("/strategies", response_class=HTMLResponse)
 async def form_page(request: Request):
     result = strategy_service.get_all()
     
@@ -31,13 +31,13 @@ async def form_page(request: Request):
 
 
 # Ruta GET: muestra el formulario
-@router.get("/strategies/create", response_class=HTMLResponse)
+@router.get("/strategies/new", response_class=HTMLResponse)
 async def create_get(request: Request):
     return templates.TemplateResponse("/strategies/create.html", {"request": request})
 
 
 # Ruta POST: Procesa datos del formulario
-@router.post("/strategies/create")
+@router.post("/strategies")
 async def create_post(
     name: str = Form(...),
     description: str = Form(...),
@@ -48,7 +48,7 @@ async def create_post(
         
         if result.ok:
             strategy_vm = StrategyVM.model_validate(result.item)
-            return RedirectResponse(url="/strategies/", status_code=303)
+            return RedirectResponse(url="/strategies", status_code=303)
 
         else:
             return {
@@ -61,7 +61,7 @@ async def create_post(
         return {"error": e.errors()}
     
     
-@router.get("/strategies/update/{strategy_id}")
+@router.get("/strategies/{strategy_id}")
 async def update_get(request: Request, strategy_id: UUID):
 
     # Obtener la estrategia de la base de datos
@@ -77,7 +77,7 @@ async def update_get(request: Request, strategy_id: UUID):
     }
 
 
-@router.post("/strategies/update/{strategy_id}")
+@router.post("/strategies/{strategy_id}")
 async def update_post(
     id:UUID = Form(...),
     name: str = Form(...),
@@ -88,7 +88,7 @@ async def update_post(
 
     if result.ok:
 
-        return RedirectResponse(url="/strategies/", status_code=303)
+        return RedirectResponse(url="/strategies", status_code=303)
     
     return {
         "message": "Error",
@@ -96,7 +96,7 @@ async def update_post(
     }
 
 
-@router.post("/strategies/delete/{strategy_id}")
+@router.post("/strategies/{strategy_id}/delete")
 async def delete(strategy_id: UUID):
     result = strategy_service.delete(id=strategy_id)
     

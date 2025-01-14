@@ -1,5 +1,7 @@
 import time
 from sqlalchemy import UUID
+from app.backbone.entities.bot import Bot
+from app.backbone.entities.strategy import Strategy
 from app.backbone.entities.timeframe import Timeframe
 from backbone.database.db_service import DbService
 from backbone.services.operation_result import OperationResult
@@ -161,3 +163,15 @@ class TickerService:
             except Exception as e:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
+            
+    def get_tickers_by_strategy(self, strategy_id) -> OperationResult:
+        with self.db_service.get_database() as db:
+        
+            strategies = (
+                db.query(Ticker)
+                    .join(Bot, Bot.TickerId == Ticker.Id)
+                    .filter(Bot.StrategyId == strategy_id)
+            )
+            
+            result = OperationResult(ok=True, message='', item=strategies)
+            return result

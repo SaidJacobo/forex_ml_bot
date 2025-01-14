@@ -1,4 +1,5 @@
 from sqlalchemy import UUID
+from app.backbone.entities.bot import Bot
 from backbone.database.db_service import DbService
 from backbone.entities.strategy import Strategy
 from backbone.services.operation_result import OperationResult
@@ -52,7 +53,7 @@ class StrategyService:
        
     def get_by_id(self, id) -> OperationResult:
         with self.db_service.get_database() as db:
-            
+
             try:
                 strategy = self.db_service.get_by_id(db, Strategy, id)
                 result = OperationResult(ok=True, message='', item=strategy)
@@ -77,5 +78,16 @@ class StrategyService:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
             
+    def get_used_strategies(self) -> OperationResult:
+        with self.db_service.get_database() as db:
         
+            strategies = (
+                db.query(Strategy)
+                .join(Bot, Strategy.Id == Bot.StrategyId)  # Relación entre Strategy y Bot
+                .distinct()  # Evita duplicados
+                .all()  # Recupera los resultados
+            )
+            
+            result = OperationResult(ok=True, message='', item=strategies)
+            return result
         

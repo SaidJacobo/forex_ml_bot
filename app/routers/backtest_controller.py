@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi import Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -7,8 +7,10 @@ from pandas import Timestamp
 from pydantic import ValidationError
 from pydantic import BaseModel, ConfigDict
 import pytz
+from app.backbone.services.bot_service import BotService
 from app.backbone.services.strategy_service import StrategyService
-from app.view_models.backtest_vm import BacktestCreateVM
+from app.view_models.backtest_create_vm import BacktestCreateVM
+from app.view_models.bot_vm import BotVM
 from app.view_models.category_vm import CategoryVM
 from app.view_models.strategy_vm import StrategyVM
 from app.view_models.timeframe_vm import TimeframeVM
@@ -17,8 +19,6 @@ from backbone.services.backtest_service import BacktestService
 
 from uuid import UUID
 
-
-
 router = APIRouter()
 
 templates = Jinja2Templates(directory="./app/templates")
@@ -26,16 +26,23 @@ templates = Jinja2Templates(directory="./app/templates")
 ticker_service = TickerService()
 strategy_service = StrategyService()
 backtest_service = BacktestService()
+bot_service = BotService()
 
-# Ruta GET: muestra el formulario
-@router.get("/backtest/", response_class=HTMLResponse)
-async def form_page(request: Request):
+@router.get("/backtest", response_class=HTMLResponse)
+async def backtest_strategies(request: Request):
+    result = strategy_service.get_used_strategies()
+    
+    if result.ok:
+        strategies_vm = [StrategyVM.model_validate(strategy) for strategy in result.item]
+        return templates.TemplateResponse("/backtest/index.html", {"request": request, 'strategies': strategies_vm})
+
+    else:
+        return {
+            "message": "Error",
+            "data": result.message
+        }
         
-    return templates.TemplateResponse("/backtest/index.html", {"request": request})
-
-
-# Ruta GET: muestra el formulario
-@router.get("/backtest/create", response_class=HTMLResponse)
+@router.get("/backtest/new", response_class=HTMLResponse)
 async def create_get(request: Request):
     result_timeframes = ticker_service.get_all_timeframes()
     result_strategies = strategy_service.get_all()
@@ -56,13 +63,7 @@ async def create_get(request: Request):
             'error': [result_categories.message, result_strategies.message, result_timeframes.message]
         }
         
-
-
-
-
-
-# Ruta POST: Procesa datos del formulario
-@router.post("/backtest/create")
+@router.post("/backtest")
 async def create_post(
     strategy_id: UUID = Form(...),
     category_id: Optional[str] = Form(None),
@@ -112,5 +113,18 @@ async def create_post(
         risk,
     )
     
-    return RedirectResponse(url="/backtest/", status_code=303)
+    return RedirectResponse(url="/backtest", status_code=303) # aca deberia enviarte a la pantalla del que acabas de correr
+
+
+
+@router.get('/backtest/ticker/{ticker_id}')
+def get_backtest_by_ticker(request: Request, ticker_id: UUID, strategy_id: UUID = Query(...)):
+    
+    
+    result = backtest_service.get_bot_performances(ticker_id=ticker_id, strategy_id=strategy_id)
+    
+    print(result)
+    
+    return {"ticker_id": ticker_id, "strategy_id": strategy_id}
+
     
