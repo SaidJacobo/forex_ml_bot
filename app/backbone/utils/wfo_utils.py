@@ -178,21 +178,18 @@ def run_strategy(
     
     trade_performance = pd.DataFrame(
         {
-           "strategy": [strategy.__name__],
-            "ticker": [ticker],
-            "interval": [interval],
             "MeanWinningReturnPct":[winning_trades.ReturnPct.mean()],
             "StdWinningReturnPct":[winning_trades.ReturnPct.std()],
             "MeanLosingReturnPct":[losing_trades.ReturnPct.mean()],
             "StdLosingReturnPct":[losing_trades.ReturnPct.std()],
             "MeanTradeDuration":[trades['Duration'].mean()],
             "StdTradeDuration":[trades['Duration'].std()],
-            "long_winrate": [long_winning_trades.size / long_trades.size if long_trades.size > 0 else 0],
+            "LongWinrate": [long_winning_trades.size / long_trades.size if long_trades.size > 0 else 0],
             "WinLongMeanReturnPct": [long_winning_trades.ReturnPct.mean()],
             "WinLongStdReturnPct": [long_winning_trades.ReturnPct.std()],
             "LoseLongMeanReturnPct": [long_losing_trades.ReturnPct.mean()],
             "LoseLongStdReturnPct": [long_losing_trades.ReturnPct.std()],
-            "short_winrate": [short_winning_trades.size / short_trades.size if short_trades.size > 0 else 0],
+            "ShortWinrate": [short_winning_trades.size / short_trades.size if short_trades.size > 0 else 0],
             "WinShortMeanReturnPct": [short_winning_trades.ReturnPct.mean()],
             "WinShortStdReturnPct": [short_winning_trades.ReturnPct.std()],
             "LoseShortMeanReturnPct": [short_losing_trades.ReturnPct.mean()],

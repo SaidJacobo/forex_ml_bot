@@ -25,7 +25,7 @@ class BotPerformance(Base):
     Robust = Column(Boolean, nullable=True)
     
     Bot = relationship('Bot', back_populates='BotPerformance', lazy='joined')
-
+    BotTradePerformance = relationship('BotTradePerformance', back_populates='BotPerformance', lazy='joined')
 
     def __repr__(self):
         return f"<Timeframe(Id={self.Id}, Trades={self.Trades}, Return={self.Return}, Drawdown={self.Drawdown})>"

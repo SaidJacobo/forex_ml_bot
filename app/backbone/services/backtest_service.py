@@ -7,6 +7,7 @@ import yaml
 from app.backbone.database.db_service import DbService
 from app.backbone.entities.bot import Bot
 from app.backbone.entities.bot_performance import BotPerformance
+from app.backbone.entities.bot_trade_performance import BotTradePerformance
 from app.backbone.entities.strategy import Strategy
 from app.backbone.entities.ticker import Ticker
 from app.backbone.entities.timeframe import Timeframe
@@ -15,12 +16,22 @@ from app.backbone.utils.get_data import get_data
 from app.backbone.utils.general_purpose import load_function
 from app.backbone.utils.wfo_utils import run_strategy
 import pandas as pd
+from pandas import DataFrame
 
+def _performance_from_df_to_obj(df_performance: DataFrame, date_from, date_to, risk, method, bot):
+    performance_for_db = [BotPerformance(**row) for _, row in df_performance.iterrows()].pop()
+    performance_for_db.DateFrom = date_from
+    performance_for_db.DateTo = date_to
+    performance_for_db.Risk = risk
+    performance_for_db.Method = method
+    performance_for_db.Bot = bot # Clave foranea con Bot
+    
+    return performance_for_db
 
 class BacktestService:
     def __init__(self):
         self.db_service = DbService()
-        
+    
     
     def run(
         self,
@@ -73,30 +84,30 @@ class BacktestService:
                     initial_cash=initial_cash,
                     margin=margin,
                     risk=risk,
-                    plot=False,  # enviar ruta de donde quiero que se guarde
+                    plot=False,
                 )
 
                 trade_performance
                 stats_per_symbol[ticker][ticker.Name] = stats
-        
+
+                strategy_name = strategy.Name.split(".")[1]
                 bot = Bot(
-                    Name = f'{strategy.Name.split(".")[1]}_{ticker.Name}_{timeframe.Name}',
+                    Name = f'{strategy_name}_{ticker.Name}_{timeframe.Name}',
                     StrategyId = strategy.Id,
                     TickerId = ticker.Id,
                     TimeframeId = timeframe.Id,
                     MetaTraderName = metatrader_name,
                 )
-        
-                performance_obj = [BotPerformance(**row) for _, row in performance.iterrows()].pop()
-                performance_obj.DateFrom = date_from
-                performance_obj.DateTo = date_to
-                performance_obj.Risk = risk
-                performance_obj.Method = method
-                performance_obj.Bot = bot
+
+                performance_for_db = _performance_from_df_to_obj(performance, date_from, date_to, risk, method, bot)
+                
+                trade_performance_for_db = [BotTradePerformance(**row) for _, row in trade_performance.iterrows()].pop()
+                trade_performance_for_db.BotPerformance = performance_for_db # Clave foranea con BotPerformance
                 
                 with self.db_service.get_database() as db:
                     self.db_service.create(db, bot)
-                    self.db_service.create(db, performance_obj)
+                    self.db_service.create(db, performance_for_db)
+                    self.db_service.create(db, trade_performance_for_db)
                     
                 
                 
