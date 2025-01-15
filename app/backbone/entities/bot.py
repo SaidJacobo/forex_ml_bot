@@ -13,6 +13,7 @@ class Bot(Base):
     TimeframeId = Column(UUID(as_uuid=True), ForeignKey('Timeframes.Id'))
     Name = Column(String, nullable=False)
     MetaTraderName = Column(String(length=16), nullable=False)
+    Risk = Column(Float, nullable=False)
     
     Strategy = relationship('Strategy', back_populates='Bot', lazy='joined')
     Ticker = relationship('Ticker', back_populates='Bot', lazy='joined')

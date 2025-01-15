@@ -7,3 +7,5 @@ class BotVM(BaseModel):
     
     Id:UUID
     Name: str
+    Risk: float
+    

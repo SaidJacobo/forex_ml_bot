@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from app.routers import categories_controller, strategies_controller, backtest_controller, tickers_controller
+from fastapi.staticfiles import StaticFiles
 
 
 app = FastAPI()
@@ -22,7 +23,9 @@ app.include_router(tickers_controller.router)
 
 templates = Jinja2Templates(directory="./app/templates")
 
+app.mount("/static", StaticFiles(directory="./app/templates/static"), name="static")
 
-@app.get("/home", response_class=HTMLResponse)
+
+@app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     return templates.TemplateResponse("base.html", {"request": request})

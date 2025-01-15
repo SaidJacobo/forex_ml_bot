@@ -10,9 +10,7 @@ class BotPerformance(Base):
     BotId = Column(UUID(as_uuid=True), ForeignKey('Bots.Id'))
     DateFrom = Column(Date, nullable=False)
     DateTo = Column(Date, nullable=False)
-    Risk = Column(Float, nullable=False)
     Method = Column(String, nullable=False) 
-    
     StabilityRatio = Column(Float, nullable=False)
     Trades = Column(Integer, nullable=False)	
     Return = Column(Float, nullable=False)	
@@ -21,14 +19,13 @@ class BotPerformance(Base):
     CustomMetric = Column(Float, nullable=False)
     WinRate = Column(Float, nullable=False)
     Duration = Column(Integer, nullable=False)
-
     Robust = Column(Boolean, nullable=True)
-    
     Bot = relationship('Bot', back_populates='BotPerformance', lazy='joined')
-    BotTradePerformance = relationship('BotTradePerformance', back_populates='BotPerformance', lazy='joined')
+    
+    BotTradePerformance = relationship('BotTradePerformance', back_populates='BotPerformance', lazy='joined', uselist=False)
 
     def __repr__(self):
-        return f"<Timeframe(Id={self.Id}, Trades={self.Trades}, Return={self.Return}, Drawdown={self.Drawdown})>"
+        return f"<BotPerformance(Id={self.Id}, Trades={self.Trades}, Return={self.Return}, Drawdown={self.Drawdown})>"
     
 
 

@@ -7,7 +7,7 @@ class BotTradePerformance(Base):
     __tablename__ = 'BotTradePerformances'
     
     Id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    BotPerformanceId =  Column(UUID(as_uuid=True), ForeignKey('BotPerformances.Id'))
+    BotPerformanceId =  Column(UUID(as_uuid=True), ForeignKey('BotPerformances.Id'), unique=True)
     MeanWinningReturnPct = Column(Float, nullable=False)
     StdWinningReturnPct = Column(Float, nullable=False)
     MeanLosingReturnPct = Column(Float, nullable=False)
@@ -24,11 +24,11 @@ class BotTradePerformance(Base):
     WinShortStdReturnPct = Column(Float, nullable=False)
     LoseShortMeanReturnPct = Column(Float, nullable=False)
     LoseShortStdReturnPct = Column(Float, nullable=False)
-
+    
     BotPerformance = relationship('BotPerformance', back_populates='BotTradePerformance', lazy='joined')
     
 
     def __repr__(self):
-        return f"<Timeframe(Id={self.Id}, MeanWinningReturnPct={self.MeanWinningReturnPct}, MeanTradeDuration={self.MeanTradeDuration})>"
+        return f"<BotTradePerformance(Id={self.Id}, MeanWinningReturnPct={self.MeanWinningReturnPct}, MeanTradeDuration={self.MeanTradeDuration})>"
     
     
