@@ -102,8 +102,8 @@ async def create_post(
         timeframes,
         date_from,
         date_to,
-        'pa',
-        'bbands',
+        'pa', # viene del front
+        'bbands', # viene del front
         risk,
     )
     
@@ -113,7 +113,7 @@ async def create_post(
 def get_backtest_by_ticker(request: Request, ticker_id: UUID, strategy_id: UUID = Query(...)):
     
     
-    result = backtest_service.get_bot_performances(ticker_id=ticker_id, strategy_id=strategy_id)
+    result = backtest_service.get_performances_by_strategy_ticker(ticker_id=ticker_id, strategy_id=strategy_id)
     
     if result.ok:
         bot_performance_vm = [BotPerformanceVM.model_validate(performance) for performance in result.item]
@@ -125,7 +125,7 @@ def get_backtest_by_ticker(request: Request, ticker_id: UUID, strategy_id: UUID 
 
 @router.get('/backtest/bot/{bot_id}')
 def get_bot_backtes(request: Request, bot_id: UUID):
-    result = backtest_service.get_bot_performance(bot_id=bot_id)
+    result = backtest_service.get_performance_by_bot(bot_id=bot_id)
     
     if result.ok:
         bot_performance_vm = BotPerformanceVM.model_validate(result.item)

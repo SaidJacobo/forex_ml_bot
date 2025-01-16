@@ -122,7 +122,7 @@ def run_strategy(
             bt_train.plot(filename=f"./plots/{ticker}_{interval}.html", resample=False)
     
     equity_curve = stats._equity_curve
-    trades = stats._trades
+    trades = stats._trades.round(3)
     
     trades = pd.merge(
         trades,

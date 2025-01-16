@@ -14,6 +14,7 @@ from app.backbone.entities.timeframe import Timeframe
 from app.backbone.entities.bot_performance import BotPerformance
 from app.backbone.entities.timeframe import Timeframe
 from app.backbone.entities.bot_trade_performance import BotTradePerformance
+from app.backbone.entities.trade import Trade
 
 
 # this is the Alembic Config object, which provides

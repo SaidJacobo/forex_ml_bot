@@ -1,8 +1,6 @@
 
 
-from turtle import pd
 from typing import List
-
 import yaml
 from app.backbone.database.db_service import DbService
 from app.backbone.entities.bot import Bot
@@ -12,7 +10,9 @@ from app.backbone.entities.strategy import Strategy
 from app.backbone.entities.ticker import Ticker
 from app.backbone.entities.timeframe import Timeframe
 from pandas import Timestamp
+from app.backbone.entities.trade import Trade
 from app.backbone.services.operation_result import OperationResult
+from app.backbone.services.bot_service import BotService
 from app.backbone.utils.get_data import get_data
 from app.backbone.utils.general_purpose import load_function
 from app.backbone.utils.wfo_utils import run_strategy
@@ -20,6 +20,7 @@ import pandas as pd
 from pandas import DataFrame
 
 def _performance_from_df_to_obj(df_performance: DataFrame, date_from, date_to, risk, method, bot):
+    print(df_performance)
     performance_for_db = [BotPerformance(**row) for _, row in df_performance.iterrows()].pop()
     performance_for_db.DateFrom = date_from
     performance_for_db.DateTo = date_to
@@ -32,6 +33,8 @@ def _performance_from_df_to_obj(df_performance: DataFrame, date_from, date_to, r
 class BacktestService:
     def __init__(self):
         self.db_service = DbService()
+        self.bot_service = BotService()
+    
     
     def run(
         self,
@@ -60,73 +63,81 @@ class BacktestService:
             margin = 1 / leverage
             
             for timeframe in timeframes:
-                try:
-                    prices = get_data(ticker.Name, timeframe.MetaTraderNumber, date_from, date_to)
+                # try:
                     
-                    prices.index = pd.to_datetime(prices.index)
-
-                    if ticker not in symbols.keys():
-                        symbols[ticker] = {}
-                    
-                    symbols[ticker][timeframe.Name] = prices
-
-                    print(f'{ticker.Name}_{timeframe.Name}_{timeframe.Name}')
-                    
-                    if ticker not in stats_per_symbol.keys():
-                        stats_per_symbol[ticker] = {}
-                        
-                    performance, trade_performance, stats = run_strategy(
-                        strategy=strategy_func,
-                        ticker=ticker.Name,
-                        interval=timeframe.Name,
-                        commission=ticker.Commission,
-                        prices=prices,
-                        initial_cash=initial_cash,
-                        margin=margin,
-                        risk=risk,
-                        plot=False,
-                    )
-
-                    stats_per_symbol[ticker][ticker.Name] = stats                 
-                        
-                    strategy_name = strategy.Name.split(".")[1]
-                    bot = Bot(
-                        Name = f'{strategy_name}_{ticker.Name}_{timeframe.Name}_{risk}',
-                        StrategyId = strategy.Id,
-                        TickerId = ticker.Id,
-                        TimeframeId = timeframe.Id,
-                        MetaTraderName = metatrader_name,
-                        Risk = risk
-                    )
-
-                    performance_for_db = _performance_from_df_to_obj(performance, date_from, date_to, risk, method, bot)
-                    
-                    trade_performance_for_db = [BotTradePerformance(**row) for _, row in trade_performance.iterrows()].pop()
-                    trade_performance_for_db.BotPerformance = performance_for_db # Clave foranea con BotPerformance
-                    
-                    with self.db_service.get_database() as db: # se crea todo de un saque para que haya un unico commit
-                        self.db_service.create(db, bot)
-                        self.db_service.create(db, performance_for_db)
-                        self.db_service.create(db, trade_performance_for_db)
+                # Se fija si el bot existe para no correrlo de nuevo
+                result = self.bot_service.get_bot(
+                    strategy_id=strategy.Id,
+                    ticker_id=ticker.Id,
+                    timeframe_id=timeframe.Id,
+                    risk=risk   
+                )
                 
-                except:
-                    strategy_name = strategy.Name.split(".")[1]
-                    Name = f'{strategy_name}_{ticker.Name}_{timeframe.Name}_{risk}',
-                    print(f'No se pudo correr la configuracion {Name}')
+                if result.ok and result.item:
+                    # aca deberia guardar que el bot existe en algun lado y retornar ese mensaje al front
+                    print('El bot ya existe')
+                    continue
+                
+                prices = get_data(ticker.Name, timeframe.MetaTraderNumber, date_from, date_to)
+                
+                prices.index = pd.to_datetime(prices.index)
+
+                if ticker not in symbols.keys():
+                    symbols[ticker] = {}
+                
+                symbols[ticker][timeframe.Name] = prices
+
+                print(f'{ticker.Name}_{timeframe.Name}_{timeframe.Name}')
+                
+                if ticker not in stats_per_symbol.keys():
+                    stats_per_symbol[ticker] = {}
                     
-    def get_all_bots(self) -> OperationResult:
-        with self.db_service.get_database() as db:
-            
-            try:
-                all_bots = self.db_service.get_all(db, Bot)
-                result = OperationResult(ok=True, message='', item=all_bots)
-                return result
-            
-            except Exception as e:
-                result = OperationResult(ok=False, message=e, item=None)
-                return result
+                performance, trade_performance, stats = run_strategy(
+                    strategy=strategy_func,
+                    ticker=ticker.Name,
+                    interval=timeframe.Name,
+                    commission=ticker.Commission,
+                    prices=prices,
+                    initial_cash=initial_cash,
+                    margin=margin,
+                    risk=risk,
+                    plot=False,
+                )
+
+                stats_per_symbol[ticker][ticker.Name] = stats                 
+                    
+                strategy_name = strategy.Name.split(".")[1]
+                bot = Bot(
+                    Name = f'{strategy_name}_{ticker.Name}_{timeframe.Name}_{risk}',
+                    StrategyId = strategy.Id,
+                    TickerId = ticker.Id,
+                    TimeframeId = timeframe.Id,
+                    MetaTraderName = metatrader_name,
+                    Risk = risk
+                )
+
+                bot_performance_for_db = _performance_from_df_to_obj(performance, date_from, date_to, risk, method, bot)
+                
+                trade_performance_for_db = [BotTradePerformance(**row) for _, row in trade_performance.iterrows()].pop()
+                trade_performance_for_db.BotPerformance = bot_performance_for_db # Clave foranea con BotPerformance
+                
+                with self.db_service.get_database() as db: # se crea todo de un saque para que haya un unico commit
+                    self.db_service.create(db, bot)
+                    self.db_service.create(db, bot_performance_for_db)
+                    self.db_service.create(db, trade_performance_for_db)
+                    
+                    trade_history = [Trade(**row) for _, row in stats._trades.iterrows()]
+                    for trade in trade_history:
+                        trade.BotPerformance = bot_performance_for_db
+                        self.db_service.create(db, trade)
+                
+                # except Exception as e:
+                #     strategy_name = strategy.Name.split(".")[1]
+                #     name = f'{strategy_name}_{ticker.Name}_{timeframe.Name}_{risk}',
+                #     print(f'No se pudo correr la configuracion {name}: {e}')
+                    
                        
-    def get_bot_performances(self, strategy_id, ticker_id) -> OperationResult:
+    def get_performances_by_strategy_ticker(self, strategy_id, ticker_id) -> OperationResult:
         with self.db_service.get_database() as db:
             
             try:
@@ -146,7 +157,7 @@ class BacktestService:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
      
-    def get_bot_performance(self, bot_id) -> OperationResult:
+    def get_performance_by_bot(self, bot_id) -> OperationResult:
         with self.db_service.get_database() as db:
             
             try:
