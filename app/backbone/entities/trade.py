@@ -25,4 +25,4 @@ class Trade(Base):
     BotPerformance = relationship('BotPerformance', back_populates='TradeHistory', lazy='joined')
 
     def __repr__(self):
-        return f"<TradeHistory(Id={self.Id}, Trades={self.Trades}, Return={self.Return}, Drawdown={self.Drawdown})>"
+        return f"<TradeHistory(Id={self.Id}, Size={self.Size}, PnL={self.PnL}, ReturnPct={self.ReturnPct})>"

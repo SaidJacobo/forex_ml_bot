@@ -24,6 +24,7 @@ app.include_router(tickers_controller.router)
 templates = Jinja2Templates(directory="./app/templates")
 
 app.mount("/static", StaticFiles(directory="./app/templates/static"), name="static")
+app.mount("/backtest_plots", StaticFiles(directory="./app/templates/static/backtest_plots"), name="backtest_plots")
 
 
 @app.get("/", response_class=HTMLResponse)

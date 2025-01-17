@@ -18,7 +18,7 @@ class Bot(Base):
     Strategy = relationship('Strategy', back_populates='Bot', lazy='joined')
     Ticker = relationship('Ticker', back_populates='Bot', lazy='joined')
     Timeframe = relationship('Timeframe', back_populates='Bot', lazy='joined')
-    BotPerformance = relationship('BotPerformance', back_populates='Bot', lazy='joined')
+    BotPerformance = relationship('BotPerformance', back_populates='Bot', lazy='joined', uselist=False)
     
 
     def __repr__(self):

@@ -13,6 +13,7 @@ from app.view_models.strategy_vm import StrategyVM
 from app.view_models.timeframe_vm import TimeframeVM
 from backbone.services.ticker_service import TickerService
 from backbone.services.backtest_service import BacktestService
+import plotly.graph_objects as go
 
 from uuid import UUID
 
@@ -95,7 +96,7 @@ async def create_post(
     else:
         timeframes = [ticker_service.get_timeframe_by_id(timeframe_id).item]
     
-    backtest_service.run(
+    backtest_service.run_backtest(
         10_000, # viene del front
         strategy,
         tickers,
@@ -112,7 +113,6 @@ async def create_post(
 @router.get('/backtest/ticker/{ticker_id}')
 def get_backtest_by_ticker(request: Request, ticker_id: UUID, strategy_id: UUID = Query(...)):
     
-    
     result = backtest_service.get_performances_by_strategy_ticker(ticker_id=ticker_id, strategy_id=strategy_id)
     
     if result.ok:
@@ -122,7 +122,6 @@ def get_backtest_by_ticker(request: Request, ticker_id: UUID, strategy_id: UUID 
     else:
         return {'error': result.message}
 
-
 @router.get('/backtest/bot/{bot_id}')
 def get_bot_backtes(request: Request, bot_id: UUID):
     result = backtest_service.get_performance_by_bot(bot_id=bot_id)
@@ -130,14 +129,38 @@ def get_bot_backtes(request: Request, bot_id: UUID):
     if result.ok:
         bot_performance_vm = BotPerformanceVM.model_validate(result.item)
         
+        dates = [trade.ExitTime for trade in bot_performance_vm.TradeHistory]
+        equity = [trade.Equity for trade in bot_performance_vm.TradeHistory]
         
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=dates, y=equity,
+                            mode='lines',
+                            name='equity original'))
+
+        fig.update_layout(
+            xaxis_title='Time',
+            yaxis_title='Equity'
+        )
         
-        
+        equity_plot = fig.to_json()
         
         return templates.TemplateResponse(
             "/backtest/view_bot_performance.html", 
-            {"request": request, "performance": bot_performance_vm}
+            {"request": request, "performance": bot_performance_vm, 'equity_plot': equity_plot}
         )
+
+
+@router.get('/backtest/bot/{bot_id}/montecarlo')
+def get_montecarlo_test(request: Request, bot_id:UUID):
+    
+    result = backtest_service.run_montecarlo_test(
+        bot_id=bot_id, 
+        n_simulations=1000, # Viene del front
+        initial_cash=10_000, # Viene del front
+        threshold_ruin=0.9 # Viene del front
+    )
+    
+    print(result)
 
     
     

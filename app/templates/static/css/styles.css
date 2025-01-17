@@ -189,17 +189,6 @@ h3 {
     color: var(--primary-text);
 }
 
-/* Asegurar contraste en links dentro de cards */
-.card a {
-    color: var(--primary-button-bg);
-    text-decoration: none;
-}
-
-.card a:hover {
-    color: var(--button-hover-bg);
-    text-decoration: underline;
-}
-
 
 /* Asegurar contraste en títulos */
 h1, h2, h3 {

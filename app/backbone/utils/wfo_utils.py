@@ -1,3 +1,4 @@
+import os
 from backbone.utils.general_purpose import transformar_a_uno
 from unittest.mock import patch
 from backtesting import Backtest
@@ -70,6 +71,7 @@ def get_scaled_symbol_metadata(ticker: str, metatrader=None):
 
 def run_strategy(
     strategy,
+    strategy_name,
     ticker,
     interval,
     prices: pd.DataFrame,
@@ -77,7 +79,6 @@ def run_strategy(
     commission: float,
     margin: float,
     risk=None,
-    plot=False,
     plot_path=None,
     opt_params=None,
 ):
@@ -112,14 +113,16 @@ def run_strategy(
         opt_params=opt_params,
     )
 
-    if plot:
-        if plot_path:
-            bt_train.plot(
-                filename=f"{plot_path}/{ticker}_{interval}.html", resample=False
-            )
+    if plot_path:
+        if not os.path.exists(plot_path):
+            os.mkdir(plot_path)
             
-        else:
-            bt_train.plot(filename=f"./plots/{ticker}_{interval}.html", resample=False)
+        bt_train.plot(
+            filename=f"{plot_path}/{strategy_name}_{ticker}_{interval}_{risk}.html", 
+            resample=False, 
+            open_browser=False
+        )
+
     
     equity_curve = stats._equity_curve
     trades = stats._trades.round(3)

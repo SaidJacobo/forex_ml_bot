@@ -53,4 +53,17 @@ class BotService:
             except Exception as e:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
+            
+    def get_bot_by_id(self, bot_id) -> OperationResult:
+        with self.db_service.get_database() as db:
+            
+            try:
+                bot = self.db_service.get_by_id(db, Bot, id=bot_id)
+                result = OperationResult(ok=True, message='', item=bot)
+                
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
 

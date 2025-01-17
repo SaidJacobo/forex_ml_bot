@@ -1,9 +1,11 @@
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from app.view_models.bot_trade_performance_vm import BotTradePerformamceVM
 from app.view_models.bot_vm import BotVM
 from datetime import date
+
+from app.view_models.trade_vm import TradeVM
 
 
 class BotPerformanceVM(BaseModel):
@@ -24,3 +26,4 @@ class BotPerformanceVM(BaseModel):
     Robust: Optional[bool] = None
     Bot: BotVM
     BotTradePerformance: BotTradePerformamceVM
+    TradeHistory: List[TradeVM]
