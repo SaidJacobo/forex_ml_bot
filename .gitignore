@@ -8,6 +8,7 @@ __pycache__/
 mtvenv/
 mtvenv2/
 env/
+venv/
 
 # Archivo de configuración para el entorno de desarrollo
 .env
