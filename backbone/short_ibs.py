@@ -90,7 +90,7 @@ class ShortIBS(Strategy):
         if open_positions:
             if open_positions[-1].type == mt5.ORDER_TYPE_SELL:
                 if actual_ibs <= self.exit_ibs:
-                    self.position.close()
+                    trader.close_order(open_positions[-1])
 
         else:
             info_tick = trader.get_info_tick()

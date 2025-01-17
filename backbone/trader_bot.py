@@ -137,7 +137,7 @@ class TraderBot:
         
     def get_data(self, n_bars=None):
         rates = self.mt5.copy_rates_from_pos(
-            self.ticker, time_frames[self.timeframe], 1, n_bars
+            self.ticker, time_frames[self.timeframe], 0, n_bars
         )
 
         historical_prices = pd.DataFrame(rates)
