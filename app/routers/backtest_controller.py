@@ -149,6 +149,9 @@ def get_bot_backtes(request: Request, bot_id: UUID):
             "/backtest/view_bot_performance.html", 
             {"request": request, "performance": bot_performance_vm, 'equity_plot': equity_plot}
         )
+        
+    else:
+        return {'error': result.message}
 
 
 @router.post('/backtest/bot/{bot_id}/montecarlo')
@@ -161,9 +164,24 @@ def run_montecarlo_test(request: Request, bot_id:UUID):
         threshold_ruin=0.9 # Viene del front
     )
     
+    if result.ok:
+        return RedirectResponse(url=f'/backtest/bot/{bot_id}', status_code=303) # aca deberia enviarte a la pantalla del que acabas de correr
+
+    else:
+        return {'error': result.message}
+    
+@router.post('/backtest/bot/{bot_id}/luck_test')
+def run_montecarlo_test(request: Request, bot_id:UUID):
+    
+    result = backtest_service.run_montecarlo_test(
+        bot_id=bot_id, 
+        n_simulations=1000, # Viene del front
+        initial_cash=10_000, # Viene del front
+        threshold_ruin=0.9 # Viene del front
+    )
+    
     return RedirectResponse(url=f'/backtest/bot/{bot_id}', status_code=303) # aca deberia enviarte a la pantalla del que acabas de correr
-    
-    
+     
     
 
     

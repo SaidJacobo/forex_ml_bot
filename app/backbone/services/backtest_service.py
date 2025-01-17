@@ -141,8 +141,7 @@ class BacktestService:
                 except Exception as e:
                     
                     return OperationResult(ok=False, message=e)
-
-                       
+                    
     def get_performances_by_strategy_ticker(self, strategy_id, ticker_id) -> OperationResult:
         with self.db_service.get_database() as db:
             
@@ -243,4 +242,5 @@ class BacktestService:
             
             return OperationResult(ok=False, message=e, item=None)
         
-            
+    def run_luck_test(self, bot_id, ):
+        pass     

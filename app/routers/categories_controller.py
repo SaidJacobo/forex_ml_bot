@@ -24,8 +24,6 @@ async def categories(request: Request):
         categories_vm = []
         for category in result.item:
             category_vm = CategoryVM.model_validate(category)
-            category_vm.Tickers = [TickerVM.model_validate(ticker) for ticker in category.Tickers]
-            
             categories_vm.append(category_vm)
         
         return templates.TemplateResponse("/tickers/categories.html", {"request": request, "categories": categories_vm})
