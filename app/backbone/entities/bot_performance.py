@@ -25,6 +25,7 @@ class BotPerformance(Base):
     Bot = relationship('Bot', back_populates='BotPerformance', lazy='joined')
     BotTradePerformance = relationship('BotTradePerformance', back_populates='BotPerformance', lazy='joined', uselist=False)
     TradeHistory = relationship('Trade', back_populates='BotPerformance', lazy='joined')
+    Montecarlo = relationship('MetricWharehouse', back_populates='BotPerformance', lazy='joined')
 
     def __repr__(self):
         return f"<BotPerformance(Id={self.Id}, Trades={self.Trades}, Return={self.Return}, Drawdown={self.Drawdown})>"

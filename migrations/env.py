@@ -7,6 +7,7 @@ from alembic import context
 
 from app.backbone.entities import Base
 from app.backbone.entities.bot import Bot
+from app.backbone.entities.metric_wharehouse import MetricWharehouse
 from app.backbone.entities.strategy import Strategy
 from app.backbone.entities.ticker import Ticker
 from app.backbone.entities.category import Category
@@ -15,7 +16,6 @@ from app.backbone.entities.bot_performance import BotPerformance
 from app.backbone.entities.timeframe import Timeframe
 from app.backbone.entities.bot_trade_performance import BotTradePerformance
 from app.backbone.entities.trade import Trade
-
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

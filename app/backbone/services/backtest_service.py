@@ -6,6 +6,7 @@ from app.backbone.database.db_service import DbService
 from app.backbone.entities.bot import Bot
 from app.backbone.entities.bot_performance import BotPerformance
 from app.backbone.entities.bot_trade_performance import BotTradePerformance
+from app.backbone.entities.metric_wharehouse import MetricWharehouse
 from app.backbone.entities.strategy import Strategy
 from app.backbone.entities.ticker import Ticker
 from app.backbone.entities.timeframe import Timeframe
@@ -182,51 +183,64 @@ class BacktestService:
         if not result.ok:
             return OperationResult(ok=False, message=result.message, item=None)
             
-        # try:
-        bot = result.item
-        data = [{
-                'Id': trade.Id,
-                'BotPerformanceId': trade.BotPerformanceId,
-                'Size': trade.Size,
-                'EntryBar': trade.EntryBar,
-                'ExitBar': trade.ExitBar,
-                'EntryPrice': trade.EntryPrice,
-                'ExitPrice': trade.ExitPrice,
-                'PnL': trade.PnL,
-                'ReturnPct': trade.ReturnPct,
-                'EntryTime': trade.EntryTime,
-                'ExitTime': trade.ExitTime,
-                'Duration': trade.Duration,
-                'Equity': trade.Equity,
-            }
-            for trade in bot.BotPerformance.TradeHistory
-        ]
+        try:
+            bot = result.item
+            data = [{
+                    'Id': trade.Id,
+                    'BotPerformanceId': trade.BotPerformanceId,
+                    'Size': trade.Size,
+                    'EntryBar': trade.EntryBar,
+                    'ExitBar': trade.ExitBar,
+                    'EntryPrice': trade.EntryPrice,
+                    'ExitPrice': trade.ExitPrice,
+                    'PnL': trade.PnL,
+                    'ReturnPct': trade.ReturnPct,
+                    'EntryTime': trade.EntryTime,
+                    'ExitTime': trade.ExitTime,
+                    'Duration': trade.Duration,
+                    'Equity': trade.Equity,
+                }
+                for trade in bot.BotPerformance.TradeHistory
+            ]
 
-        # Crear el DataFrame
-        trades_history = pd.DataFrame(data)
+            trades_history = pd.DataFrame(data)
 
-        # Simulación de Montecarlo para cada ticker (datos agregados)
+            mc = monte_carlo_simulation_v2(
+                equity_curve=trades_history.Equity,
+                trade_history=trades_history,
+                n_simulations=n_simulations,
+                initial_equity=initial_cash,
+                threshold_ruin=threshold_ruin,
+                return_raw_curves=False,
+                percentiles=[0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95],
+            )
 
-        mc = monte_carlo_simulation_v2(
-            equity_curve=trades_history.Equity,
-            trade_history=trades_history,
-            n_simulations=n_simulations,
-            initial_equity=initial_cash,
-            threshold_ruin=threshold_ruin,
-            return_raw_curves=False,
-            percentiles=[0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95],
-        )
-
-        mc = mc.round(3).reset_index().rename(
-            columns={'index':'metric'}
-        )
-        
-        # Transformar a clase
-        
-        return OperationResult(ok=True, message='', item=mc)
-        
-        # except Exception as e:
+            mc = mc.round(3).reset_index().rename(
+                columns={'index':'metric'}
+            )
             
-        #     return OperationResult(ok=False, message=e, item=None)
+            mc_long = mc.melt(id_vars=['metric'], var_name='ColumnName', value_name='Value')
+            
+            rows = [
+                MetricWharehouse(
+                    Method='Montecarlo', 
+                    Metric=row['metric'], 
+                    ColumnName=row['ColumnName'], 
+                    Value=row['Value'],
+                    BotPerformanceId=bot.BotPerformance.Id,
+                    BotPerformance=bot.BotPerformance
+                )
+                
+                for _, row in mc_long.iterrows()
+            ]
+            
+            with self.db_service.get_database() as db:
+                db.add_all(rows)
+            
+            return OperationResult(ok=True, message='', item=rows)
+        
+        except Exception as e:
+            
+            return OperationResult(ok=False, message=e, item=None)
         
             

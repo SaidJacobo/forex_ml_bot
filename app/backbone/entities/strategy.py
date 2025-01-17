@@ -11,7 +11,7 @@ class Strategy(Base):
     Name = Column(String, nullable=False) 
     Description = Column(String, nullable=False)
 
-    Bot = relationship('Bot', back_populates='Strategy', lazy='joined')
+    Bot = relationship('Bot', back_populates='Strategy', lazy='select')
 
 
     def __repr__(self):

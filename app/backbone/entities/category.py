@@ -10,7 +10,7 @@ class Category(Base):
     Id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     Name = Column(String, nullable=False) 
     
-    Tickers = relationship('Ticker', back_populates='Category', lazy='joined')
+    Tickers = relationship('Ticker', back_populates='Category', lazy='select')
 
     def __repr__(self):
         return f"<Category(id={self.Id}, name='{self.Name}')>"

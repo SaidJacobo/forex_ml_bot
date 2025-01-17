@@ -11,7 +11,7 @@ class Timeframe(Base):
     Id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     Name = Column(String, nullable=False)
     MetaTraderNumber = Column(Integer, nullable=False)
-    Bot = relationship('Bot', back_populates='Timeframe', lazy='joined')
+    Bot = relationship('Bot', back_populates='Timeframe', lazy='select')
     
     
     def __repr__(self):

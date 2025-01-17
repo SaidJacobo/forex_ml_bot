@@ -13,8 +13,8 @@ class Ticker(Base):
     Name = Column(String, nullable=False) 
     Commission = Column(Float, nullable=False)
     
-    Category = relationship('Category', back_populates='Tickers', lazy='joined')
-    Bot = relationship('Bot', back_populates='Ticker', lazy='joined')
+    Category = relationship('Category', back_populates='Tickers', lazy='select')
+    Bot = relationship('Bot', back_populates='Ticker', lazy='select')
 
     def __repr__(self):
         return f"<Ticker(id={self.Id}, name='{self.Name}', commission={self.Commission})>"
