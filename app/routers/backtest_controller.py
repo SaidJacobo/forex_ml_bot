@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Query
 from fastapi import Form, Request
@@ -124,8 +125,8 @@ def get_backtest_by_ticker(request: Request, ticker_id: UUID, strategy_id: UUID 
         return {'error': result.message}
 
 @router.get('/backtest/bot/{bot_id}')
-def get_bot_backtes(request: Request, bot_id: UUID):
-    result = backtest_service.get_performance_by_bot(bot_id=bot_id)
+def get_bot_backtes(request: Request, bot_id: UUID, date_from: date = Query(...), date_to: date = Query(...)):
+    result = backtest_service.get_performances_by_bot_dates(bot_id=bot_id, date_from=date_from, date_to=date_to)
     
     if result.ok:
         bot_performance_vm = BotPerformanceVM.model_validate(result.item)
@@ -153,7 +154,6 @@ def get_bot_backtes(request: Request, bot_id: UUID):
     else:
         return {'error': result.message}
 
-
 @router.post('/backtest/{bot_performance_id}/montecarlo')
 def run_montecarlo_test(request: Request, bot_performance_id:UUID):
     
@@ -164,12 +164,9 @@ def run_montecarlo_test(request: Request, bot_performance_id:UUID):
         threshold_ruin=0.9 # Viene del front
     )
     
-    
-    
     if result.ok:
-        montecarlo = result.item
-        bot_id = montecarlo[0].BotPerformance.Bot.Id
-        return RedirectResponse(url=f'/backtest/bot/{bot_id}', status_code=303) # aca deberia enviarte a la pantalla del que acabas de correr
+        referer = request.headers.get('referer')  # Obtiene la URL de la página anterior
+        return RedirectResponse(url=referer, status_code=303)
 
     else:
         return {'error': result.message}
@@ -179,11 +176,15 @@ def run_luck_test(request: Request, performance_id:UUID):
     
     result = backtest_service.run_luck_test(
         bot_performance_id=performance_id, 
-        trades_percent_to_remove=5 # Viene del front
+        trades_percent_to_remove=5 
     )
     
-    print(result)
-    return RedirectResponse(url=f'/backtest/bot/{bot_id}', status_code=303) # aca deberia enviarte a la pantalla del que acabas de correr
+    if result.ok:
+        referer = request.headers.get('referer')  # Obtiene la URL de la página anterior
+        return RedirectResponse(url=referer, status_code=303)
+
+    else:
+        return {'error': result.message}
      
     
 

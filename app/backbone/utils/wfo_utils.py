@@ -71,15 +71,14 @@ def get_scaled_symbol_metadata(ticker: str, metatrader=None):
 
 def run_strategy(
     strategy,
-    strategy_name,
     ticker,
-    interval,
     prices: pd.DataFrame,
     initial_cash: float,
     commission: float,
     margin: float,
     risk=None,
     plot_path=None,
+    file_name=None,
     opt_params=None,
 ):
 
@@ -118,7 +117,7 @@ def run_strategy(
             os.mkdir(plot_path)
             
         bt_train.plot(
-            filename=f"{plot_path}/{strategy_name}_{ticker}_{interval}_{risk}.html", 
+            filename=os.path.join(plot_path, file_name), 
             resample=False, 
             open_browser=False
         )

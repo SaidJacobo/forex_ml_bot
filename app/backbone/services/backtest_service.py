@@ -107,10 +107,10 @@ class BacktestService:
                 
                 bot = None
                 if result_bot.item:
-                    bot = result_bot.item.Id
+                    bot = result_bot.item
                     
                     result_performance = self.get_performances_by_bot_dates(
-                        bot_id=bot, 
+                        bot_id=bot.Id, 
                         date_from=date_from, 
                         date_to=date_to
                     )
@@ -120,6 +120,16 @@ class BacktestService:
                     
                     if result_performance.item:
                         continue
+
+                else:
+                    bot = Bot(
+                        Name = bot_name,
+                        StrategyId = strategy.Id,
+                        TickerId = ticker.Id,
+                        TimeframeId = timeframe.Id,
+                        MetaTraderName = metatrader_name,
+                        Risk = risk
+                    )
 
                 try:
                     prices = get_data(ticker.Name, timeframe.MetaTraderNumber, date_from, date_to)
@@ -135,31 +145,23 @@ class BacktestService:
                     
                     if ticker not in stats_per_symbol.keys():
                         stats_per_symbol[ticker] = {}
-                        
+
+                    str_date_from = str(date_from.date()).replace('-','')
+                    str_date_to = str(date_to.date()).replace('-','')
+                    
                     performance, trade_performance, stats = run_strategy(
                         strategy=strategy_func,
-                        strategy_name=strategy_name,
                         ticker=ticker.Name,
-                        interval=timeframe.Name,
                         risk=risk,
                         commission=ticker.Commission,
                         prices=prices,
                         initial_cash=initial_cash,
                         margin=margin,
-                        plot_path='./app/templates/static/backtest_plots'
+                        plot_path=f'./app/templates/static/backtest_plots',
+                        file_name=f'{bot_name}_{str_date_from}_{str_date_to}.html'
                     )
 
                     stats_per_symbol[ticker][ticker.Name] = stats                 
-
-                    if not bot:
-                        bot = Bot(
-                            Name = bot_name,
-                            StrategyId = strategy.Id,
-                            TickerId = ticker.Id,
-                            TimeframeId = timeframe.Id,
-                            MetaTraderName = metatrader_name,
-                            Risk = risk
-                        )
 
                     bot_performance_for_db = _performance_from_df_to_obj(performance, date_from, date_to, risk, method, bot)
                     
@@ -172,15 +174,13 @@ class BacktestService:
                             self.db_service.create(db, bot)
                             
                         self.db_service.create(db, bot_performance_for_db)
-                        self.db_service.create(db, trade_performance_for_db)
                         
                         trade_history = [Trade(**row) for _, row in stats._trades.iterrows()]
                         for trade in trade_history:
                             trade.BotPerformance = bot_performance_for_db
                             self.db_service.create(db, trade)
-                
-                except Exception as e:
                     
+                except Exception as e:
                     return OperationResult(ok=False, message=e)
                     
     def get_performances_by_strategy_ticker(self, strategy_id, ticker_id) -> OperationResult:
@@ -209,7 +209,7 @@ class BacktestService:
             try:
                 bot_performance = (
                     db.query(BotPerformance)
-                    .join(Bot, Bot.Id == bot_id)
+                    .filter(BotPerformance.BotId == bot_id)
                     .filter(BotPerformance.DateFrom == date_from)
                     .filter(BotPerformance.DateTo == date_to)
                     .first()
