@@ -1,6 +1,8 @@
 
 
 from typing import List
+import numpy as np
+from sklearn.linear_model import LinearRegression
 import yaml
 from app.backbone.database.db_service import DbService
 from app.backbone.entities.bot import Bot
@@ -16,7 +18,7 @@ from app.backbone.services.operation_result import OperationResult
 from app.backbone.services.bot_service import BotService
 from app.backbone.utils.get_data import get_data
 from app.backbone.utils.general_purpose import load_function
-from app.backbone.utils.montecarlo_utils import monte_carlo_simulation_v2
+from app.backbone.utils.montecarlo_utils import max_drawdown, monte_carlo_simulation_v2
 from app.backbone.utils.wfo_utils import run_strategy
 import pandas as pd
 from pandas import DataFrame
@@ -31,6 +33,27 @@ def _performance_from_df_to_obj(df_performance: DataFrame, date_from, date_to, r
     performance_for_db.Bot = bot # Clave foranea con Bot
     
     return performance_for_db
+
+def get_trade_df_from_db(trades, performance_id):
+    data = [{
+            'Id': trade.Id,
+            'BotPerformanceId': performance_id,
+            'Size': trade.Size,
+            'EntryBar': trade.EntryBar,
+            'ExitBar': trade.ExitBar,
+            'EntryPrice': trade.EntryPrice,
+            'ExitPrice': trade.ExitPrice,
+            'PnL': trade.PnL,
+            'ReturnPct': trade.ReturnPct,
+            'EntryTime': trade.EntryTime,
+            'ExitTime': trade.ExitTime,
+            'Duration': trade.Duration,
+            'Equity': trade.Equity,
+        }
+        for trade in trades
+    ]
+    
+    return pd.DataFrame(data)
 
 class BacktestService:
     def __init__(self):
@@ -71,19 +94,33 @@ class BacktestService:
                 bot_name = f'{strategy_name}_{ticker.Name}_{timeframe.Name}_{risk}'
                 
                 # Se fija si el bot existe para no correrlo de nuevo
-                result = self.bot_service.get_bot(
+                result_bot = self.bot_service.get_bot(
                     strategy_id=strategy.Id,
                     ticker_id=ticker.Id,
                     timeframe_id=timeframe.Id,
                     risk=risk   
                 )
                 
-                if not result.ok:
-                    return OperationResult(ok=False, message=result.message)
+                if not result_bot.ok:
+                    return OperationResult(ok=False, message=result_bot.message)
                 
-                if result.ok and result.item:
-                    continue # aca habria que avisar al front que el backtest ya existe
                 
+                bot = None
+                if result_bot.item:
+                    bot = result_bot.item.Id
+                    
+                    result_performance = self.get_performances_by_bot_dates(
+                        bot_id=bot, 
+                        date_from=date_from, 
+                        date_to=date_to
+                    )
+                    
+                    if not result_performance.ok:
+                        return OperationResult(ok=False, message=result_performance.message)
+                    
+                    if result_performance.item:
+                        continue
+
                 try:
                     prices = get_data(ticker.Name, timeframe.MetaTraderNumber, date_from, date_to)
                     
@@ -113,15 +150,16 @@ class BacktestService:
                     )
 
                     stats_per_symbol[ticker][ticker.Name] = stats                 
-                        
-                    bot = Bot(
-                        Name = bot_name,
-                        StrategyId = strategy.Id,
-                        TickerId = ticker.Id,
-                        TimeframeId = timeframe.Id,
-                        MetaTraderName = metatrader_name,
-                        Risk = risk
-                    )
+
+                    if not bot:
+                        bot = Bot(
+                            Name = bot_name,
+                            StrategyId = strategy.Id,
+                            TickerId = ticker.Id,
+                            TimeframeId = timeframe.Id,
+                            MetaTraderName = metatrader_name,
+                            Risk = risk
+                        )
 
                     bot_performance_for_db = _performance_from_df_to_obj(performance, date_from, date_to, risk, method, bot)
                     
@@ -129,7 +167,10 @@ class BacktestService:
                     trade_performance_for_db.BotPerformance = bot_performance_for_db # Clave foranea con BotPerformance
                     
                     with self.db_service.get_database() as db: # se crea todo de un saque para que haya un unico commit
-                        self.db_service.create(db, bot)
+                        
+                        if not result_bot.item:
+                            self.db_service.create(db, bot)
+                            
                         self.db_service.create(db, bot_performance_for_db)
                         self.db_service.create(db, trade_performance_for_db)
                         
@@ -161,8 +202,28 @@ class BacktestService:
             except Exception as e:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
+            
+    def get_performances_by_bot_dates(self, bot_id, date_from, date_to) -> OperationResult:
+        with self.db_service.get_database() as db:
+            
+            try:
+                bot_performance = (
+                    db.query(BotPerformance)
+                    .join(Bot, Bot.Id == bot_id)
+                    .filter(BotPerformance.DateFrom == date_from)
+                    .filter(BotPerformance.DateTo == date_to)
+                    .first()
+                )   
+                
+                result = OperationResult(ok=True, message='', item=bot_performance)
+                
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
      
-    def get_performance_by_bot(self, bot_id) -> OperationResult:
+    def get_performance_by_bot(self, bot_id) -> OperationResult: # cambiar bot_id por backtest_id
         with self.db_service.get_database() as db:
             
             try:
@@ -175,34 +236,30 @@ class BacktestService:
             except Exception as e:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
+            
+    def get_bot_performance_by_id(self, bot_performance_id) -> OperationResult: # cambiar bot_id por backtest_id
+        with self.db_service.get_database() as db:
+            
+            try:
+                bot_performance = self.db_service.get_by_filter(db, BotPerformance, Id=bot_performance_id)  
+                
+                result = OperationResult(ok=True, message='', item=bot_performance)
+                
+                return result
+            
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
            
-    def run_montecarlo_test(self, bot_id, n_simulations, initial_cash, threshold_ruin):
-        result = self.bot_service.get_bot_by_id(bot_id=bot_id)
+    def run_montecarlo_test(self, bot_performance_id, n_simulations, initial_cash, threshold_ruin):
+        result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)
         
         if not result.ok:
             return OperationResult(ok=False, message=result.message, item=None)
             
         try:
-            bot = result.item
-            data = [{
-                    'Id': trade.Id,
-                    'BotPerformanceId': trade.BotPerformanceId,
-                    'Size': trade.Size,
-                    'EntryBar': trade.EntryBar,
-                    'ExitBar': trade.ExitBar,
-                    'EntryPrice': trade.EntryPrice,
-                    'ExitPrice': trade.ExitPrice,
-                    'PnL': trade.PnL,
-                    'ReturnPct': trade.ReturnPct,
-                    'EntryTime': trade.EntryTime,
-                    'ExitTime': trade.ExitTime,
-                    'Duration': trade.Duration,
-                    'Equity': trade.Equity,
-                }
-                for trade in bot.BotPerformance.TradeHistory
-            ]
-
-            trades_history = pd.DataFrame(data)
+            performance = result.item
+            trades_history = get_trade_df_from_db(performance.TradeHistory, performance_id=performance.Id)
 
             mc = monte_carlo_simulation_v2(
                 equity_curve=trades_history.Equity,
@@ -226,8 +283,8 @@ class BacktestService:
                     Metric=row['metric'], 
                     ColumnName=row['ColumnName'], 
                     Value=row['Value'],
-                    BotPerformanceId=bot.BotPerformance.Id,
-                    BotPerformance=bot.BotPerformance
+                    BotPerformanceId=performance.Id,
+                    BotPerformance=performance
                 )
                 
                 for _, row in mc_long.iterrows()
@@ -242,5 +299,74 @@ class BacktestService:
             
             return OperationResult(ok=False, message=e, item=None)
         
-    def run_luck_test(self, bot_id, ):
-        pass     
+    def run_luck_test(self, bot_performance_id, trades_percent_to_remove):
+        
+        initial_cash = 100_000 # cambiar por bot_performance.initial_cash
+        
+        result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)
+        
+        if not result.ok:
+            return OperationResult(ok=False, message=result.message, item=None)
+            
+        # try:
+        performance = result.item
+    
+        trades = get_trade_df_from_db(performance.TradeHistory, performance_id=performance.Id)
+
+        trades_to_remove = round((trades_percent_to_remove/100) * trades.shape[0])
+        
+        top_best_trades = trades.sort_values(by='ReturnPct', ascending=False).head(trades_to_remove)
+        top_worst_trades = trades.sort_values(by='ReturnPct', ascending=False).tail(trades_to_remove)
+        
+        trades_to_remove *= 2
+        
+        filtered_trades = trades[
+            (~trades['Id'].isin(top_best_trades.Id))
+            & (~trades['Id'].isin(top_worst_trades.Id))
+            & (~trades['ReturnPct'].isna())
+        ].sort_values(by='ExitTime')
+
+        filtered_trades['Equity'] = 0
+        filtered_trades['Equity'] = initial_cash * (1 + filtered_trades.ReturnPct).cumprod()
+        
+        dd = -1 * max_drawdown(filtered_trades['Equity'])
+        ret = ((filtered_trades.iloc[-1]['Equity'] - filtered_trades.iloc[0]['Equity']) / filtered_trades.iloc[0]['Equity']) * 100
+        ret_dd = ret / dd
+        custom_metric = (ret / (1 + dd)) * np.log(1 + filtered_trades.shape[0])  
+        
+        x = np.arange(filtered_trades.shape[0]).reshape(-1, 1)
+        reg = LinearRegression().fit(x, filtered_trades['Equity'])
+        stability_ratio = reg.score(x, filtered_trades['Equity'])
+        
+        metrics = pd.DataFrame({
+            'strategy': [f'take_off_{trades_to_remove}_trades'],
+            # 'ticker': [ticker],
+            # 'interval': [interval],
+            'stability_ratio': [stability_ratio],
+            'return': [ret],
+            'drawdown': [dd],
+            'return_drawdown': [ret_dd],
+            'custom_metric': [custom_metric],
+        })
+    
+        return OperationResult(ok=True, message=None, item=metrics)
+
+        # except Exception as e:
+            
+        #     return OperationResult(ok=False, message=e, item=None)
+            
+            # # Create traces
+            # fig = go.Figure()
+            # fig.add_trace(go.Scatter(x=trades.ExitTime, y=trades.Equity,
+            #                     mode='lines',
+            #                     name='equity original'))
+
+            # fig.add_trace(go.Scatter(x=filtered_trades.ExitTime, y=filtered_trades.Equity,
+            #                     mode='lines',
+            #                     name=f'take_of_{trades_to_remove}_trades'))
+
+            # fig.update_layout(
+            #     title=f"{strategy_name}_{ticker}_{interval}",
+            #     xaxis_title='Time',
+            #     yaxis_title='Equity'
+            # )     

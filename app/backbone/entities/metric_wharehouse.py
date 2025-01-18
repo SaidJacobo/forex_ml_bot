@@ -16,7 +16,7 @@ class MetricWharehouse(Base):
     ColumnName = Column(String, nullable=False) 
     Value = Column(Float, nullable=False)
     
-    BotPerformance = relationship('BotPerformance', back_populates='Montecarlo', lazy='joined')
+    BotPerformance = relationship('BotPerformance', back_populates='Montecarlo', lazy='joined', uselist=False)
 
 
     def __repr__(self):

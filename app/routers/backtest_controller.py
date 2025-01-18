@@ -154,32 +154,35 @@ def get_bot_backtes(request: Request, bot_id: UUID):
         return {'error': result.message}
 
 
-@router.post('/backtest/bot/{bot_id}/montecarlo')
-def run_montecarlo_test(request: Request, bot_id:UUID):
+@router.post('/backtest/{bot_performance_id}/montecarlo')
+def run_montecarlo_test(request: Request, bot_performance_id:UUID):
     
     result = backtest_service.run_montecarlo_test(
-        bot_id=bot_id, 
+        bot_performance_id=bot_performance_id, 
         n_simulations=1000, # Viene del front
         initial_cash=10_000, # Viene del front
         threshold_ruin=0.9 # Viene del front
     )
     
+    
+    
     if result.ok:
+        montecarlo = result.item
+        bot_id = montecarlo[0].BotPerformance.Bot.Id
         return RedirectResponse(url=f'/backtest/bot/{bot_id}', status_code=303) # aca deberia enviarte a la pantalla del que acabas de correr
 
     else:
         return {'error': result.message}
     
-@router.post('/backtest/bot/{bot_id}/luck_test')
-def run_montecarlo_test(request: Request, bot_id:UUID):
+@router.post('/backtest/{performance_id}/luck_test')
+def run_luck_test(request: Request, performance_id:UUID):
     
-    result = backtest_service.run_montecarlo_test(
-        bot_id=bot_id, 
-        n_simulations=1000, # Viene del front
-        initial_cash=10_000, # Viene del front
-        threshold_ruin=0.9 # Viene del front
+    result = backtest_service.run_luck_test(
+        bot_performance_id=performance_id, 
+        trades_percent_to_remove=5 # Viene del front
     )
     
+    print(result)
     return RedirectResponse(url=f'/backtest/bot/{bot_id}', status_code=303) # aca deberia enviarte a la pantalla del que acabas de correr
      
     
