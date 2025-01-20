@@ -8,6 +8,7 @@ from app.backbone.database.db_service import DbService
 from app.backbone.entities.bot import Bot
 from app.backbone.entities.bot_performance import BotPerformance
 from app.backbone.entities.bot_trade_performance import BotTradePerformance
+from app.backbone.entities.luck_test import LuckTest
 from app.backbone.entities.metric_wharehouse import MetricWharehouse
 from app.backbone.entities.montecarlo_test import MontecarloTest
 from app.backbone.entities.strategy import Strategy
@@ -23,6 +24,8 @@ from app.backbone.utils.montecarlo_utils import max_drawdown, monte_carlo_simula
 from app.backbone.utils.wfo_utils import run_strategy
 import pandas as pd
 from pandas import DataFrame
+from sqlalchemy.orm import joinedload
+
 
 def _performance_from_df_to_obj(df_performance: DataFrame, date_from, date_to, risk, method, bot):
     print(df_performance)
@@ -35,7 +38,7 @@ def _performance_from_df_to_obj(df_performance: DataFrame, date_from, date_to, r
     
     return performance_for_db
 
-def get_trade_df_from_db(trades, performance_id):
+def get_trade_df_from_db(trades: List[Trade], performance_id):
     data = [{
             'Id': trade.Id,
             'BotPerformanceId': performance_id,
@@ -50,6 +53,8 @@ def get_trade_df_from_db(trades, performance_id):
             'ExitTime': trade.ExitTime,
             'Duration': trade.Duration,
             'Equity': trade.Equity,
+            'TopBest': trade.TopBest,
+            'TopWorst': trade.TopWorst,
         }
         for trade in trades
     ]
@@ -187,21 +192,19 @@ class BacktestService:
                     
     def get_performances_by_strategy_ticker(self, strategy_id, ticker_id) -> OperationResult:
         with self.db_service.get_database() as db:
-            
             try:
                 bot_performances = (
                     db.query(BotPerformance)
                     .join(Bot, Bot.Id == BotPerformance.BotId)
+                    .options(
+                        joinedload(BotPerformance.LuckTest).joinedload(LuckTest.LuckTestPerformance),
+                    )
                     .filter(Bot.TickerId == ticker_id)
                     .filter(Bot.StrategyId == strategy_id)
-                    .filter(BotPerformance.Method == 'wfo' or BotPerformance.Method == 'pa')
                     .all()
-                )   
-                
+                )
                 result = OperationResult(ok=True, message='', item=bot_performances)
-                
                 return result
-            
             except Exception as e:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
@@ -212,6 +215,9 @@ class BacktestService:
             try:
                 bot_performance = (
                     db.query(BotPerformance)
+                    .options(
+                        joinedload(BotPerformance.LuckTest).joinedload(LuckTest.LuckTestPerformance),
+                    )
                     .filter(BotPerformance.BotId == bot_id)
                     .filter(BotPerformance.DateFrom == date_from)
                     .filter(BotPerformance.DateTo == date_to)
@@ -310,7 +316,31 @@ class BacktestService:
       
     def get_luck_test_equity_curve(self, bot_performance_id, remove_only_good_luck=False):
         ''' filtra los mejores y peores trades de un bt y devuelve una nueva curva de equity'''
-        pass
+        result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)
+        if result.ok:
+            
+            try:
+                performance = result.item
+                
+                trades = get_trade_df_from_db(performance.TradeHistory, performance_id=performance.Id)
+                
+                if remove_only_good_luck:
+                    filtered_trades = trades[(trades['TopBest'].isna())].sort_values(by='ExitTime')
+                
+                else:
+                    filtered_trades = trades[(trades['TopBest'].isna()) & (trades['TopWorst'].isna())].sort_values(by='ExitTime')
+                
+                filtered_trades['Equity'] = 0
+                
+                filtered_trades['Equity'] = (performance.InitialCash * (1 + filtered_trades.ReturnPct).cumprod()).round(3)
+
+                equity = filtered_trades[['ExitTime','Equity']]
+                
+                return OperationResult(ok=True, message=None, item=equity)
+            
+            except Exception as e:    
+                return OperationResult(ok=False, message=e, item=None)
+            
       
     def run_luck_test(self, bot_performance_id, trades_percent_to_remove):
         
@@ -321,92 +351,82 @@ class BacktestService:
             if not result.ok:
                 return OperationResult(ok=False, message=result.message, item=None)
                 
-            # try:
-            performance = result.item
-        
-            trades = get_trade_df_from_db(performance.TradeHistory, performance_id=performance.Id)
+            try:
+                performance = result.item
+            
+                trades = get_trade_df_from_db(performance.TradeHistory, performance_id=performance.Id)
 
-            trades_to_remove = round((trades_percent_to_remove/100) * trades.shape[0])
-            
-            top_best_trades = trades.sort_values(by='ReturnPct', ascending=False).head(trades_to_remove)
-            top_worst_trades = trades.sort_values(by='ReturnPct', ascending=False).tail(trades_to_remove)
-            
-            trades_to_remove *= 2
-            
-            filtered_trades = trades[
-                (~trades['Id'].isin(top_best_trades.Id))
-                & (~trades['Id'].isin(top_worst_trades.Id))
-                & (~trades['ReturnPct'].isna())
-            ].sort_values(by='ExitTime')
-
-            filtered_trades['Equity'] = 0
-            filtered_trades['Equity'] = (performance.InitialCash * (1 + filtered_trades.ReturnPct).cumprod()).round(3)
-            
-            dd = np.abs(max_drawdown(filtered_trades['Equity'])).round(3)
-            ret = ((filtered_trades.iloc[-1]['Equity'] - filtered_trades.iloc[0]['Equity']) / filtered_trades.iloc[0]['Equity']) * 100
-            ret = round(ret, 3)
-            
-            ret_dd = (ret / dd).round(3)
-            custom_metric = ((ret / (1 + dd)) * np.log(1 + filtered_trades.shape[0])).round(3)
-            
-            x = np.arange(filtered_trades.shape[0]).reshape(-1, 1)
-            reg = LinearRegression().fit(x, filtered_trades['Equity'])
-            stability_ratio = round(reg.score(x, filtered_trades['Equity']), 3)
-            new_winrate = round((filtered_trades[filtered_trades['PnL']>0].size / filtered_trades['Id'].size), 3)
-            
-            luck_test_performance = BotPerformance(**{
-                'DateFrom': performance.DateFrom,
-                'DateTo': performance.DateTo,
-                'BotId': None,
-                'BotPerformanceId': performance.Id,
-                'StabilityRatio': stability_ratio,
-                'Trades': filtered_trades['Id'].size,
-                'Return': ret,
-                'Drawdown': dd,
-                'RreturnDd': ret_dd,
-                'WinRate': new_winrate,
-                'Duration': performance.Duration,
-                'CustomMetric': custom_metric,
-                'Method': 'luck_test',
-                'InitialCash': performance.InitialCash
-            })
-            
-            top_best_trades_id = top_best_trades['Id'].values
-            top_worst_trades_id = top_worst_trades['Id'].values
-            
-            with self.db_service.get_database() as db:
+                trades_to_remove = round((trades_percent_to_remove/100) * trades.shape[0])
                 
-                for trade in performance.TradeHistory:
-                    if trade.Id in top_best_trades_id:
-                        trade.TopBest = True
+                top_best_trades = trades.sort_values(by='ReturnPct', ascending=False).head(trades_to_remove)
+                top_worst_trades = trades.sort_values(by='ReturnPct', ascending=False).tail(trades_to_remove)
+                
+                trades_to_remove *= 2
+                
+                filtered_trades = trades[
+                    (~trades['Id'].isin(top_best_trades.Id))
+                    & (~trades['Id'].isin(top_worst_trades.Id))
+                    & (~trades['ReturnPct'].isna())
+                ].sort_values(by='ExitTime')
+
+                filtered_trades['Equity'] = 0
+                filtered_trades['Equity'] = (performance.InitialCash * (1 + filtered_trades.ReturnPct).cumprod()).round(3)
+                
+                dd = np.abs(max_drawdown(filtered_trades['Equity'])).round(3)
+                ret = ((filtered_trades.iloc[-1]['Equity'] - filtered_trades.iloc[0]['Equity']) / filtered_trades.iloc[0]['Equity']) * 100
+                ret = round(ret, 3)
+                
+                ret_dd = (ret / dd).round(3)
+                custom_metric = ((ret / (1 + dd)) * np.log(1 + filtered_trades.shape[0])).round(3)
+                
+                x = np.arange(filtered_trades.shape[0]).reshape(-1, 1)
+                reg = LinearRegression().fit(x, filtered_trades['Equity'])
+                stability_ratio = round(reg.score(x, filtered_trades['Equity']), 3)
+                new_winrate = round((filtered_trades[filtered_trades['PnL']>0].size / filtered_trades['Id'].size), 3)
+                
+                luck_test_performance = BotPerformance(**{
+                    'DateFrom': performance.DateFrom,
+                    'DateTo': performance.DateTo,
+                    'BotId': None,
+                    'StabilityRatio': stability_ratio,
+                    'Trades': filtered_trades['Id'].size,
+                    'Return': ret,
+                    'Drawdown': dd,
+                    'RreturnDd': ret_dd,
+                    'WinRate': new_winrate,
+                    'Duration': performance.Duration,
+                    'CustomMetric': custom_metric,
+                    'Method': 'luck_test',
+                    'InitialCash': performance.InitialCash
+                })
+                
+                luck_test = LuckTest(**{
+                    'BotPerformanceId': performance.Id,
+                    'TradesPercentToRemove': trades_percent_to_remove,
+                    'LuckTestPerformance': luck_test_performance
+                })
+                
+                top_best_trades_id = top_best_trades['Id'].values
+                top_worst_trades_id = top_worst_trades['Id'].values
+                
+                with self.db_service.get_database() as db:
+                    
+                    for trade in performance.TradeHistory:
+                        if trade.Id in top_best_trades_id:
+                            trade.TopBest = True
+                            
+                        if trade.Id in top_worst_trades_id:
+                            trade.TopWorst = True
                         
-                    if trade.Id in top_worst_trades_id:
-                        trade.TopWorst = True
+                        _ = self.db_service.update(db, Trade, trade)
                     
-                    _ = self.db_service.update(db, Trade, trade)
-                
-                luck_test_performance_db = self.db_service.create(db, luck_test_performance)
-                
-                    
-        
-            return OperationResult(ok=True, message=None, item=luck_test_performance_db)
-
-        # except Exception as e:
+                    luck_test_db = self.db_service.create(db, luck_test)
+                    _ = self.db_service.create(db, luck_test_performance)
             
-        #     return OperationResult(ok=False, message=e, item=None)
+                return OperationResult(ok=True, message=None, item=luck_test_db)
+
+            except Exception as e:
+                
+                return OperationResult(ok=False, message=e, item=None)
             
-            # # Create traces
-            # fig = go.Figure()
-            # fig.add_trace(go.Scatter(x=trades.ExitTime, y=trades.Equity,
-            #                     mode='lines',
-            #                     name='equity original'))
-
-            # fig.add_trace(go.Scatter(x=filtered_trades.ExitTime, y=filtered_trades.Equity,
-            #                     mode='lines',
-            #                     name=f'take_of_{trades_to_remove}_trades'))
-
-            # fig.update_layout(
-            #     title=f"{strategy_name}_{ticker}_{interval}",
-            #     xaxis_title='Time',
-            #     yaxis_title='Equity'
-            # )     
+  

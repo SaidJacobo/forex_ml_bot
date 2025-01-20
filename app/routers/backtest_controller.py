@@ -131,7 +131,9 @@ def get_bot_backtes(request: Request, bot_id: UUID, date_from: date = Query(...)
     result = backtest_service.get_performances_by_bot_dates(bot_id=bot_id, date_from=date_from, date_to=date_to)
     
     if result.ok:
-        bot_performance_vm = BotPerformanceVM.model_validate(result.item)
+        bot_performance = result.item
+        
+        bot_performance_vm = BotPerformanceVM.model_validate(bot_performance)
         bot_performance_vm.TradeHistory = sorted(bot_performance_vm.TradeHistory, key=lambda trade: trade.ExitTime)
 
         # Equity plot
@@ -148,9 +150,48 @@ def get_bot_backtes(request: Request, bot_id: UUID, date_from: date = Query(...)
         )
         equity_plot = fig.to_json()
         
+        # LuckTest Plot
+        result = backtest_service.get_luck_test_equity_curve(bot_performance_vm.Id)
+        if not result.ok:
+            return {'error': result.error}
+        
+        luck_test_equity_curve = result.item
+        
+        result = backtest_service.get_luck_test_equity_curve(bot_performance_vm.Id, remove_only_good_luck=True)
+        if not result.ok:
+            return {'error': result.error} 
+        
+        luck_test_remove_only_good = result.item
+       
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=dates, y=equity,
+                            mode='lines',
+                            name='Equity'))
+
+        fig.add_trace(go.Scatter(x=luck_test_equity_curve.ExitTime, y=luck_test_equity_curve.Equity,
+                            mode='lines',
+                            name=f'Luck test'))
+        
+        fig.add_trace(go.Scatter(x=luck_test_remove_only_good.ExitTime, y=luck_test_remove_only_good.Equity,
+                            mode='lines',
+                            name=f'Luck test (BL)'))
+
+        fig.update_layout(
+            xaxis_title='Time',
+            yaxis_title='Equity'
+        )   
+        luck_test_plot = fig.to_json()
+        
+        
+        
         return templates.TemplateResponse(
             "/backtest/view_bot_performance.html", 
-            {"request": request, "performance": bot_performance_vm, 'equity_plot': equity_plot}
+            {
+                "request": request, 
+                "performance": bot_performance_vm, 
+                'equity_plot': equity_plot,
+                'luck_test_plot': luck_test_plot
+            }
         )
         
     else:
