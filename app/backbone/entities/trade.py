@@ -20,6 +20,9 @@ class Trade(Base):
     ExitTime = Column(Date, nullable=False)
     Duration = Column(Integer, nullable=False)
     Equity = Column(Float, nullable=False)
+    TopBest = Column(Boolean, nullable=True)
+    TopWorst = Column(Boolean, nullable=True)
+    
 
     # Relación con BotPerformance
     BotPerformance = relationship('BotPerformance', back_populates='TradeHistory', lazy='joined')

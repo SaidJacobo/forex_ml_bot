@@ -4,7 +4,6 @@ from uuid import UUID
 from app.view_models.bot_trade_performance_vm import BotTradePerformamceVM
 from app.view_models.bot_vm import BotVM
 from datetime import date
-
 from app.view_models.montecarlo_vm import MontecarloVM
 from app.view_models.trade_vm import TradeVM
 
@@ -28,4 +27,5 @@ class BotPerformanceVM(BaseModel):
     Bot: BotVM
     BotTradePerformance: BotTradePerformamceVM
     TradeHistory: List[TradeVM]
-    Montecarlo: List[MontecarloVM]
+    MontecarloTest: Optional[MontecarloVM] = None
+    InitialCash: float

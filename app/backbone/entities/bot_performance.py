@@ -7,7 +7,7 @@ class BotPerformance(Base):
     __tablename__ = 'BotPerformances'
 
     Id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    BotId = Column(UUID(as_uuid=True), ForeignKey('Bots.Id'))
+    BotId = Column(UUID(as_uuid=True), ForeignKey('Bots.Id'), nullable=True)
     DateFrom = Column(Date, nullable=False)
     DateTo = Column(Date, nullable=False)
     Method = Column(String, nullable=False)
@@ -20,15 +20,19 @@ class BotPerformance(Base):
     WinRate = Column(Float, nullable=False)
     Duration = Column(Integer, nullable=False)
     Robust = Column(Boolean, nullable=True)
+    InitialCash = Column(Float, nullable=False)
 
     # Relación con otras tablas
     Bot = relationship('Bot', back_populates='BotPerformance', lazy='joined')
     BotTradePerformance = relationship('BotTradePerformance', back_populates='BotPerformance', lazy='joined', uselist=False)
     TradeHistory = relationship('Trade', back_populates='BotPerformance', lazy='joined')
-    Montecarlo = relationship('MetricWharehouse', back_populates='BotPerformance', lazy='joined')
+
+    # Relación con MontecarloTest
+    MontecarloTest = relationship('MontecarloTest', back_populates='BotPerformance', lazy='joined', uselist=False)
 
     def __repr__(self):
         return f"<BotPerformance(Id={self.Id}, Trades={self.Trades}, Return={self.Return}, Drawdown={self.Drawdown})>"
+
     
 
 

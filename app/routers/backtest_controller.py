@@ -72,6 +72,8 @@ async def create_post(
     date_from: str = Form(...),
     date_to: str = Form(...),
     risk: float = Form(...),
+    initial_cash: float = Form(...),
+    metatrader_name: str = Form(...),
 ):
        
     category_id = UUID(category_id) if category_id else None
@@ -99,14 +101,14 @@ async def create_post(
         timeframes = [ticker_service.get_timeframe_by_id(timeframe_id).item]
     
     backtest_service.run_backtest(
-        10_000, # viene del front
+        initial_cash,
         strategy,
         tickers,
         timeframes,
         date_from,
         date_to,
         'pa', # viene del front
-        'bbands', # viene del front
+        metatrader_name,
         risk,
     )
     
@@ -130,7 +132,9 @@ def get_bot_backtes(request: Request, bot_id: UUID, date_from: date = Query(...)
     
     if result.ok:
         bot_performance_vm = BotPerformanceVM.model_validate(result.item)
-        
+        bot_performance_vm.TradeHistory = sorted(bot_performance_vm.TradeHistory, key=lambda trade: trade.ExitTime)
+
+        # Equity plot
         dates = [trade.ExitTime for trade in bot_performance_vm.TradeHistory]
         equity = [trade.Equity for trade in bot_performance_vm.TradeHistory]
         
@@ -138,12 +142,10 @@ def get_bot_backtes(request: Request, bot_id: UUID, date_from: date = Query(...)
         fig.add_trace(go.Scatter(x=dates, y=equity,
                             mode='lines',
                             name='equity original'))
-
         fig.update_layout(
             xaxis_title='Time',
             yaxis_title='Equity'
         )
-        
         equity_plot = fig.to_json()
         
         return templates.TemplateResponse(
@@ -160,7 +162,6 @@ def run_montecarlo_test(request: Request, bot_performance_id:UUID):
     result = backtest_service.run_montecarlo_test(
         bot_performance_id=bot_performance_id, 
         n_simulations=1000, # Viene del front
-        initial_cash=10_000, # Viene del front
         threshold_ruin=0.9 # Viene del front
     )
     

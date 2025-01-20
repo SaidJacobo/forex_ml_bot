@@ -11,3 +11,4 @@ from .metric_wharehouse import MetricWharehouse
 from .bot_performance import BotPerformance
 from .trade import Trade
 from .bot import Bot
+from .montecarlo_test import MontecarloTest

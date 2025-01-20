@@ -9,6 +9,7 @@ from app.backbone.entities.bot import Bot
 from app.backbone.entities.bot_performance import BotPerformance
 from app.backbone.entities.bot_trade_performance import BotTradePerformance
 from app.backbone.entities.metric_wharehouse import MetricWharehouse
+from app.backbone.entities.montecarlo_test import MontecarloTest
 from app.backbone.entities.strategy import Strategy
 from app.backbone.entities.ticker import Ticker
 from app.backbone.entities.timeframe import Timeframe
@@ -30,7 +31,7 @@ def _performance_from_df_to_obj(df_performance: DataFrame, date_from, date_to, r
     performance_for_db.DateTo = date_to
     performance_for_db.Risk = risk
     performance_for_db.Method = method
-    performance_for_db.Bot = bot # Clave foranea con Bot
+    performance_for_db.Bot = bot
     
     return performance_for_db
 
@@ -59,7 +60,6 @@ class BacktestService:
     def __init__(self):
         self.db_service = DbService()
         self.bot_service = BotService()
-    
     
     def run_backtest(
         self,
@@ -164,6 +164,8 @@ class BacktestService:
                     stats_per_symbol[ticker][ticker.Name] = stats                 
 
                     bot_performance_for_db = _performance_from_df_to_obj(performance, date_from, date_to, risk, method, bot)
+                    bot_performance_for_db.InitialCash = initial_cash
+                    bot_performance_for_db.MetaTraderName = metatrader_name
                     
                     trade_performance_for_db = [BotTradePerformance(**row) for _, row in trade_performance.iterrows()].pop()
                     trade_performance_for_db.BotPerformance = bot_performance_for_db # Clave foranea con BotPerformance
@@ -192,6 +194,7 @@ class BacktestService:
                     .join(Bot, Bot.Id == BotPerformance.BotId)
                     .filter(Bot.TickerId == ticker_id)
                     .filter(Bot.StrategyId == strategy_id)
+                    .filter(BotPerformance.Method == 'wfo' or BotPerformance.Method == 'pa')
                     .all()
                 )   
                 
@@ -251,7 +254,7 @@ class BacktestService:
                 result = OperationResult(ok=False, message=e, item=None)
                 return result
            
-    def run_montecarlo_test(self, bot_performance_id, n_simulations, initial_cash, threshold_ruin):
+    def run_montecarlo_test(self, bot_performance_id, n_simulations, threshold_ruin):
         result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)
         
         if not result.ok:
@@ -265,7 +268,7 @@ class BacktestService:
                 equity_curve=trades_history.Equity,
                 trade_history=trades_history,
                 n_simulations=n_simulations,
-                initial_equity=initial_cash,
+                initial_equity=performance.InitialCash,
                 threshold_ruin=threshold_ruin,
                 return_raw_curves=False,
                 percentiles=[0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95],
@@ -277,79 +280,116 @@ class BacktestService:
             
             mc_long = mc.melt(id_vars=['metric'], var_name='ColumnName', value_name='Value')
             
+            montecarlo_test = MontecarloTest(
+                BotPerformanceId=performance.Id,
+                Simulations=n_simulations,
+                ThresholdRuin=threshold_ruin,
+            )
+            
             rows = [
                 MetricWharehouse(
                     Method='Montecarlo', 
                     Metric=row['metric'], 
                     ColumnName=row['ColumnName'], 
                     Value=row['Value'],
-                    BotPerformanceId=performance.Id,
-                    BotPerformance=performance
+                    MontecarloTest=montecarlo_test
                 )
                 
                 for _, row in mc_long.iterrows()
             ]
             
             with self.db_service.get_database() as db:
-                db.add_all(rows)
+                self.db_service.create(db, montecarlo_test)
+                self.db_service.create_all(db, rows)
             
             return OperationResult(ok=True, message='', item=rows)
         
         except Exception as e:
             
             return OperationResult(ok=False, message=e, item=None)
-        
+      
+    def get_luck_test_equity_curve(self, bot_performance_id, remove_only_good_luck=False):
+        ''' filtra los mejores y peores trades de un bt y devuelve una nueva curva de equity'''
+        pass
+      
     def run_luck_test(self, bot_performance_id, trades_percent_to_remove):
         
-        initial_cash = 100_000 # cambiar por bot_performance.initial_cash
-        
         result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)
-        
-        if not result.ok:
-            return OperationResult(ok=False, message=result.message, item=None)
+        if result.ok:
+            performance = result.item
             
-        # try:
-        performance = result.item
-    
-        trades = get_trade_df_from_db(performance.TradeHistory, performance_id=performance.Id)
+            if not result.ok:
+                return OperationResult(ok=False, message=result.message, item=None)
+                
+            # try:
+            performance = result.item
+        
+            trades = get_trade_df_from_db(performance.TradeHistory, performance_id=performance.Id)
 
-        trades_to_remove = round((trades_percent_to_remove/100) * trades.shape[0])
-        
-        top_best_trades = trades.sort_values(by='ReturnPct', ascending=False).head(trades_to_remove)
-        top_worst_trades = trades.sort_values(by='ReturnPct', ascending=False).tail(trades_to_remove)
-        
-        trades_to_remove *= 2
-        
-        filtered_trades = trades[
-            (~trades['Id'].isin(top_best_trades.Id))
-            & (~trades['Id'].isin(top_worst_trades.Id))
-            & (~trades['ReturnPct'].isna())
-        ].sort_values(by='ExitTime')
+            trades_to_remove = round((trades_percent_to_remove/100) * trades.shape[0])
+            
+            top_best_trades = trades.sort_values(by='ReturnPct', ascending=False).head(trades_to_remove)
+            top_worst_trades = trades.sort_values(by='ReturnPct', ascending=False).tail(trades_to_remove)
+            
+            trades_to_remove *= 2
+            
+            filtered_trades = trades[
+                (~trades['Id'].isin(top_best_trades.Id))
+                & (~trades['Id'].isin(top_worst_trades.Id))
+                & (~trades['ReturnPct'].isna())
+            ].sort_values(by='ExitTime')
 
-        filtered_trades['Equity'] = 0
-        filtered_trades['Equity'] = initial_cash * (1 + filtered_trades.ReturnPct).cumprod()
+            filtered_trades['Equity'] = 0
+            filtered_trades['Equity'] = (performance.InitialCash * (1 + filtered_trades.ReturnPct).cumprod()).round(3)
+            
+            dd = np.abs(max_drawdown(filtered_trades['Equity'])).round(3)
+            ret = ((filtered_trades.iloc[-1]['Equity'] - filtered_trades.iloc[0]['Equity']) / filtered_trades.iloc[0]['Equity']) * 100
+            ret = round(ret, 3)
+            
+            ret_dd = (ret / dd).round(3)
+            custom_metric = ((ret / (1 + dd)) * np.log(1 + filtered_trades.shape[0])).round(3)
+            
+            x = np.arange(filtered_trades.shape[0]).reshape(-1, 1)
+            reg = LinearRegression().fit(x, filtered_trades['Equity'])
+            stability_ratio = round(reg.score(x, filtered_trades['Equity']), 3)
+            new_winrate = round((filtered_trades[filtered_trades['PnL']>0].size / filtered_trades['Id'].size), 3)
+            
+            luck_test_performance = BotPerformance(**{
+                'DateFrom': performance.DateFrom,
+                'DateTo': performance.DateTo,
+                'BotId': None,
+                'BotPerformanceId': performance.Id,
+                'StabilityRatio': stability_ratio,
+                'Trades': filtered_trades['Id'].size,
+                'Return': ret,
+                'Drawdown': dd,
+                'RreturnDd': ret_dd,
+                'WinRate': new_winrate,
+                'Duration': performance.Duration,
+                'CustomMetric': custom_metric,
+                'Method': 'luck_test',
+                'InitialCash': performance.InitialCash
+            })
+            
+            top_best_trades_id = top_best_trades['Id'].values
+            top_worst_trades_id = top_worst_trades['Id'].values
+            
+            with self.db_service.get_database() as db:
+                
+                for trade in performance.TradeHistory:
+                    if trade.Id in top_best_trades_id:
+                        trade.TopBest = True
+                        
+                    if trade.Id in top_worst_trades_id:
+                        trade.TopWorst = True
+                    
+                    _ = self.db_service.update(db, Trade, trade)
+                
+                luck_test_performance_db = self.db_service.create(db, luck_test_performance)
+                
+                    
         
-        dd = -1 * max_drawdown(filtered_trades['Equity'])
-        ret = ((filtered_trades.iloc[-1]['Equity'] - filtered_trades.iloc[0]['Equity']) / filtered_trades.iloc[0]['Equity']) * 100
-        ret_dd = ret / dd
-        custom_metric = (ret / (1 + dd)) * np.log(1 + filtered_trades.shape[0])  
-        
-        x = np.arange(filtered_trades.shape[0]).reshape(-1, 1)
-        reg = LinearRegression().fit(x, filtered_trades['Equity'])
-        stability_ratio = reg.score(x, filtered_trades['Equity'])
-        
-        metrics = pd.DataFrame({
-            'strategy': [f'take_off_{trades_to_remove}_trades'],
-            # 'ticker': [ticker],
-            # 'interval': [interval],
-            'stability_ratio': [stability_ratio],
-            'return': [ret],
-            'drawdown': [dd],
-            'return_drawdown': [ret_dd],
-            'custom_metric': [custom_metric],
-        })
-    
-        return OperationResult(ok=True, message=None, item=metrics)
+            return OperationResult(ok=True, message=None, item=luck_test_performance_db)
 
         # except Exception as e:
             

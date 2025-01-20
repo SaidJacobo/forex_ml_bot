@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from typing import Iterable
 from sqlalchemy import UUID
 from sqlalchemy.orm import Session
 from backbone.database.db import get_db
@@ -23,6 +24,11 @@ class DbService:
     def create(self, db: Session, obj_in):
         db.add(obj_in)
         return obj_in
+
+    def create_all(self, db, iterable: Iterable[object]) -> None:
+        db.add_all(iterable)
+        
+        return None
 
     def update(self, db: Session, model, obj_in):
         db_obj = db.query(model).filter(model.Id == obj_in.Id).first()
