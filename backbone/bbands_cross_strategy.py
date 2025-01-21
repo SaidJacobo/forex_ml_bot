@@ -121,7 +121,6 @@ class BbandsCross(Strategy):
         logger.info('Entrando a next_live')
         actual_close = self.data.Close[-1]
         
-        logger.info('')
         logger.info(f'''
             Candle: {self.data.index[-1]},
             Close: {self.data.Close[-1]},
