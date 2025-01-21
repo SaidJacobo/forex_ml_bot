@@ -6,8 +6,11 @@ import numpy as np
 import MetaTrader5 as mt5
 import numpy as np
 import pandas as pd
-
 from backbone.utils.general_purpose import calculate_units_size, diff_pips
+
+import logging
+
+logger = logging.getLogger("ShortIBS")
 
 def ibs_indicator(high, low, close):
     high = pd.Series(high)
@@ -36,8 +39,7 @@ class ShortIBS(Strategy):
         self.atr = self.I(ta.ATR, self.data.High, self.data.Low, self.data.Close)
         self.sma = self.I(ta.SMA, self.data.Close, timeperiod=200)
         self.ibs = self.I(ibs_indicator, self.data.High, self.data.Low, self.data.Close)
-        
-    
+           
     def next(self):
         actual_date = self.data.index[-1]
         
@@ -79,11 +81,17 @@ class ShortIBS(Strategy):
                     size=units,
                     sl=sl_price
                 )
-                
-                
+                      
     def next_live(self, trader:TraderBot):       
         actual_ibs = self.ibs[-1]
         price = self.data.Close[-1]
+           
+        logger.info(f'''
+            Candle: {self.data.index[-1]},
+            Close: {self.data.Close[-1]},
+            IBS: {self.ibs[-1]},
+            SMA: {self.sma[-1]},
+        ''')
                   
         open_positions = trader.get_open_positions()
 
