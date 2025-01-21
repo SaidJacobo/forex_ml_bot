@@ -5,8 +5,11 @@ from backtesting.lib import crossover
 import numpy as np
 import MetaTrader5 as mt5
 import numpy as np
-
 from backbone.utils.general_purpose import calculate_units_size, diff_pips
+import logging
+
+logger = logging.getLogger("BbandsCross")
+
 
 np.seterr(divide='ignore')
 
@@ -114,8 +117,18 @@ class BbandsCross(Strategy):
                 )
                             
     def next_live(self, trader:TraderBot):
-            
+        
+        logger.info('Entrando a next_live')
         actual_close = self.data.Close[-1]
+        
+        logger.info('')
+        logger.info(f'''
+            Candle: {self.data.index[-1]},
+            Close: {self.data.Close[-1]},
+            Upper Band: {self.upper_band[-1]},
+            Lower Band: {self.lower_band[-1]},
+            SMA: {self.sma[-1]},
+        ''')
         
         open_positions = trader.get_open_positions()
         
