@@ -91,6 +91,7 @@ class ShortIBS(Strategy):
             Close: {self.data.Close[-1]},
             IBS: {self.ibs[-1]},
             SMA: {self.sma[-1]},
+            Params:{self.opt_params}
         ''')
                   
         open_positions = trader.get_open_positions()

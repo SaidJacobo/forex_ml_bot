@@ -5,8 +5,10 @@ from backtesting.lib import crossover
 import numpy as np
 import MetaTrader5 as mt5
 import numpy as np
-
 from backbone.utils.general_purpose import calculate_units_size, diff_pips
+import logging
+
+logger = logging.getLogger("Channel")
 
 
 class Channel(Strategy):
@@ -100,19 +102,20 @@ class Channel(Strategy):
                 
                 
     def next_live(self, trader:TraderBot):
-        actual_date = self.data.index[-1]
+        logger.info('Entrando a next_live')
+        logger.info(f'''
+            Candle: {self.data.index[-1]},
+            Close: {self.data.Close[-1]},
+            Upper Channel: {self.sma_upper_channel[-1]},
+            Lower Channel: {self.sma_lower_channel[-1]},
+            SMA: {self.sma_200[-1]},
+            Params:{self.opt_params}
+        ''')
+
         actual_close = self.data.Close[-1]
         
         open_positions = trader.get_open_positions()
         
-        if self.opt_params and actual_date in self.opt_params.keys():
-            for k, v in self.opt_params[actual_date].items():
-                setattr(self, k, v)
-            
-        self.sma_upper_channel = ta.SMA(self.data.High, timeperiod=self.sma_period)
-        self.sma_lower_channel = ta.SMA(self.data.Low, timeperiod=self.sma_period)
-        
-        actual_close = self.data.Close[-1]
         
         if open_positions:
             if open_positions[-1].type == mt5.ORDER_TYPE_BUY:

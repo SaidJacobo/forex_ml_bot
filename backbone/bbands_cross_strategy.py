@@ -119,7 +119,6 @@ class BbandsCross(Strategy):
     def next_live(self, trader:TraderBot):
         
         logger.info('Entrando a next_live')
-        actual_close = self.data.Close[-1]
         
         logger.info(f'''
             Candle: {self.data.index[-1]},
@@ -127,8 +126,10 @@ class BbandsCross(Strategy):
             Upper Band: {self.upper_band[-1]},
             Lower Band: {self.lower_band[-1]},
             SMA: {self.sma[-1]},
+            Params:{self.opt_params}
         ''')
         
+        actual_close = self.data.Close[-1]
         open_positions = trader.get_open_positions()
         
         if open_positions:
