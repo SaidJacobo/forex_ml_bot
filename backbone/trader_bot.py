@@ -79,7 +79,6 @@ class TraderBot:
         self.ticker = ticker
         self.timeframe = timeframe
 
-        self.opt_params = opt_params if opt_params != None else {}
         self.wfo_params = wfo_params
         self.strategy = strategy
         self.timezone = timezone
@@ -123,15 +122,18 @@ class TraderBot:
             volume_step: {self.volume_step},  
         ''')
         
-        self.opt_params["minimum_lot"] = [self.scaled_minimum_lot]
-        self.opt_params["maximum_lot"] = [self.scaled_maximum_lot]
-        self.opt_params["pip_value"] = [self.scaled_pip_value]
-        self.opt_params["contract_volume"] = [self.scaled_contract_volume]
-        self.opt_params["trade_tick_value_loss"] = [self.trade_tick_value_loss]
-        self.opt_params["volume_step"] = [self.volume_step]
-        self.opt_params["risk"] = [risk]
-
-        self.opt_params["maximize"] = optimization_function
+        # ADVERTENCIA esto deberia joinearse con all params
+        self.opt_params = opt_params #if opt_params != None else {} 
+        
+        self.all_params = {}
+        self.all_params["minimum_lot"] = self.scaled_minimum_lot
+        self.all_params["maximum_lot"] = self.scaled_maximum_lot
+        self.all_params["pip_value"] = self.scaled_pip_value
+        self.all_params["contract_volume"] = self.scaled_contract_volume
+        self.all_params["trade_tick_value_loss"] = self.trade_tick_value_loss
+        self.all_params["volume_step"] = self.volume_step
+        self.all_params["risk"] = risk
+        # self.all_params["maximize"] = optimization_function
         
         logger.info(f'{self.metatrader_name}: Inicializacion completada :)')
         
@@ -328,24 +330,27 @@ class TraderBot:
         commission = round(spread / avg_price, 5)
         leverage = self.leverages[self.ticker]
         
-        bt_train = Backtest(
-            df, self.strategy, commission=commission, cash=15_000, margin=1/leverage
-        )
+        if self.opt_params:
+            bt_train = Backtest(
+                df, self.strategy, commission=commission, cash=15_000, margin=1/leverage
+            )
 
-        logger.info(f'{self.metatrader_name}: Corriendo optimizacion. opt_params: {self.opt_params}')
-        stats_training = bt_train.optimize(**self.opt_params)
-        
-        opt_params = {
-            param: getattr(stats_training._strategy, param)
-            for param in self.opt_params.keys()
-            if param != "maximize"
-        }
+            logger.info(f'{self.metatrader_name}: Corriendo optimizacion. opt_params: {self.opt_params}')
+            stats_training = bt_train.optimize(**self.opt_params)
+            
+            opt_params = {
+                param: getattr(stats_training._strategy, param)
+                for param in self.opt_params.keys()
+                if param != "maximize"
+            }
 
-        logger.info(f'{self.metatrader_name}: Optimizacion completada. Parametros optimos: {opt_params}')
-        
-        logger.info(f'{self.metatrader_name}: Corriendo simulacion con parametros optimos')
+            logger.info(f'{self.metatrader_name}: Optimizacion completada. Parametros optimos: {opt_params}')
+            
+            logger.info(f'{self.metatrader_name}: Corriendo simulacion con parametros optimos')
+            
+
         bt = Backtest(df, self.strategy, commission=commission, cash=15_000, margin=1/leverage)
-        _ = bt.run(**opt_params)
+        _ = bt.run(**self.all_params)
         
         logger.info(f'{self.metatrader_name}: Ejecutando funcion next_live') 
         bt._results._strategy.next_live(trader=self)
