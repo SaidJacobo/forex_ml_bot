@@ -27,14 +27,24 @@ from pandas import DataFrame
 from sqlalchemy.orm import joinedload
 
 
-def _performance_from_df_to_obj(df_performance: DataFrame, date_from, date_to, risk, method, bot):
-    print(df_performance)
+def _performance_from_df_to_obj(
+    df_performance: DataFrame, 
+    date_from, 
+    date_to, 
+    risk, 
+    method, 
+    bot, 
+    initial_cash, 
+    metatrader_name
+    ):
     performance_for_db = [BotPerformance(**row) for _, row in df_performance.iterrows()].pop()
     performance_for_db.DateFrom = date_from
     performance_for_db.DateTo = date_to
     performance_for_db.Risk = risk
     performance_for_db.Method = method
     performance_for_db.Bot = bot
+    performance_for_db.InitialCash = initial_cash
+    performance_for_db.MetaTraderName = metatrader_name
     
     return performance_for_db
 
@@ -167,9 +177,16 @@ class BacktestService:
 
                     stats_per_symbol[ticker][ticker.Name] = stats                 
 
-                    bot_performance_for_db = _performance_from_df_to_obj(performance, date_from, date_to, risk, method, bot)
-                    bot_performance_for_db.InitialCash = initial_cash
-                    bot_performance_for_db.MetaTraderName = metatrader_name
+                    bot_performance_for_db = _performance_from_df_to_obj(
+                        performance, 
+                        date_from, 
+                        date_to, 
+                        risk, 
+                        method, 
+                        bot,
+                        initial_cash,
+                        metatrader_name
+                    )
                     
                     trade_performance_for_db = [BotTradePerformance(**row) for _, row in trade_performance.iterrows()].pop()
                     trade_performance_for_db.BotPerformance = bot_performance_for_db # Clave foranea con BotPerformance
@@ -188,7 +205,7 @@ class BacktestService:
                             self.db_service.create(db, trade)
                     
                 except Exception as e:
-                    return OperationResult(ok=False, message=e)
+                    return OperationResult(ok=False, message=e, item=None)
                     
     def get_performances_by_strategy_ticker(self, strategy_id, ticker_id) -> OperationResult:
         with self.db_service.get_database() as db:
@@ -359,8 +376,6 @@ class BacktestService:
             top_best_trades = trades.sort_values(by='ReturnPct', ascending=False).head(trades_to_remove)
             top_worst_trades = trades.sort_values(by='ReturnPct', ascending=False).tail(trades_to_remove)
             
-            trades_to_remove *= 2
-            
             filtered_trades = trades[
                 (~trades['Id'].isin(top_best_trades.Id))
                 & (~trades['Id'].isin(top_worst_trades.Id))
@@ -450,12 +465,19 @@ class BacktestService:
             performance_id=bot_performance.Id
         )
         
-        equity_curve = trade_history.Equity
-        
         long_trades = trade_history[trade_history['Size'] > 0]
         short_trades = trade_history[trade_history['Size'] < 0]
         
-        prob_trade = len(trade_history) / len(equity_curve)  # Probabilidad de realizar un trade
+        prices = get_data(
+            ticker.Name, 
+            timeframe.MetaTraderNumber, 
+            pd.Timestamp(bot_performance.DateFrom, tz="UTC"), 
+            pd.Timestamp(bot_performance.DateTo, tz="UTC")
+        )
+        
+        prices.index = pd.to_datetime(prices.index)
+        
+        prob_trade = len(trade_history) / len(prices)  # Probabilidad de realizar un trade
         prob_long = len(long_trades) / len(trade_history) if len(trade_history) > 0 else 0
         prob_short = len(short_trades) / len(trade_history) if len(trade_history) > 0 else 0
 
@@ -475,15 +497,6 @@ class BacktestService:
             'std_trade_duration': std_trade_duration,
         }
         
-        prices = get_data(
-            ticker.Name, 
-            timeframe.MetaTraderNumber, 
-            pd.Timestamp(bot_performance.DateFrom, tz="UTC"), 
-            pd.Timestamp(bot_performance.DateTo, tz="UTC")
-        )
-        
-        prices.index = pd.to_datetime(prices.index)
-
         mean_performance = pd.DataFrame()
         mean_trade_performance = pd.DataFrame()
         
@@ -502,9 +515,28 @@ class BacktestService:
             mean_performance = pd.concat([mean_performance, performance])
             mean_trade_performance = pd.concat([mean_trade_performance, trade_performance])
             
-        mean_performance = mean_performance.mean().round(3).reset_index()
-        mean_trade_performance = mean_trade_performance.mean().round(3).reset_index()
+        mean_performance = pd.DataFrame(mean_performance.mean().round(3))
+        mean_trade_performance = pd.DataFrame(mean_trade_performance.mean().round(3))
         
         print(mean_performance)
         print(mean_trade_performance)
+        
+        bot_performance_for_db = _performance_from_df_to_obj(
+            df_performance=mean_performance, 
+            date_from=bot_performance.DateFrom, 
+            date_to=bot_performance.DateTo, 
+            risk=bot_performance.Bot.Risk, 
+            method='random_test', 
+            bot=None,
+            initial_cash=bot_performance.InitialCash,
+            metatrader_name=None
+        )
+        
+        trade_performance_for_db = [BotTradePerformance(**row) for _, row in mean_trade_performance.iterrows()].pop()
+        trade_performance_for_db.BotPerformance = bot_performance_for_db # Clave foranea con BotPerformance
+        
+        with self.db_service.get_database() as db: # se crea todo de un saque para que haya un unico commit
+                
+            self.db_service.create(db, bot_performance_for_db)
+            self.db_service.create(db, trade_performance_for_db)
    

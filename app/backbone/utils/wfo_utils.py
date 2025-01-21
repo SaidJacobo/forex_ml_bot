@@ -180,22 +180,22 @@ def run_strategy(
     
     trade_performance = pd.DataFrame(
         {
-            "MeanWinningReturnPct":[winning_trades.ReturnPct.mean()],
-            "StdWinningReturnPct":[winning_trades.ReturnPct.std()],
-            "MeanLosingReturnPct":[losing_trades.ReturnPct.mean()],
-            "StdLosingReturnPct":[losing_trades.ReturnPct.std()],
+            "MeanWinningReturnPct":[winning_trades.ReturnPct.mean() * 100],
+            "StdWinningReturnPct":[winning_trades.ReturnPct.std() * 100],
+            "MeanLosingReturnPct":[losing_trades.ReturnPct.mean() * 100],
+            "StdLosingReturnPct":[losing_trades.ReturnPct.std() * 100],
             "MeanTradeDuration":[trades['Duration'].mean()],
             "StdTradeDuration":[trades['Duration'].std()],
             "LongWinrate": [long_winning_trades.size / long_trades.size if long_trades.size > 0 else 0],
-            "WinLongMeanReturnPct": [long_winning_trades.ReturnPct.mean()],
-            "WinLongStdReturnPct": [long_winning_trades.ReturnPct.std()],
-            "LoseLongMeanReturnPct": [long_losing_trades.ReturnPct.mean()],
-            "LoseLongStdReturnPct": [long_losing_trades.ReturnPct.std()],
+            "WinLongMeanReturnPct": [long_winning_trades.ReturnPct.mean() * 100],
+            "WinLongStdReturnPct": [long_winning_trades.ReturnPct.std() * 100],
+            "LoseLongMeanReturnPct": [long_losing_trades.ReturnPct.mean() * 100],
+            "LoseLongStdReturnPct": [long_losing_trades.ReturnPct.std() * 100],
             "ShortWinrate": [short_winning_trades.size / short_trades.size if short_trades.size > 0 else 0],
-            "WinShortMeanReturnPct": [short_winning_trades.ReturnPct.mean()],
-            "WinShortStdReturnPct": [short_winning_trades.ReturnPct.std()],
-            "LoseShortMeanReturnPct": [short_losing_trades.ReturnPct.mean()],
-            "LoseShortStdReturnPct": [short_losing_trades.ReturnPct.std()],
+            "WinShortMeanReturnPct": [short_winning_trades.ReturnPct.mean() * 100],
+            "WinShortStdReturnPct": [short_winning_trades.ReturnPct.std() * 100],
+            "LoseShortMeanReturnPct": [short_losing_trades.ReturnPct.mean() * 100],
+            "LoseShortStdReturnPct": [short_losing_trades.ReturnPct.std() * 100],
         }
     ).round(3)
     
