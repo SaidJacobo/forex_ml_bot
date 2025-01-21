@@ -229,6 +229,21 @@ def run_luck_test(request: Request, performance_id:UUID):
         return {'error': result.message}
      
     
+@router.post('/backtest/{performance_id}/random_test')
+def run_luck_test(request: Request, performance_id:UUID):
 
+    backtest_service.run_random_test(performance_id, n_iterations=100)
+    
+    # result = backtest_service.run_luck_test(
+    #     bot_performance_id=performance_id, 
+    #     trades_percent_to_remove=5 
+    # )
+    
+    # if result.ok:
+    #     referer = request.headers.get('referer')  # Obtiene la URL de la página anterior
+    #     return RedirectResponse(url=referer, status_code=303)
+
+    # else:
+    #     return {'error': result.message}
     
     
