@@ -16,7 +16,6 @@ from app.view_models.timeframe_vm import TimeframeVM
 from backbone.services.ticker_service import TickerService
 from backbone.services.backtest_service import BacktestService
 import plotly.graph_objects as go
-
 from uuid import UUID
 
 router = APIRouter()
@@ -133,6 +132,10 @@ def get_bot_backtes(request: Request, bot_id: UUID, date_from: date = Query(...)
     if result.ok:
         bot_performance = result.item
         
+        # print(bot_performance.RandomTest.RandomTestPerformance)
+        # print(bot_performance.RandomTest.RandomTestPerformance.BotTradePerformance)
+        
+        
         bot_performance_vm = BotPerformanceVM.model_validate(bot_performance)
         bot_performance_vm.TradeHistory = sorted(bot_performance_vm.TradeHistory, key=lambda trade: trade.ExitTime)
 
@@ -227,23 +230,15 @@ def run_luck_test(request: Request, performance_id:UUID):
 
     else:
         return {'error': result.message}
-     
-    
+        
 @router.post('/backtest/{performance_id}/random_test')
-def run_luck_test(request: Request, performance_id:UUID):
+def run_random_test(request: Request, performance_id:UUID):
 
-    backtest_service.run_random_test(performance_id, n_iterations=100)
+    result = backtest_service.run_random_test(performance_id, n_iterations=10)
     
-    # result = backtest_service.run_luck_test(
-    #     bot_performance_id=performance_id, 
-    #     trades_percent_to_remove=5 
-    # )
-    
-    # if result.ok:
-    #     referer = request.headers.get('referer')  # Obtiene la URL de la página anterior
-    #     return RedirectResponse(url=referer, status_code=303)
+    if result.ok:
+        referer = request.headers.get('referer')  # Obtiene la URL de la página anterior
+        return RedirectResponse(url=referer, status_code=303)
 
-    # else:
-    #     return {'error': result.message}
-    
-    
+    else:
+        return {'error': result.message}

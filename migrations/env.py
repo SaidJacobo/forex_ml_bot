@@ -18,6 +18,7 @@ from app.backbone.entities.bot_trade_performance import BotTradePerformance
 from app.backbone.entities.trade import Trade
 from app.backbone.entities.montecarlo_test import MontecarloTest
 from app.backbone.entities.luck_test import LuckTest
+from app.backbone.entities.random_test import RandomTest
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

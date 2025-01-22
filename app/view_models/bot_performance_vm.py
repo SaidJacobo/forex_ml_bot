@@ -6,6 +6,7 @@ from app.view_models.bot_vm import BotVM
 from datetime import date
 from app.view_models.luck_test_vm import LuckTestVM
 from app.view_models.montecarlo_vm import MontecarloVM
+from app.view_models.random_test_vm import RandomTestVM
 from app.view_models.trade_vm import TradeVM
 
 
@@ -31,3 +32,4 @@ class BotPerformanceVM(BaseModel):
     TradeHistory: Optional[List[TradeVM]] = None
     MontecarloTest: Optional[MontecarloVM] = None
     LuckTest: Optional[LuckTestVM] = None
+    RandomTest: Optional[RandomTestVM] = None

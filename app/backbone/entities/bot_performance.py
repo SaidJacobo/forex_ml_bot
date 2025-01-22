@@ -29,6 +29,7 @@ class BotPerformance(Base):
     TradeHistory = relationship('Trade', back_populates='BotPerformance', lazy='joined')
     MontecarloTest = relationship('MontecarloTest', back_populates='BotPerformance', lazy='joined', uselist=False)
     LuckTest = relationship('LuckTest', foreign_keys='LuckTest.BotPerformanceId', back_populates='BotPerformance', lazy='joined', uselist=False)
+    RandomTest = relationship('RandomTest', foreign_keys='RandomTest.BotPerformanceId', back_populates='BotPerformance', lazy='joined', uselist=False)
 
     def __repr__(self):
         return f"<BotPerformance(Id={self.Id}, Trades={self.Trades}, Return={self.Return}, Drawdown={self.Drawdown})>"

@@ -7,6 +7,7 @@ from .category import Category
 from .strategy import Strategy
 from .timeframe import Timeframe
 from .luck_test import LuckTest
+from .random_test import RandomTest
 from .bot_trade_performance import BotTradePerformance
 from .metric_wharehouse import MetricWharehouse
 from .trade import Trade

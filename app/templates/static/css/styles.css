@@ -60,7 +60,7 @@ body {
 }
 
 /* Títulos centrados */
-h1, h2, h3 {
+h1, h2, h3, h4 {
     text-align: center;
     margin-bottom: 1.5rem;
     color: var(--primary-text);
@@ -77,6 +77,10 @@ h2 {
 
 h3 {
     font-size: 1.5rem;
+}
+
+h4 {
+    font-size: 1.25rem;
 }
 
 /* Estilo de las Tablas */
@@ -191,7 +195,7 @@ h3 {
 
 
 /* Asegurar contraste en títulos */
-h1, h2, h3 {
+h1, h2, h3, h4 {
     color: var(--primary-text);
 }
 

@@ -11,6 +11,7 @@ from app.backbone.entities.bot_trade_performance import BotTradePerformance
 from app.backbone.entities.luck_test import LuckTest
 from app.backbone.entities.metric_wharehouse import MetricWharehouse
 from app.backbone.entities.montecarlo_test import MontecarloTest
+from app.backbone.entities.random_test import RandomTest
 from app.backbone.entities.strategy import Strategy
 from app.backbone.entities.ticker import Ticker
 from app.backbone.entities.timeframe import Timeframe
@@ -215,6 +216,8 @@ class BacktestService:
                     .join(Bot, Bot.Id == BotPerformance.BotId)
                     .options(
                         joinedload(BotPerformance.LuckTest).joinedload(LuckTest.LuckTestPerformance),
+                        joinedload(BotPerformance.RandomTest).joinedload(RandomTest.RandomTestPerformance),
+
                     )
                     .filter(Bot.TickerId == ticker_id)
                     .filter(Bot.StrategyId == strategy_id)
@@ -229,25 +232,26 @@ class BacktestService:
     def get_performances_by_bot_dates(self, bot_id, date_from, date_to) -> OperationResult:
         with self.db_service.get_database() as db:
             
-            try:
-                bot_performance = (
-                    db.query(BotPerformance)
-                    .options(
-                        joinedload(BotPerformance.LuckTest).joinedload(LuckTest.LuckTestPerformance),
-                    )
-                    .filter(BotPerformance.BotId == bot_id)
-                    .filter(BotPerformance.DateFrom == date_from)
-                    .filter(BotPerformance.DateTo == date_to)
-                    .first()
-                )   
-                
-                result = OperationResult(ok=True, message='', item=bot_performance)
-                
-                return result
+            # try:
+            bot_performance = (
+                db.query(BotPerformance)
+                .options(
+                    joinedload(BotPerformance.RandomTest).joinedload(RandomTest.RandomTestPerformance),
+                    joinedload(BotPerformance.LuckTest).joinedload(LuckTest.LuckTestPerformance),
+                )
+                .filter(BotPerformance.BotId == bot_id)
+                .filter(BotPerformance.DateFrom == date_from)
+                .filter(BotPerformance.DateTo == date_to)
+                .first()
+            )
             
-            except Exception as e:
-                result = OperationResult(ok=False, message=e, item=None)
-                return result
+            result = OperationResult(ok=True, message='', item=bot_performance)
+            
+            return result
+            
+            # except Exception as e:
+            #     result = OperationResult(ok=False, message=e, item=None)
+            #     return result
      
     def get_performance_by_bot(self, bot_id) -> OperationResult: # cambiar bot_id por backtest_id
         with self.db_service.get_database() as db:
@@ -451,92 +455,110 @@ class BacktestService:
         ticker = bot_performance.Bot.Ticker
         timeframe = bot_performance.Bot.Timeframe
         
-        with open("./configs/leverages.yml", "r") as file_name:
-            leverages = yaml.safe_load(file_name)
+        try:
+            with open("./configs/leverages.yml", "r") as file_name:
+                leverages = yaml.safe_load(file_name)
+                
+            leverage = leverages[ticker.Name]
             
-        leverage = leverages[ticker.Name]
-        
-        strategy_path = 'app.backbone.strategies.random_trader.RandomTrader'
-        
-        strategy_func = load_function(strategy_path)
-        
-        trade_history = get_trade_df_from_db(
-            bot_performance.TradeHistory, 
-            performance_id=bot_performance.Id
-        )
-        
-        long_trades = trade_history[trade_history['Size'] > 0]
-        short_trades = trade_history[trade_history['Size'] < 0]
-        
-        prices = get_data(
-            ticker.Name, 
-            timeframe.MetaTraderNumber, 
-            pd.Timestamp(bot_performance.DateFrom, tz="UTC"), 
-            pd.Timestamp(bot_performance.DateTo, tz="UTC")
-        )
-        
-        prices.index = pd.to_datetime(prices.index)
-        
-        prob_trade = len(trade_history) / len(prices)  # Probabilidad de realizar un trade
-        prob_long = len(long_trades) / len(trade_history) if len(trade_history) > 0 else 0
-        prob_short = len(short_trades) / len(trade_history) if len(trade_history) > 0 else 0
+            strategy_path = 'app.backbone.strategies.random_trader.RandomTrader'
+            
+            strategy_func = load_function(strategy_path)
+            
+            trade_history = get_trade_df_from_db(
+                bot_performance.TradeHistory, 
+                performance_id=bot_performance.Id
+            )
+            
+            long_trades = trade_history[trade_history['Size'] > 0]
+            short_trades = trade_history[trade_history['Size'] < 0]
+            
+            prices = get_data(
+                ticker.Name, 
+                timeframe.MetaTraderNumber, 
+                pd.Timestamp(bot_performance.DateFrom, tz="UTC"), 
+                pd.Timestamp(bot_performance.DateTo, tz="UTC")
+            )
+            
+            prices.index = pd.to_datetime(prices.index)
+            
+            prob_trade = len(trade_history) / len(prices)  # Probabilidad de realizar un trade
+            prob_long = len(long_trades) / len(trade_history) if len(trade_history) > 0 else 0
+            prob_short = len(short_trades) / len(trade_history) if len(trade_history) > 0 else 0
 
-        timeframe_hours = bot_performance.Bot.Timeframe.Hours
-        
-        trade_history["Duration"] = pd.to_timedelta(trade_history["Duration"])
-        trade_history["Bars"] = (trade_history["Duration"] / pd.Timedelta(hours=timeframe_hours)).apply(lambda x: int(round(x)))
+            timeframe_hours = bot_performance.Bot.Timeframe.Hours
+            
+            trade_history["Duration"] = pd.to_timedelta(trade_history["Duration"])
+            trade_history["Bars"] = (trade_history["Duration"] / pd.Timedelta(hours=timeframe_hours)).apply(lambda x: int(round(x)))
 
-        avg_trade_duration = trade_history.Bars.mean()
-        std_trade_duration = trade_history.Bars.std()
+            avg_trade_duration = trade_history.Bars.mean()
+            std_trade_duration = trade_history.Bars.std()
 
-        params = {
-            'prob_trade': prob_trade,
-            'prob_long': prob_long,
-            'prob_short': prob_short,
-            'avg_trade_duration': avg_trade_duration,
-            'std_trade_duration': std_trade_duration,
-        }
-        
-        mean_performance = pd.DataFrame()
-        mean_trade_performance = pd.DataFrame()
-        
-        for _ in range(0, n_iterations):
-            performance, trade_performance, stats = run_strategy(
-                strategy=strategy_func,
-                ticker=ticker.Name,
+            params = {
+                'prob_trade': prob_trade,
+                'prob_long': prob_long,
+                'prob_short': prob_short,
+                'avg_trade_duration': avg_trade_duration,
+                'std_trade_duration': std_trade_duration,
+            }
+            
+            mean_performance = pd.DataFrame()
+            mean_trade_performance = pd.DataFrame()
+            
+            for _ in range(0, n_iterations):
+                performance, trade_performance, stats = run_strategy(
+                    strategy=strategy_func,
+                    ticker=ticker.Name,
+                    risk=bot_performance.Bot.Risk,
+                    commission=ticker.Commission,
+                    prices=prices,
+                    initial_cash=bot_performance.InitialCash,
+                    margin=1 / leverage, 
+                    opt_params=params
+                )
+
+                mean_performance = pd.concat([mean_performance, performance])
+                mean_trade_performance = pd.concat([mean_trade_performance, trade_performance])
+                
+            mean_performance = mean_performance.mean().round(3).to_frame().T
+            mean_trade_performance = mean_trade_performance.mean().round(3).to_frame().T
+            
+            random_test_performance_for_db = _performance_from_df_to_obj(
+                df_performance=mean_performance,
+                date_from=bot_performance.DateFrom,
+                date_to=bot_performance.DateTo,
                 risk=bot_performance.Bot.Risk,
-                commission=ticker.Commission,
-                prices=prices,
+                method='random_test',
+                bot=None,
                 initial_cash=bot_performance.InitialCash,
-                margin=1 / leverage, 
-                opt_params=params
+                metatrader_name=None
             )
 
-            mean_performance = pd.concat([mean_performance, performance])
-            mean_trade_performance = pd.concat([mean_trade_performance, trade_performance])
-            
-        mean_performance = pd.DataFrame(mean_performance.mean().round(3))
-        mean_trade_performance = pd.DataFrame(mean_trade_performance.mean().round(3))
-        
-        print(mean_performance)
-        print(mean_trade_performance)
-        
-        bot_performance_for_db = _performance_from_df_to_obj(
-            df_performance=mean_performance, 
-            date_from=bot_performance.DateFrom, 
-            date_to=bot_performance.DateTo, 
-            risk=bot_performance.Bot.Risk, 
-            method='random_test', 
-            bot=None,
-            initial_cash=bot_performance.InitialCash,
-            metatrader_name=None
-        )
-        
-        trade_performance_for_db = [BotTradePerformance(**row) for _, row in mean_trade_performance.iterrows()].pop()
-        trade_performance_for_db.BotPerformance = bot_performance_for_db # Clave foranea con BotPerformance
-        
-        with self.db_service.get_database() as db: # se crea todo de un saque para que haya un unico commit
+            random_test_trade_performance_for_db = [BotTradePerformance(**row) for _, row in mean_trade_performance.iterrows()].pop()
+
+            with self.db_service.get_database() as db:
+                # Primero, guardar random_test_performance_for_db
+                random_test_performance_for_db = self.db_service.create(db, random_test_performance_for_db)
                 
-            self.db_service.create(db, bot_performance_for_db)
-            self.db_service.create(db, trade_performance_for_db)
+                # Ahora que tenemos el ID, podemos asignarlo a random_test
+                random_test = RandomTest(
+                    Iterations=n_iterations,
+                    BotPerformanceId=bot_performance.Id,
+                    RandomTestPerformance=random_test_performance_for_db  # Asignar el ID después de guardar
+                )
+                
+                # Guardar random_test ahora con la relación correcta
+                self.db_service.create(db, random_test)
+
+                # Ahora guardar random_test_trade_performance_for_db con las relaciones correctas
+                random_test_trade_performance_for_db.BotPerformance = random_test_performance_for_db
+                random_test_trade_performance_for_db.BotPerformanceId = random_test_performance_for_db.Id
+                random_test_trade_performance_for_db.RandomTest = random_test
+                self.db_service.create(db, random_test_trade_performance_for_db)
+                
+            return OperationResult(ok=True, message=None, item=None)
+
+        except Exception as e:
+            
+            return OperationResult(ok=False, message=e, item=None)
    
