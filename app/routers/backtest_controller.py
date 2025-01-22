@@ -1,5 +1,7 @@
 from collections import defaultdict
 from datetime import date
+import json
+import os
 from typing import Optional
 from fastapi import APIRouter, Query
 from fastapi import Form, Request
@@ -131,11 +133,7 @@ def get_bot_backtes(request: Request, bot_id: UUID, date_from: date = Query(...)
     
     if result.ok:
         bot_performance = result.item
-        
-        # print(bot_performance.RandomTest.RandomTestPerformance)
-        # print(bot_performance.RandomTest.RandomTestPerformance.BotTradePerformance)
-        
-        
+            
         bot_performance_vm = BotPerformanceVM.model_validate(bot_performance)
         bot_performance_vm.TradeHistory = sorted(bot_performance_vm.TradeHistory, key=lambda trade: trade.ExitTime)
 
@@ -147,45 +145,32 @@ def get_bot_backtes(request: Request, bot_id: UUID, date_from: date = Query(...)
         fig.add_trace(go.Scatter(x=dates, y=equity,
                             mode='lines',
                             name='equity original'))
+        
         fig.update_layout(
             xaxis_title='Time',
             yaxis_title='Equity'
         )
         equity_plot = fig.to_json()
         
-        # LuckTest Plot
-        result = backtest_service.get_luck_test_equity_curve(bot_performance_vm.Id)
-        if not result.ok:
-            return {'error': result.error}
+        str_date_from = str(bot_performance.DateFrom).replace('-','')
+        str_date_to = str(bot_performance.DateFrom).replace('-','')
+        file_name=f'{bot_performance.Bot.Name}_{str_date_from}_{str_date_to}.html'
         
-        luck_test_equity_curve = result.item
+        luck_test_plot = None
+        luck_plot_path = './app/templates/static/luck_test_plots'
         
-        result = backtest_service.get_luck_test_equity_curve(bot_performance_vm.Id, remove_only_good_luck=True)
-        if not result.ok:
-            return {'error': result.error} 
-        
-        luck_test_remove_only_good = result.item
-       
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=dates, y=equity,
-                            mode='lines',
-                            name='Equity'))
+        if os.path.exists(os.path.join(luck_plot_path, file_name)):
+            with open(os.path.join(luck_plot_path, file_name), 'r') as f:
+                luck_test_plot = json.load(f)  # Cargar el contenido JSON
 
-        fig.add_trace(go.Scatter(x=luck_test_equity_curve.ExitTime, y=luck_test_equity_curve.Equity,
-                            mode='lines',
-                            name=f'Luck test'))
-        
-        fig.add_trace(go.Scatter(x=luck_test_remove_only_good.ExitTime, y=luck_test_remove_only_good.Equity,
-                            mode='lines',
-                            name=f'Luck test (BL)'))
+        correlation_test_plot = None
+        correlation_plot_path = './app/templates/static/correlation_plots'
+        if os.path.exists(os.path.join(correlation_plot_path, file_name)):
+            with open(os.path.join(correlation_plot_path, file_name), 'r') as f:
+                correlation_test_plot = json.load(f)  # Cargar el contenido JSON
+                
+            bot_performance_vm.HasCorrelationTest = True
 
-        fig.update_layout(
-            xaxis_title='Time',
-            yaxis_title='Equity'
-        )   
-        luck_test_plot = fig.to_json()
-        
-        
         
         return templates.TemplateResponse(
             "/backtest/view_bot_performance.html", 
@@ -193,7 +178,8 @@ def get_bot_backtes(request: Request, bot_id: UUID, date_from: date = Query(...)
                 "request": request, 
                 "performance": bot_performance_vm, 
                 'equity_plot': equity_plot,
-                'luck_test_plot': luck_test_plot
+                'luck_test_plot': luck_test_plot or {"data": [], "layout": {}},
+                'correlation_test_plot': correlation_test_plot or {"data": [], "layout": {}},
             }
         )
         
@@ -242,3 +228,16 @@ def run_random_test(request: Request, performance_id:UUID):
 
     else:
         return {'error': result.message}
+
+@router.post('/backtest/{performance_id}/correlation_test')
+def run_correlation_test(request: Request, performance_id:UUID):
+
+    result = backtest_service.run_correlation_test(performance_id)
+    
+    if result.ok:
+        referer = request.headers.get('referer')  # Obtiene la URL de la página anterior
+        return RedirectResponse(url=referer, status_code=303)
+
+    else:
+        return {'error': result.message}
+    

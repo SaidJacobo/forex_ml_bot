@@ -33,3 +33,4 @@ class BotPerformanceVM(BaseModel):
     MontecarloTest: Optional[MontecarloVM] = None
     LuckTest: Optional[LuckTestVM] = None
     RandomTest: Optional[RandomTestVM] = None
+    HasCorrelationTest: bool = False

@@ -1,5 +1,6 @@
 
 
+import os
 from typing import List
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -26,6 +27,8 @@ from app.backbone.utils.wfo_utils import run_strategy
 import pandas as pd
 from pandas import DataFrame
 from sqlalchemy.orm import joinedload
+import plotly.express as px
+import plotly.graph_objects as go
 
 
 def _performance_from_df_to_obj(
@@ -231,27 +234,26 @@ class BacktestService:
             
     def get_performances_by_bot_dates(self, bot_id, date_from, date_to) -> OperationResult:
         with self.db_service.get_database() as db:
-            
-            # try:
-            bot_performance = (
-                db.query(BotPerformance)
-                .options(
-                    joinedload(BotPerformance.RandomTest).joinedload(RandomTest.RandomTestPerformance),
-                    joinedload(BotPerformance.LuckTest).joinedload(LuckTest.LuckTestPerformance),
+            try:
+                bot_performance = (
+                    db.query(BotPerformance)
+                    .options(
+                        joinedload(BotPerformance.RandomTest).joinedload(RandomTest.RandomTestPerformance),
+                        joinedload(BotPerformance.LuckTest).joinedload(LuckTest.LuckTestPerformance),
+                    )
+                    .filter(BotPerformance.BotId == bot_id)
+                    .filter(BotPerformance.DateFrom == date_from)
+                    .filter(BotPerformance.DateTo == date_to)
+                    .first()
                 )
-                .filter(BotPerformance.BotId == bot_id)
-                .filter(BotPerformance.DateFrom == date_from)
-                .filter(BotPerformance.DateTo == date_to)
-                .first()
-            )
+                
+                result = OperationResult(ok=True, message='', item=bot_performance)
+                
+                return result
             
-            result = OperationResult(ok=True, message='', item=bot_performance)
-            
-            return result
-            
-            # except Exception as e:
-            #     result = OperationResult(ok=False, message=e, item=None)
-            #     return result
+            except Exception as e:
+                result = OperationResult(ok=False, message=e, item=None)
+                return result
      
     def get_performance_by_bot(self, bot_id) -> OperationResult: # cambiar bot_id por backtest_id
         with self.db_service.get_database() as db:
@@ -439,12 +441,80 @@ class BacktestService:
                 
                 luck_test_db = self.db_service.create(db, luck_test)
                 _ = self.db_service.create(db, luck_test_performance)
+            
+            self._create_luck_test_plot(bot_performance_id=bot_performance_id)
         
             return OperationResult(ok=True, message=None, item=luck_test_db)
 
         except Exception as e:
             
             return OperationResult(ok=False, message=e, item=None)
+  
+    def _create_luck_test_plot(self, bot_performance_id):
+        print('Creando grafico de luck test')
+        result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)
+        if not result.ok:
+            return result
+        
+        print('Bot performance obtenida correctamente')
+        bot_performance = result.item
+        bot_performance.TradeHistory = sorted(bot_performance.TradeHistory, key=lambda trade: trade.ExitTime)
+
+
+        # Equity plot
+        dates = [trade.ExitTime for trade in bot_performance.TradeHistory]
+        equity = [trade.Equity for trade in bot_performance.TradeHistory]
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=dates, y=equity,
+                            mode='lines',
+                            name='Equity'))
+
+
+        print('Calculando curva de luck test')
+        result = self.get_luck_test_equity_curve(bot_performance_id)
+        # if not result.ok:
+        #     return result
+
+        luck_test_equity_curve = result.item
+        print(luck_test_equity_curve)
+        
+        print('Calculando curva de luck test (BL)')
+        result = self.get_luck_test_equity_curve(bot_performance_id, remove_only_good_luck=True)
+        if not result.ok:
+            return result
+        
+        luck_test_remove_only_good = result.item
+    
+        fig.add_trace(go.Scatter(x=luck_test_equity_curve.ExitTime, y=luck_test_equity_curve.Equity,
+                            mode='lines',
+                            name=f'Luck test'))
+        
+        fig.add_trace(go.Scatter(x=luck_test_remove_only_good.ExitTime, y=luck_test_remove_only_good.Equity,
+                            mode='lines',
+                            name=f'Luck test (BL)'))
+
+        fig.update_layout(
+            xaxis_title='Time',
+            yaxis_title='Equity'
+        )   
+        
+        str_date_from = str(bot_performance.DateFrom).replace('-','')
+        str_date_to = str(bot_performance.DateFrom).replace('-','')
+        file_name=f'{bot_performance.Bot.Name}_{str_date_from}_{str_date_to}.html'
+        
+        print('Guardando grafico')
+        
+        plot_path = './app/templates/static/luck_test_plots'
+        
+        if not os.path.exists(plot_path):
+            os.mkdir(plot_path)
+
+        json_content = fig.to_json()
+
+        with open(os.path.join(plot_path, file_name), 'w') as f:
+            f.write(json_content)
+      
             
     def run_random_test(self, bot_performance_id, n_iterations):
         result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)
@@ -561,4 +631,111 @@ class BacktestService:
         except Exception as e:
             
             return OperationResult(ok=False, message=e, item=None)
+   
+    def run_correlation_test(self, bot_performance_id):
+        
+        result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)
+        if not result.ok:
+            return result
+        
+        bot_performance = result.item
+        
+        trade_history = get_trade_df_from_db(
+            bot_performance.TradeHistory, 
+            performance_id=bot_performance.Id
+        )
+        
+        prices = get_data(
+            bot_performance.Bot.Ticker.Name, 
+            bot_performance.Bot.Timeframe.MetaTraderNumber, 
+            pd.Timestamp(bot_performance.DateFrom, tz="UTC"), 
+            pd.Timestamp(bot_performance.DateTo, tz="UTC")
+        )
+
+        # Transformar el índice al formato mensual
+        equity = trade_history[['ExitTime', 'Equity']]
+                
+        equity['month'] = pd.to_datetime(equity['ExitTime']).dt.to_period('M')
+        equity = equity.groupby(by='month').agg({'Equity': 'last'})
+        equity['perc_diff'] = (equity['Equity'] - equity['Equity'].shift(1)) / equity['Equity'].shift(1)
+        equity.fillna(0, inplace=True)
+
+        # Crear un rango completo de meses con PeriodIndex
+        full_index = pd.period_range(start=equity.index.min(), end=equity.index.max(), freq='M')
+
+        # Reindexar usando el rango completo de PeriodIndex
+        equity = equity.reindex(full_index)
+        equity = equity.ffill()
+
+        prices['month'] = pd.to_datetime(prices.index)
+        prices['month'] = prices['month'].dt.to_period('M')
+        prices = prices.groupby(by='month').agg({'Close':'last'})
+        prices['perc_diff'] = (prices['Close'] - prices['Close'].shift(1)) / prices['Close'].shift(1)
+        prices.fillna(0, inplace=True)
+
+        prices = prices[prices.index.isin(equity.index)]
+
+        x = np.array(prices['perc_diff']).reshape(-1, 1)
+        y = equity['perc_diff']
+
+        # Ajustar el modelo de regresión lineal
+        reg = LinearRegression().fit(x, y)
+        determination = reg.score(x, y)
+        correlation = np.corrcoef(prices['perc_diff'], equity['perc_diff'])[0, 1]
+
+        # Predicciones para la recta
+        x_range = np.linspace(x.min(), x.max(), 100).reshape(-1, 1)  # Rango de X para la recta
+        y_pred = reg.predict(x_range)  # Valores predichos de Y
+
+        result = pd.DataFrame({
+            'correlation': [correlation],
+            'determination': [determination],
+        }).round(3)
+
+        # Crear el gráfico
+        fig = px.scatter(
+            x=prices['perc_diff'], y=equity['perc_diff'],
+        )
+
+        # Agregar la recta de regresión
+        fig.add_scatter(x=x_range.flatten(), y=y_pred, mode='lines', name='Regresión Lineal')
+
+        # Personalización
+        fig.update_layout(
+            xaxis_title='Monthly Price Variation',
+            yaxis_title='Monthly Returns'
+        )
+
+        # Agregar anotación con los valores R² y Pearson
+        fig.add_annotation(
+            x=0.95,  # Posición en el gráfico (en unidades de fracción del eje)
+            y=0.95,
+            xref='paper', yref='paper',
+            text=f"<b>r = {correlation:.3f}<br>R² = {determination:.3f}</b>",
+            showarrow=False,
+            font=dict(size=16, color="black"),
+            align="left",
+            bordercolor="black",
+            borderwidth=1,
+            borderpad=4,
+            bgcolor="white",
+            opacity=0.8
+        )
+
+        str_date_from = str(bot_performance.DateFrom).replace('-','')
+        str_date_to = str(bot_performance.DateFrom).replace('-','')
+        file_name=f'{bot_performance.Bot.Name}_{str_date_from}_{str_date_to}.html'
+        
+        plot_path='./app/templates/static/correlation_plots'
+        
+        if not os.path.exists(plot_path):
+            os.mkdir(plot_path)
+
+        json_content = fig.to_json()
+
+        with open(os.path.join(plot_path, file_name), 'w') as f:
+            f.write(json_content)
+        
+        return OperationResult(ok=True, message=False, item=result)
+
    
