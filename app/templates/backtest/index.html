@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Estrategias usadas{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="text-center mb-4">Estrategias usadas</h1>
+
+    <!-- Botón Crear -->
+    <div class="d-flex justify-content-end mb-3">
+        <a href="/backtest/new" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i>
+        </a>
+    </div>
+
+
+    <!-- Tabla de Estrategias -->
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>Strategy</th>
+                    <th>Description</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for strategy in strategies %}
+                <tr>
+                    <td>{{ strategy.Name }}</td>
+                    <td>{{ strategy.Description }}</td>
+                    <td>
+                        <a href="#" class="view-bots btn btn-success" data-strategy-id="{{ strategy.Id }}">
+                            <i class="fas fa-money-bill-wave" aria-hidden="true"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal de Bootstrap -->
+<div class="modal fade" id="botsModal" tabindex="-1" aria-labelledby="botsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="botsModalLabel">Bots de la Estrategia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Contenido dinámico del modal -->
+                <div id="modal-bots-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Seleccionar todos los botones con clase "view-bots"
+const botsButtons = document.querySelectorAll('.view-bots');
+
+// Agregar un evento a cada botón
+botsButtons.forEach(button => {
+    button.addEventListener('click', async () => {
+        const strategyId = button.getAttribute('data-strategy-id');
+
+        // Realizar la solicitud al endpoint
+        try {
+            const response = await fetch(`/tickers/${strategyId}`);
+            const data = await response.json();
+
+            // Contenedor del modal
+            const modalContainer = document.getElementById('modal-bots-container');
+            modalContainer.innerHTML = '';
+
+            if (data.tickers && data.tickers.length > 0) {
+                // Generar la tabla de bots
+                modalContainer.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.tickers.map(ticker => `
+                                    <tr>
+                                        <td>
+                                            ${ticker.Name}
+                                        </td>
+                                        <td>
+                                            <a href='/backtest/ticker/${ticker.Id}?strategy_id=${strategyId}'>Ver</a>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                modalContainer.innerHTML = '<p class="text-center">No hay bots disponibles para esta estrategia.</p>';
+            }
+
+            // Mostrar el modal
+            const botsModal = new bootstrap.Modal(document.getElementById('botsModal'));
+            botsModal.show();
+        } catch (error) {
+            console.error('Error al cargar los bots:', error);
+            alert('Hubo un error al cargar los bots. Por favor, intenta de nuevo.');
+        }
+    });
+});
+</script>
+{% endblock %}

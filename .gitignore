@@ -17,7 +17,10 @@ venv/
 *.csv
 
 # Archivos de btpy
-*.html
+app/templates/static/backtest_plots/*.html
+app/templates/static/correlation_plots/*.html
+app/templates/static/luck_test_plots/*.html
+backtesting_pipeline/**/*.html
 
 # Archivos de texto
 *.txt

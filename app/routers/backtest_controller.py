@@ -187,13 +187,23 @@ def get_bot_backtes(request: Request, bot_id: UUID, date_from: date = Query(...)
     else:
         return {'error': result.message}
 
+@router.get('/backtest/{bot_performance_id}/montecarlo', response_class=HTMLResponse)
+async def get_montecarlo_modal(request: Request, bot_performance_id: UUID):
+    performance = {"Id": bot_performance_id}
+    return templates.TemplateResponse("/backtest/montecarlo_form.html", {"request": request, "performance": performance})
+
 @router.post('/backtest/{bot_performance_id}/montecarlo')
-def run_montecarlo_test(request: Request, bot_performance_id:UUID):
+def run_montecarlo_test(
+    request: Request, 
+    bot_performance_id:UUID,
+    simulations: int = Form(...),
+    threshold_ruin: float = Form(...),
+):
     
     result = backtest_service.run_montecarlo_test(
         bot_performance_id=bot_performance_id, 
-        n_simulations=1000, # Viene del front
-        threshold_ruin=0.9 # Viene del front
+        n_simulations=simulations,
+        threshold_ruin=threshold_ruin
     )
     
     if result.ok:
@@ -241,4 +251,5 @@ def run_correlation_test(request: Request, performance_id:UUID):
 
     else:
         return {'error': result.message}
-    
+
+
