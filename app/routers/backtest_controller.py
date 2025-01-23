@@ -113,7 +113,7 @@ async def create_post(
         risk,
     )
     
-    return RedirectResponse(url="/backtest", status_code=303) # aca deberia enviarte a la pantalla del que acabas de correr
+    return RedirectResponse(url="/backtest", status_code=303)
 
 @router.get('/backtest/ticker/{ticker_id}')
 def get_backtest_by_ticker(request: Request, ticker_id: UUID, strategy_id: UUID = Query(...)):
@@ -266,8 +266,7 @@ def run_correlation_test(request: Request, performance_id:UUID):
     result = backtest_service.delete(performance_id)
     
     if result.ok:
-        referer = request.headers.get('referer')  # Obtiene la URL de la página anterior
-        return RedirectResponse(url=referer, status_code=303)
+        return RedirectResponse(url='/backtest', status_code=303)
     else:
         return {'error': result.message}
         
