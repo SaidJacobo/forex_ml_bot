@@ -261,4 +261,13 @@ def run_correlation_test(request: Request, performance_id:UUID):
     else:
         return {'error': result.message}
 
-
+@router.post('/backtest/{performance_id}/delete')
+def run_correlation_test(request: Request, performance_id:UUID):
+    result = backtest_service.delete(performance_id)
+    
+    if result.ok:
+        referer = request.headers.get('referer')  # Obtiene la URL de la página anterior
+        return RedirectResponse(url=referer, status_code=303)
+    else:
+        return {'error': result.message}
+        

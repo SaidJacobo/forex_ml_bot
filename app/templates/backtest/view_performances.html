@@ -6,15 +6,20 @@
 <div class="container my-5">
     <h1 class="text-center mb-4">Bot Performances</h1>
 
+    <div class="d-flex justify-content-end mb-3">
+        <a href="/backtest/new" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i>
+        </a>
+    </div>
+
     <!-- Tabla de Estrategias -->
     <div class="table-responsive">
         <table class="table table-custom">
             <thead>
                 <tr>
                     <th>Bot</th>
-                    <th>Cash</th>
-                    <th>Date from</th>
-                    <th>Date to</th>
+                    <th>Datefrom</th>
+                    <th>DateTo</th>
                     <th>Method</th>
                     <th>StabilityRatio</th>
                     <th>Trades</th>
@@ -24,6 +29,7 @@
                     <th>CustomMetric</th>
                     <th>WinRate</th>
                     <th>Duration</th>
+                    <th></th>
 
                 </tr>
             </thead>
@@ -35,7 +41,6 @@
                                 {{ performance.Bot.Name }}
                             </a>
                         </td>
-                        <td>{{ performance.InitialCash }}</td>
                         <td>{{ performance.DateFrom }}</td>
                         <td>{{ performance.DateTo }}</td>
                         <td>{{ performance.Method }}</td>
@@ -47,6 +52,14 @@
                         <td>{{ performance.CustomMetric }}</td>
                         <td>{{ performance.WinRate }}</td>
                         <td>{{ performance.Duration }}</td>
+                        <td>
+                            <form action="/backtest/{{ performance.Id }}/delete" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de que deseas eliminar este backtest?')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </td>
+                        
 
                     </tr>
                 {% endfor %}

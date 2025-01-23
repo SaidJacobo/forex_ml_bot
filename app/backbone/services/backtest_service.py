@@ -445,7 +445,7 @@ class BacktestService:
             
             return OperationResult(ok=False, message=e, item=None)
   
-    def _create_luck_test_plot(self, bot_performance_id):
+    def _create_luck_test_plot(self, bot_performance_id) -> OperationResult:
         print('Creando grafico de luck test')
         result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)
         if not result.ok:
@@ -510,7 +510,7 @@ class BacktestService:
         with open(os.path.join(plot_path, file_name), 'w') as f:
             f.write(json_content)
             
-    def run_random_test(self, bot_performance_id, n_iterations):
+    def run_random_test(self, bot_performance_id, n_iterations) -> OperationResult:
         result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)
         if not result.ok:
             return result
@@ -626,110 +626,171 @@ class BacktestService:
             
             return OperationResult(ok=False, message=e, item=None)
    
-    def run_correlation_test(self, bot_performance_id):
+    def run_correlation_test(self, bot_performance_id) -> OperationResult:
         
         result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)
         if not result.ok:
             return result
         
-        bot_performance = result.item
-        
-        trade_history = get_trade_df_from_db(
-            bot_performance.TradeHistory, 
-            performance_id=bot_performance.Id
-        )
-        
-        prices = get_data(
-            bot_performance.Bot.Ticker.Name, 
-            bot_performance.Bot.Timeframe.MetaTraderNumber, 
-            pd.Timestamp(bot_performance.DateFrom, tz="UTC"), 
-            pd.Timestamp(bot_performance.DateTo, tz="UTC")
-        )
+        try:
+            bot_performance = result.item
+            
+            trade_history = get_trade_df_from_db(
+                bot_performance.TradeHistory, 
+                performance_id=bot_performance.Id
+            )
+            
+            prices = get_data(
+                bot_performance.Bot.Ticker.Name, 
+                bot_performance.Bot.Timeframe.MetaTraderNumber, 
+                pd.Timestamp(bot_performance.DateFrom, tz="UTC"), 
+                pd.Timestamp(bot_performance.DateTo, tz="UTC")
+            )
 
-        # Transformar el índice al formato mensual
-        equity = trade_history[['ExitTime', 'Equity']]
+            # Transformar el índice al formato mensual
+            equity = trade_history[['ExitTime', 'Equity']]
+                    
+            equity['month'] = pd.to_datetime(equity['ExitTime']).dt.to_period('M')
+            equity = equity.groupby(by='month').agg({'Equity': 'last'})
+            equity['perc_diff'] = (equity['Equity'] - equity['Equity'].shift(1)) / equity['Equity'].shift(1)
+            equity.fillna(0, inplace=True)
+
+            # Crear un rango completo de meses con PeriodIndex
+            full_index = pd.period_range(start=equity.index.min(), end=equity.index.max(), freq='M')
+
+            # Reindexar usando el rango completo de PeriodIndex
+            equity = equity.reindex(full_index)
+            equity = equity.ffill()
+
+            prices['month'] = pd.to_datetime(prices.index)
+            prices['month'] = prices['month'].dt.to_period('M')
+            prices = prices.groupby(by='month').agg({'Close':'last'})
+            prices['perc_diff'] = (prices['Close'] - prices['Close'].shift(1)) / prices['Close'].shift(1)
+            prices.fillna(0, inplace=True)
+
+            prices = prices[prices.index.isin(equity.index)]
+
+            x = np.array(prices['perc_diff']).reshape(-1, 1)
+            y = equity['perc_diff']
+
+            # Ajustar el modelo de regresión lineal
+            reg = LinearRegression().fit(x, y)
+            determination = reg.score(x, y)
+            correlation = np.corrcoef(prices['perc_diff'], equity['perc_diff'])[0, 1]
+
+            # Predicciones para la recta
+            x_range = np.linspace(x.min(), x.max(), 100).reshape(-1, 1)  # Rango de X para la recta
+            y_pred = reg.predict(x_range)  # Valores predichos de Y
+
+            result = pd.DataFrame({
+                'correlation': [correlation],
+                'determination': [determination],
+            }).round(3)
+
+            # Crear el gráfico
+            fig = px.scatter(
+                x=prices['perc_diff'], y=equity['perc_diff'],
+            )
+
+            # Agregar la recta de regresión
+            fig.add_scatter(x=x_range.flatten(), y=y_pred, mode='lines', name='Regresión Lineal')
+
+            # Personalización
+            fig.update_layout(
+                xaxis_title='Monthly Price Variation',
+                yaxis_title='Monthly Returns'
+            )
+
+            # Agregar anotación con los valores R² y Pearson
+            fig.add_annotation(
+                x=0.95,  # Posición en el gráfico (en unidades de fracción del eje)
+                y=0.95,
+                xref='paper', yref='paper',
+                text=f"<b>r = {correlation:.3f}<br>R² = {determination:.3f}</b>",
+                showarrow=False,
+                font=dict(size=16, color="black"),
+                align="left",
+                bordercolor="black",
+                borderwidth=1,
+                borderpad=4,
+                bgcolor="white",
+                opacity=0.8
+            )
+
+            str_date_from = str(bot_performance.DateFrom).replace('-','')
+            str_date_to = str(bot_performance.DateFrom).replace('-','')
+            file_name=f'{bot_performance.Bot.Name}_{str_date_from}_{str_date_to}.html'
+            
+            plot_path='./app/templates/static/correlation_plots'
+            
+            if not os.path.exists(plot_path):
+                os.mkdir(plot_path)
+
+            json_content = fig.to_json()
+
+            with open(os.path.join(plot_path, file_name), 'w') as f:
+                f.write(json_content)
+            
+            return OperationResult(ok=True, message=False, item=result)
+
+        except Exception as e:
+            
+            return OperationResult(ok=False, message=e, item=None)
+
+    def delete(self, bot_performance_id) -> OperationResult:
+        try:
+            with self.db_service.get_database() as db:
+                # Obtener el BotPerformance a eliminar
+                bot_performance = self.db_service.get_by_id(db, BotPerformance, bot_performance_id)
+
+                if not bot_performance:
+                    return OperationResult(ok=False, message="BotPerformance no encontrado", item=None)
+
+                # Eliminar dependencias de MetricsWarehouse relacionadas con MontecarloTests
+                montecarlo_test = self.db_service.get_by_filter(db, MontecarloTest, BotPerformanceId=bot_performance_id)
+                if montecarlo_test:
+                    self.db_service.get_many_by_filter(db, MetricWharehouse, MontecarloTestId=montecarlo_test.Id).delete()
+                    self.db_service.delete(db, MontecarloTest, montecarlo_test.Id)
+
+                # Eliminar registros en LuckTest y su relación con LuckTestPerformanceId
+                luck_tests = self.db_service.get_many_by_filter(db, LuckTest, BotPerformanceId=bot_performance_id)
+                for luck_test in luck_tests:
+                    # Eliminar el BotPerformance asociado al LuckTestPerformanceId
+                    self.db_service.delete(db, BotPerformance, luck_test.LuckTestPerformanceId)
+                    # Eliminar el LuckTest en sí
+                    self.db_service.delete(db, LuckTest, luck_test.Id)
+
+                # Eliminar registros en RandomTest y su relación con RandomTestPerformanceId
+                random_tests = self.db_service.get_many_by_filter(db, RandomTest, BotPerformanceId=bot_performance_id)
+                for random_test in random_tests:
+                    # Eliminar el BotPerformance asociado al RandomTestPerformanceId
+                    self.db_service.delete(db, BotPerformance, random_test.RandomTestPerformanceId)
+                    # Eliminar el RandomTest en sí
+                    self.db_service.delete(db, RandomTest, random_test.Id)
+
+                # Eliminar dependencias directas de la tabla Trade
+                self.db_service.get_many_by_filter(db, Trade, BotPerformanceId=bot_performance_id).delete()
+
+                # Verificar si el Bot asociado tiene más BotPerformances
+                bot_id = bot_performance.BotId
+                if bot_id:
+                    remaining_performances = self.db_service.get_many_by_filter(db, BotPerformance, BotId=bot_id).count()
+
+                    # Si no tiene más BotPerformances, eliminar el Bot
+                    if remaining_performances == 1:  # Este será eliminado después
+                        self.db_service.delete(db, Bot, bot_id)
+
+                # Finalmente eliminar el BotPerformance
+                self.db_service.delete(db, BotPerformance, bot_performance_id)
+
+                # Confirmar los cambios
+                self.db_service.save(db)
+
+            return OperationResult(ok=True, message="BotPerformance y elementos relacionados eliminados", item=None)
+
+        except Exception as e:
+            return OperationResult(ok=False, message=str(e), item=None)
+
+
+                    
                 
-        equity['month'] = pd.to_datetime(equity['ExitTime']).dt.to_period('M')
-        equity = equity.groupby(by='month').agg({'Equity': 'last'})
-        equity['perc_diff'] = (equity['Equity'] - equity['Equity'].shift(1)) / equity['Equity'].shift(1)
-        equity.fillna(0, inplace=True)
-
-        # Crear un rango completo de meses con PeriodIndex
-        full_index = pd.period_range(start=equity.index.min(), end=equity.index.max(), freq='M')
-
-        # Reindexar usando el rango completo de PeriodIndex
-        equity = equity.reindex(full_index)
-        equity = equity.ffill()
-
-        prices['month'] = pd.to_datetime(prices.index)
-        prices['month'] = prices['month'].dt.to_period('M')
-        prices = prices.groupby(by='month').agg({'Close':'last'})
-        prices['perc_diff'] = (prices['Close'] - prices['Close'].shift(1)) / prices['Close'].shift(1)
-        prices.fillna(0, inplace=True)
-
-        prices = prices[prices.index.isin(equity.index)]
-
-        x = np.array(prices['perc_diff']).reshape(-1, 1)
-        y = equity['perc_diff']
-
-        # Ajustar el modelo de regresión lineal
-        reg = LinearRegression().fit(x, y)
-        determination = reg.score(x, y)
-        correlation = np.corrcoef(prices['perc_diff'], equity['perc_diff'])[0, 1]
-
-        # Predicciones para la recta
-        x_range = np.linspace(x.min(), x.max(), 100).reshape(-1, 1)  # Rango de X para la recta
-        y_pred = reg.predict(x_range)  # Valores predichos de Y
-
-        result = pd.DataFrame({
-            'correlation': [correlation],
-            'determination': [determination],
-        }).round(3)
-
-        # Crear el gráfico
-        fig = px.scatter(
-            x=prices['perc_diff'], y=equity['perc_diff'],
-        )
-
-        # Agregar la recta de regresión
-        fig.add_scatter(x=x_range.flatten(), y=y_pred, mode='lines', name='Regresión Lineal')
-
-        # Personalización
-        fig.update_layout(
-            xaxis_title='Monthly Price Variation',
-            yaxis_title='Monthly Returns'
-        )
-
-        # Agregar anotación con los valores R² y Pearson
-        fig.add_annotation(
-            x=0.95,  # Posición en el gráfico (en unidades de fracción del eje)
-            y=0.95,
-            xref='paper', yref='paper',
-            text=f"<b>r = {correlation:.3f}<br>R² = {determination:.3f}</b>",
-            showarrow=False,
-            font=dict(size=16, color="black"),
-            align="left",
-            bordercolor="black",
-            borderwidth=1,
-            borderpad=4,
-            bgcolor="white",
-            opacity=0.8
-        )
-
-        str_date_from = str(bot_performance.DateFrom).replace('-','')
-        str_date_to = str(bot_performance.DateFrom).replace('-','')
-        file_name=f'{bot_performance.Bot.Name}_{str_date_from}_{str_date_to}.html'
-        
-        plot_path='./app/templates/static/correlation_plots'
-        
-        if not os.path.exists(plot_path):
-            os.mkdir(plot_path)
-
-        json_content = fig.to_json()
-
-        with open(os.path.join(plot_path, file_name), 'w') as f:
-            f.write(json_content)
-        
-        return OperationResult(ok=True, message=False, item=result)
-
-   

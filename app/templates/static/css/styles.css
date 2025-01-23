@@ -232,17 +232,25 @@ h1, h2, h3, h4 {
 }
 
 
-/* Reducir tamaño del icono */
-#dark-mode-toggle i {
-    font-size: 16px; /* Ajustar el tamaño del icono */
-    margin-right: 5px; /* Ajustar el espacio entre el icono y el texto */
+#dark-mode-toggle {
+    display: inline-flex; /* Asegura que el botón se alinee correctamente */
+    align-items: center; /* Centra el contenido verticalmente */
+    justify-content: center; /* Centra el contenido horizontalmente */
+    padding: 0.4rem; /* Ajusta el espacio interno */
+    font-size: 1rem; /* Ajusta el tamaño del ícono */
+    margin: 0; /* Elimina márgenes adicionales */
+    vertical-align: middle; /* Alinea con el texto */
+    line-height: 1; /* Corrige posibles problemas de altura de línea */
 }
 
-/* Reducir tamaño del texto del botón */
-#dark-mode-toggle {
-    font-size: 14px; /* Reducir el tamaño del texto */
-    padding: 5px 10px; /* Reducir el padding del botón */
-    border-radius: 5px;
+#dark-mode-toggle i {
+    font-size: 1rem; /* Asegura que el ícono tenga un tamaño consistente */
+    line-height: 1; /* Alinea correctamente el ícono */
+}
+
+.navbar {
+    display: flex;
+    align-items: center; /* Centra verticalmente todos los elementos */
 }
 
 /* Ajuste de estilo para el modo oscuro */
@@ -335,4 +343,27 @@ body.dark-mode textarea::placeholder {
 .dark-mode .modal-header,
 .dark-mode .modal-footer {
     border-color: #555; /* Bordes internos */
+}
+
+.table-custom th,
+.table-custom td {
+    vertical-align: middle; /* Centra el contenido verticalmente */
+    text-align: center; /* Opcional: centra horizontalmente el contenido */
+    white-space: nowrap; /* Evita saltos de línea dentro de las celdas */
+}
+
+.table-custom td {
+    padding: 0.5rem; /* Ajusta el espacio para que las filas sean más uniformes */
+}
+
+.table-custom .btn-danger {
+    display: inline-flex; /* Asegura que el ícono no ocupe espacio extra */
+    align-items: center; /* Centra el ícono dentro del botón */
+    justify-content: center;
+    padding: 0.3rem; /* Reduce el tamaño del botón */
+}
+
+.table-custom .btn-danger i {
+    font-size: 0.9rem; /* Ajusta el tamaño del ícono si es necesario */
+    line-height: 1; /* Elimina cualquier desajuste de altura */
 }

@@ -44,8 +44,6 @@ class DbService:
     def delete_all(self, db: Session, model):
         db.query(model).delete()
 
-
-
     def save(self, db: Session):
         try:
             db.commit()
