@@ -217,11 +217,6 @@ class BacktestService:
                 bot_performances = (
                     db.query(BotPerformance)
                     .join(Bot, Bot.Id == BotPerformance.BotId)
-                    .options(
-                        joinedload(BotPerformance.LuckTest).joinedload(LuckTest.LuckTestPerformance),
-                        joinedload(BotPerformance.RandomTest).joinedload(RandomTest.RandomTestPerformance),
-
-                    )
                     .filter(Bot.TickerId == ticker_id)
                     .filter(Bot.StrategyId == strategy_id)
                     .all()
@@ -514,7 +509,6 @@ class BacktestService:
 
         with open(os.path.join(plot_path, file_name), 'w') as f:
             f.write(json_content)
-      
             
     def run_random_test(self, bot_performance_id, n_iterations):
         result = self.get_bot_performance_by_id(bot_performance_id=bot_performance_id)

@@ -11,6 +11,7 @@ from pandas import Timestamp
 from app.backbone.services.bot_service import BotService
 from app.backbone.services.strategy_service import StrategyService
 from app.view_models.backtest_create_vm import BacktestCreateVM
+from app.view_models.bot_performance_metrics_vm import PerformanceMetricsVM
 from app.view_models.bot_performance_vm import BotPerformanceVM
 from app.view_models.category_vm import CategoryVM
 from app.view_models.strategy_vm import StrategyVM
@@ -121,7 +122,7 @@ def get_backtest_by_ticker(request: Request, ticker_id: UUID, strategy_id: UUID 
     result = backtest_service.get_performances_by_strategy_ticker(ticker_id=ticker_id, strategy_id=strategy_id)
     
     if result.ok:
-        bot_performance_vm = [BotPerformanceVM.model_validate(performance) for performance in result.item]
+        bot_performance_vm = [PerformanceMetricsVM.model_validate(performance) for performance in result.item]
         return templates.TemplateResponse("/backtest/view_performances.html", {"request": request, "performances": bot_performance_vm})
 
     else:

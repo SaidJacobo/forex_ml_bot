@@ -4,9 +4,11 @@ from uuid import UUID
 from datetime import date
 
 from app.view_models.bot_trade_performance_vm import BotTradePerformamceVM
+from app.view_models.bot_vm import BotVM
 
 
 class PerformanceMetricsVM(BaseModel):
+    Bot: Optional[BotVM] = None
     model_config = ConfigDict(from_attributes=True)
     Id: UUID
     BotId: Optional[UUID]=None

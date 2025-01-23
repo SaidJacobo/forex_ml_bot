@@ -15,10 +15,10 @@ class Bot(Base):
     MetaTraderName = Column(String(length=16), nullable=False)
     Risk = Column(Float, nullable=False)
     
-    Strategy = relationship('Strategy', back_populates='Bot', lazy='joined')
-    Ticker = relationship('Ticker', back_populates='Bot', lazy='joined')
-    Timeframe = relationship('Timeframe', back_populates='Bot', lazy='joined')
-    BotPerformance = relationship('BotPerformance', back_populates='Bot', lazy='joined')
+    Strategy = relationship('Strategy', back_populates='Bot', lazy='select')
+    Ticker = relationship('Ticker', back_populates='Bot', lazy='select')
+    Timeframe = relationship('Timeframe', back_populates='Bot', lazy='select')
+    BotPerformance = relationship('BotPerformance', back_populates='Bot', lazy='select')
     
 
     def __repr__(self):
