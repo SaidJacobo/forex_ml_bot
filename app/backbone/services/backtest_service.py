@@ -746,6 +746,9 @@ class BacktestService:
                 if not bot_performance:
                     return OperationResult(ok=False, message="BotPerformance no encontrado", item=None)
 
+                bot_trade_performance = self.db_service.get_by_filter(db, BotTradePerformance, BotPerformanceId=bot_performance_id)
+                self.db_service.delete(db, BotTradePerformance, bot_trade_performance.Id)
+                
                 # Eliminar dependencias de MetricsWarehouse relacionadas con MontecarloTests
                 montecarlo_test = self.db_service.get_by_filter(db, MontecarloTest, BotPerformanceId=bot_performance_id)
                 if montecarlo_test:
@@ -755,17 +758,17 @@ class BacktestService:
                 # Eliminar registros en LuckTest y su relación con LuckTestPerformanceId
                 luck_tests = self.db_service.get_many_by_filter(db, LuckTest, BotPerformanceId=bot_performance_id)
                 for luck_test in luck_tests:
-                    # Eliminar el BotPerformance asociado al LuckTestPerformanceId
                     self.db_service.delete(db, BotPerformance, luck_test.LuckTestPerformanceId)
-                    # Eliminar el LuckTest en sí
                     self.db_service.delete(db, LuckTest, luck_test.Id)
 
                 # Eliminar registros en RandomTest y su relación con RandomTestPerformanceId
                 random_tests = self.db_service.get_many_by_filter(db, RandomTest, BotPerformanceId=bot_performance_id)
                 for random_test in random_tests:
-                    # Eliminar el BotPerformance asociado al RandomTestPerformanceId
+                    random_test_performance = self.db_service.get_by_id(db, BotPerformance, random_test.RandomTestPerformanceId)
+                    random_test_trade_performance = self.db_service.get_by_filter(db, BotTradePerformance, BotPerformanceId=random_test_performance.Id)
+                    
+                    self.db_service.delete(db, BotTradePerformance, random_test_trade_performance.Id)
                     self.db_service.delete(db, BotPerformance, random_test.RandomTestPerformanceId)
-                    # Eliminar el RandomTest en sí
                     self.db_service.delete(db, RandomTest, random_test.Id)
 
                 # Eliminar dependencias directas de la tabla Trade
