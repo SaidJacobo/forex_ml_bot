@@ -14,56 +14,68 @@ class TickerService:
         self.db_service = DbService()
         
     def create(self) -> OperationResult:
-        
         if not mt5.initialize():
-            print("initialize() failed, error code =",mt5.last_error())
+            print("initialize() failed, error code =", mt5.last_error())
             quit()
 
         symbols = mt5.symbols_get()
-        
+
         categories_tickers = {}
         for symbol in symbols:
-            category_name = symbol.path.split('\\')[0]
-            ticker_name = symbol.path.split('\\')[1]
-            
+            category_name = symbol.path.split("\\")[0]
+            ticker_name = symbol.path.split("\\")[1]
+
             if category_name not in categories_tickers.keys():
                 categories_tickers[category_name] = []
-            
+
             categories_tickers[category_name].append(ticker_name)
-           
-        
+
         with self.db_service.get_database() as db:
-            
-            self.db_service.delete_all(db, Ticker)
-            self.db_service.delete_all(db, Category)
-            
-            for category_name in categories_tickers.keys():
+            for category_name, tickers in categories_tickers.items():
+                # Buscar la categoría en la base de datos
+                category = self.db_service.get_by_filter(db, Category, Name=category_name)
                 
-                category = Category(Name=category_name)
-                
-                
-                self.db_service.create(db, category)
-                
-                for ticker_name in categories_tickers[category_name]:
+                # Si la categoría no existe, crearla
+                if not category:
+                    category = Category(Name=category_name)
+                    self.db_service.create(db, category)
+
+                # Procesar los tickers asociados a esta categoría
+                for ticker_name in tickers:
                     print(ticker_name)
-                    
+
+                    _ = mt5.copy_rates_from_pos(
+                        ticker_name, 16385, 0, 3
+                    )
+
                     symbol_info = mt5.symbol_info_tick(ticker_name)
-                    
-                    if symbol_info != None:
-                        
+
+                    if symbol_info is not None:
                         print(symbol_info)
 
                         avg_price = (symbol_info.bid + symbol_info.ask) / 2
-                        spread = symbol_info.ask - symbol_info.bid
-                        commission = round(spread / avg_price, 5)
-                        
-                        ticker = Ticker(Name=ticker_name, Category=category, Commission=commission, )
-                        self.db_service.create(db, ticker)
-                    
-                
 
-        
-        return OperationResult(ok=True, message='', item=None)
+                        if avg_price > 0:
+                            spread = symbol_info.ask - symbol_info.bid
+                            commission = round(spread / avg_price, 5)
+
+                            # Buscar el ticker en la base de datos
+                            ticker = self.db_service.get_by_filter(db, Ticker, Name=ticker_name, CategoryId=category.Id)
+                            
+                            # Si el ticker no existe, crearlo
+                            if not ticker:
+                                ticker = Ticker(Name=ticker_name, Category=category, Commission=commission)
+                                self.db_service.create(db, ticker)
+                            else:
+                                # Si el ticker existe, actualizar su información
+                                ticker.Commission = commission
+                                self.db_service.update(db, Ticker, ticker)
+
+            # Confirmar los cambios en la base de datos
+            self.db_service.save(db)
+
+        return OperationResult(ok=True, message="Categorías y tickers procesados correctamente", item=None)
+
 
     def get_all_categories(self) -> OperationResult:
         with self.db_service.get_database() as db:

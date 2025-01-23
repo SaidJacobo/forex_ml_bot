@@ -760,7 +760,18 @@ class BacktestService:
                 for luck_test in luck_tests:
                     self.db_service.delete(db, BotPerformance, luck_test.LuckTestPerformanceId)
                     self.db_service.delete(db, LuckTest, luck_test.Id)
+                    
+                str_date_from = str(bot_performance.DateFrom).replace('-','')
+                str_date_to = str(bot_performance.DateFrom).replace('-','')
+                file_name = f'{bot_performance.Bot.Name}_{str_date_from}_{str_date_to}.html'
+                plot_path = './app/templates/static/'
+                
+                if os.path.exists(os.path.join(plot_path, 'luck_test_plots', file_name)):
+                    os.remove(os.path.join(plot_path, 'luck_test_plots', file_name))
 
+                if os.path.exists(os.path.join(plot_path, 'correlation_plots', file_name)):
+                    os.remove(os.path.join(plot_path, 'correlation_plots', file_name))
+                    
                 # Eliminar registros en RandomTest y su relación con RandomTestPerformanceId
                 random_tests = self.db_service.get_many_by_filter(db, RandomTest, BotPerformanceId=bot_performance_id)
                 for random_test in random_tests:
@@ -770,6 +781,7 @@ class BacktestService:
                     self.db_service.delete(db, BotTradePerformance, random_test_trade_performance.Id)
                     self.db_service.delete(db, BotPerformance, random_test.RandomTestPerformanceId)
                     self.db_service.delete(db, RandomTest, random_test.Id)
+
 
                 # Eliminar dependencias directas de la tabla Trade
                 self.db_service.get_many_by_filter(db, Trade, BotPerformanceId=bot_performance_id).delete()
@@ -793,7 +805,3 @@ class BacktestService:
 
         except Exception as e:
             return OperationResult(ok=False, message=str(e), item=None)
-
-
-                    
-                
