@@ -1,4 +1,3 @@
-from collections import defaultdict
 from datetime import date
 import json
 import os
@@ -212,13 +211,18 @@ def run_montecarlo_test(
 
     else:
         return {'error': result.message}
-    
+
+@router.get('/backtest/{bot_performance_id}/luck_test', response_class=HTMLResponse)
+async def get_luck_test_modal(request: Request, bot_performance_id: UUID):
+    performance = {"Id": bot_performance_id}
+    return templates.TemplateResponse("/backtest/luck_test_form.html", {"request": request, "performance": performance})
+
 @router.post('/backtest/{performance_id}/luck_test')
-def run_luck_test(request: Request, performance_id:UUID):
-    
+def run_luck_test(request: Request, performance_id:UUID, percent_trades_to_remove: int = Form(...)):
+
     result = backtest_service.run_luck_test(
         bot_performance_id=performance_id, 
-        trades_percent_to_remove=5 
+        trades_percent_to_remove=percent_trades_to_remove 
     )
     
     if result.ok:
@@ -227,11 +231,16 @@ def run_luck_test(request: Request, performance_id:UUID):
 
     else:
         return {'error': result.message}
-        
-@router.post('/backtest/{performance_id}/random_test')
-def run_random_test(request: Request, performance_id:UUID):
 
-    result = backtest_service.run_random_test(performance_id, n_iterations=10)
+@router.get('/backtest/{bot_performance_id}/random_test', response_class=HTMLResponse)
+async def get_random_test_modal(request: Request, bot_performance_id: UUID):
+    performance = {"Id": bot_performance_id}
+    return templates.TemplateResponse("/backtest/random_test_form.html", {"request": request, "performance": performance})
+
+@router.post('/backtest/{performance_id}/random_test')
+def run_random_test(request: Request, performance_id:UUID, iterations: int = Form(...)):
+
+    result = backtest_service.run_random_test(performance_id, n_iterations=iterations)
     
     if result.ok:
         referer = request.headers.get('referer')  # Obtiene la URL de la página anterior

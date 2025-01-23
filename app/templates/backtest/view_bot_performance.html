@@ -312,15 +312,10 @@
                     </div>
 
                 {% else %}
-
                     <div class="d-flex justify-content-end mb-3">
-                        <div class="d-flex justify-content-end mb-3">
-                            <form action="/backtest/{{ performance.Id }}/random_test" method="post">
-                                <button class="btn btn-primary" type="submit">
-                                    <i class="fas fa-play-circle" aria-hidden="true"></i>
-                                </button>
-                            </form>
-                        </div>
+                        <button class="btn btn-primary open-modal" data-url="/backtest/{{ performance.Id }}/random_test">
+                            <i class="fas fa-play-circle" aria-hidden="true"></i>
+                        </button>
                     </div>
                 {% endif %}
 
@@ -384,11 +379,9 @@
                     
                     {% else %}
                         <div class="d-flex justify-content-end mb-3">
-                            <form action="/backtest/{{ performance.Id }}/luck_test" method="post">
-                                <button class="btn btn-primary" type="submit">
-                                    <i class="fas fa-play-circle" aria-hidden="true"></i>
-                                </button>
-                            </form>
+                            <button class="btn btn-primary open-modal" data-url="/backtest/{{ performance.Id }}/luck_test">
+                                <i class="fas fa-play-circle" aria-hidden="true"></i>
+                            </button>
                         </div>
                     {% endif %}
             </section>
@@ -439,7 +432,6 @@
         Plotly.newPlot("correlation-test-plot", plotCTData.data, plotCTData.layout);
     }
 
-
     document.addEventListener("DOMContentLoaded", function () {
         const modalContainer = document.getElementById("modal-container");
     
@@ -470,9 +462,6 @@
         });
     });
     
-
-
 </script>
-
 
 {% endblock %}

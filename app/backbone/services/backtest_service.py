@@ -268,7 +268,7 @@ class BacktestService:
         with self.db_service.get_database() as db:
             
             try:
-                bot_performance = self.db_service.get_by_filter(db, BotPerformance, Id=bot_performance_id)  
+                bot_performance = self.db_service.get_by_id(db, BotPerformance, id=bot_performance_id)  
                 
                 result = OperationResult(ok=True, message='', item=bot_performance)
                 
