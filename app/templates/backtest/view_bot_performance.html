@@ -5,8 +5,23 @@
 {% block content %}
 
 <div class="container my-5">
-    <h1>{{ performance.Bot.Name }} Performance</h1>
+    <div class="fixed-header">
+        <h1>{{ performance.Bot.Name }} Performance</h1>
+    </div>
     <h2>{{ performance.DateFrom }} to {{ performance.DateTo }} with ${{ performance.InitialCash }}</h2>
+    
+    <div id="floating-button-container">
+        <button 
+            id="floating-favorite-button" 
+            class="btn btn-primary btn-circle"
+            data-performance-id="{{ performance.Id }}">
+            {% if performance.Favorite %}
+                <i class="fas fa-star"></i> <!-- Estrella llena -->
+            {% else %}
+                <i class="far fa-star"></i> <!-- Estrella vacía -->
+            {% endif %}
+        </button>
+    </div>
 
     <!-- Información General -->
     <div class="card shadow-sm my-5">
@@ -461,7 +476,48 @@
             });
         });
     });
-    
+
+// Selecciona el botón flotante
+const floatingButton = document.getElementById('floating-favorite-button');
+
+if (floatingButton) {
+    floatingButton.addEventListener('click', async () => {
+        const performanceId = floatingButton.getAttribute('data-performance-id');
+        const endpoint = `/backtest/${performanceId}/favorites`;
+
+        try {
+            // Realizar la solicitud POST al endpoint
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const isFavorite = data.result.Favorite;
+
+                // Actualizar dinámicamente el ícono del botón
+                const icon = floatingButton.querySelector('i');
+                if (isFavorite) {
+                    icon.classList.remove('far'); // Estrella vacía
+                    icon.classList.add('fas');   // Estrella llena
+                } else {
+                    icon.classList.remove('fas'); // Estrella llena
+                    icon.classList.add('far');   // Estrella vacía
+                }
+            } else {
+                console.error('Error en la respuesta del servidor:', response.statusText);
+                alert('Hubo un error al actualizar el estado. Por favor, intenta de nuevo.');
+            }
+        } catch (error) {
+            console.error('Error al realizar la solicitud:', error);
+            alert('Hubo un error al comunicarte con el servidor. Por favor, intenta de nuevo.');
+        }
+    });
+}
+
 </script>
 
 {% endblock %}

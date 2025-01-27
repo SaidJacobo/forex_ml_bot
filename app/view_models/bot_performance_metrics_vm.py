@@ -23,7 +23,7 @@ class PerformanceMetricsVM(BaseModel):
     CustomMetric: float
     WinRate: float
     Duration: int
-    Robust: Optional[bool] = None
+    Favorite: bool = False
     InitialCash: float
     BotTradePerformance: Optional[BotTradePerformamceVM] = None
     

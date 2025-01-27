@@ -282,9 +282,8 @@ def get_robusts(request: Request, strategy_id:UUID):
     
     else:
         return {'error': result.message}
-    
-    
-@router.get("/tickers/{strategy_id}")
+     
+@router.get("/backtest/strategies/{strategy_id}/tickers")
 async def get_tickers_by_strategy(request: Request, strategy_id: UUID):
 
     result = ticker_service.get_tickers_by_strategy(strategy_id)
@@ -294,3 +293,17 @@ async def get_tickers_by_strategy(request: Request, strategy_id: UUID):
         return templates.TemplateResponse("/backtest/modal_tickers.html", {"request": request, "tickers": tickers, "strategy_id":strategy_id})
     else:
         return {'error': result.message}
+    
+@router.post("/backtest/{performance_id}/favorites")
+async def update_favorites(request: Request, performance_id: UUID):
+    result = backtest_service.update_favorite(performance_id)
+    print(result)
+    if result.ok:
+        return {'result':  result.item}
+    
+    else:
+        return {'result': result.error}
+    
+    
+
+

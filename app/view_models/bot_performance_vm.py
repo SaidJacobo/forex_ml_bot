@@ -26,7 +26,7 @@ class BotPerformanceVM(BaseModel):
     WinRate: float
     Duration: int
     InitialCash: float
-    Robust: Optional[bool] = None
+    Favorite: bool = False
     Bot: Optional[BotVM] = None
     BotTradePerformance: Optional[BotTradePerformamceVM] = None
     TradeHistory: Optional[List[TradeVM]] = None

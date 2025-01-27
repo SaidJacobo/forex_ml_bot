@@ -838,3 +838,22 @@ class BacktestService:
 
         except Exception as e:
             return OperationResult(ok=False, message=str(e), item=None)
+
+    def update_favorite(self, performance_id):
+        
+        try:
+            
+            with self.db_service.get_database() as db:
+                performance = self.db_service.get_by_id(db, BotPerformance, performance_id)
+                
+                performance.Favorite = not performance.Favorite
+                updated_performance = self.db_service.update(db, BotPerformance, performance)        
+                
+                return OperationResult(ok=True, message=None, item=updated_performance)
+        
+        except Exception as e:
+            
+            return OperationResult(ok=False, message=str(e), item=None)
+            
+
+                

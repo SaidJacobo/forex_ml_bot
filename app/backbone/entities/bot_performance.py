@@ -19,7 +19,7 @@ class BotPerformance(Base):
     CustomMetric = Column(Float, nullable=False)
     WinRate = Column(Float, nullable=False)
     Duration = Column(Integer, nullable=False)
-    Robust = Column(Boolean, nullable=True)
+    Favorite = Column(Boolean, nullable=False, default=False)
     InitialCash = Column(Float, nullable=False)
 
     # Relación con otras tablas

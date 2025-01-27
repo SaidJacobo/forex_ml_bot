@@ -30,6 +30,7 @@
                     <th>WinRate</th>
                     <th>Duration</th>
                     <th></th>
+                    <th></th>
 
                 </tr>
             </thead>
@@ -59,6 +60,15 @@
                                 </button>
                             </form>
                         </td>
+                        <td>
+                            <button type="button" class="btn btn-primary btn-sm toggle-favorite" data-performance-id="{{ performance.Id }}">
+                            {% if performance.Favorite %}
+                                <i class="fas fa-star"></i> <!-- Estrella llena -->
+                            {% else %}
+                                <i class="far fa-star"></i> <!-- Estrella vacía -->
+                            {% endif %}
+                        </button>
+                        </td>
                         
 
                     </tr>
@@ -67,4 +77,48 @@
         </table>
     </div>
 </div>
+
+<script>
+    // Selecciona todos los botones con la clase 'toggle-favorite'
+    const favoriteButtons = document.querySelectorAll('.toggle-favorite');
+
+    favoriteButtons.forEach(button => {
+        button.addEventListener('click', async () => {
+            const performanceId = button.getAttribute('data-performance-id');
+            const endpoint = `/backtest/${performanceId}/favorites`;
+
+            try {
+                // Realizar la solicitud POST al endpoint
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const isFavorite = data.result.Favorite;
+
+                    // Actualizar dinámicamente el ícono del botón
+                    const icon = button.querySelector('i');
+                    if (isFavorite) {
+                        icon.classList.remove('far'); // Estrella vacía
+                        icon.classList.add('fas');   // Estrella llena
+                    } else {
+                        icon.classList.remove('fas'); // Estrella llena
+                        icon.classList.add('far');   // Estrella vacía
+                    }
+                } else {
+                    console.error('Error en la respuesta del servidor:', response.statusText);
+                    alert('Hubo un error al actualizar el estado. Por favor, intenta de nuevo.');
+                }
+            } catch (error) {
+                console.error('Error al realizar la solicitud:', error);
+                alert('Hubo un error al comunicarte con el servidor. Por favor, intenta de nuevo.');
+            }
+        });
+    });
+</script>
+
 {% endblock %}
