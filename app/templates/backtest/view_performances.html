@@ -14,7 +14,7 @@
 
     <!-- Tabla de Estrategias -->
     <div class="table-responsive">
-        <table class="table table-custom">
+        <table id="performanceTable" class="table table-custom">
             <thead>
                 <tr>
                     <th>Bot</th>
@@ -69,8 +69,6 @@
                             {% endif %}
                         </button>
                         </td>
-                        
-
                     </tr>
                 {% endfor %}
             </tbody>
@@ -116,6 +114,18 @@
             } catch (error) {
                 console.error('Error al realizar la solicitud:', error);
                 alert('Hubo un error al comunicarte con el servidor. Por favor, intenta de nuevo.');
+            }
+        });
+    });
+
+    $(document).ready(function () {
+        $('#performanceTable').DataTable({
+            paging: true, // Activar paginación
+            searching: true, // Activar búsqueda
+            ordering: true, // Activar ordenamiento
+            info: true, // Mostrar información
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.5/i18n/Spanish.json' // Traducción al español
             }
         });
     });
