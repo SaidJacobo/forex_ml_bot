@@ -10,7 +10,7 @@ if root_dir not in sys.path:
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from app.routers import categories_controller, strategies_controller, backtest_controller, tickers_controller
+from app.routers import categories_controller, strategies_controller, backtest_controller
 from fastapi.staticfiles import StaticFiles
 
 
@@ -19,7 +19,6 @@ app = FastAPI()
 app.include_router(strategies_controller.router)
 app.include_router(categories_controller.router)
 app.include_router(backtest_controller.router)
-app.include_router(tickers_controller.router)
 
 templates = Jinja2Templates(directory="./app/templates")
 

@@ -14,6 +14,7 @@ from app.view_models.bot_performance_metrics_vm import PerformanceMetricsVM
 from app.view_models.bot_performance_vm import BotPerformanceVM
 from app.view_models.category_vm import CategoryVM
 from app.view_models.strategy_vm import StrategyVM
+from app.view_models.ticker_vm import TickerVM
 from app.view_models.timeframe_vm import TimeframeVM
 from backbone.services.ticker_service import TickerService
 from backbone.services.backtest_service import BacktestService
@@ -31,16 +32,16 @@ bot_service = BotService()
 
 @router.get("/backtest", response_class=HTMLResponse)
 async def backtest_strategies(request: Request):
-    result = strategy_service.get_used_strategies()
+    result_strategies = strategy_service.get_used_strategies()
     
-    if result.ok:
-        strategies_vm = [StrategyVM.model_validate(strategy) for strategy in result.item]
+    if result_strategies.ok:
+        strategies_vm = [StrategyVM.model_validate(strategy) for strategy in result_strategies.item]
         return templates.TemplateResponse("/backtest/index.html", {"request": request, 'strategies': strategies_vm})
 
     else:
         return {
             "message": "Error",
-            "data": result.message
+            "data": result_strategies.message
         }
         
 @router.get("/backtest/new", response_class=HTMLResponse)
@@ -270,3 +271,26 @@ def run_correlation_test(request: Request, performance_id:UUID):
     else:
         return {'error': result.message}
         
+@router.get('/backtest/strategies/{strategy_id}/get_robusts', response_class=HTMLResponse)
+def get_robusts(request: Request, strategy_id:UUID):
+    result = backtest_service.get_robusts_by_strategy_id(strategy_id=strategy_id)
+    
+    if result.ok:
+        bot_performances_vm = [PerformanceMetricsVM.model_validate(performance) for performance in result.item]
+        
+        return templates.TemplateResponse("/backtest/modal_robust.html", {"request": request, "performances": bot_performances_vm})
+    
+    else:
+        return {'error': result.message}
+    
+    
+@router.get("/tickers/{strategy_id}")
+async def get_tickers_by_strategy(request: Request, strategy_id: UUID):
+
+    result = ticker_service.get_tickers_by_strategy(strategy_id)
+    if result.ok:
+        tickers = [TickerVM.model_validate(ticker) for ticker in result.item]
+        
+        return templates.TemplateResponse("/backtest/modal_tickers.html", {"request": request, "tickers": tickers, "strategy_id":strategy_id})
+    else:
+        return {'error': result.message}

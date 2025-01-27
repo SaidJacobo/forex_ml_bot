@@ -2,6 +2,7 @@
 
 import os
 from typing import List
+from uuid import UUID
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import yaml
@@ -29,6 +30,7 @@ from pandas import DataFrame
 from sqlalchemy.orm import joinedload
 import plotly.express as px
 import plotly.graph_objects as go
+from sqlalchemy import String, func, desc, cast, Uuid
 
 
 def _performance_from_df_to_obj(
@@ -209,7 +211,7 @@ class BacktestService:
                             self.db_service.create(db, trade)
                     
                 except Exception as e:
-                    return OperationResult(ok=False, message=e, item=None)
+                    return OperationResult(ok=False, message=str(e), item=None)
                     
     def get_performances_by_strategy_ticker(self, strategy_id, ticker_id) -> OperationResult:
         with self.db_service.get_database() as db:
@@ -219,12 +221,13 @@ class BacktestService:
                     .join(Bot, Bot.Id == BotPerformance.BotId)
                     .filter(Bot.TickerId == ticker_id)
                     .filter(Bot.StrategyId == strategy_id)
+                    .order_by(desc(BotPerformance.CustomMetric))
                     .all()
                 )
                 result = OperationResult(ok=True, message='', item=bot_performances)
                 return result
             except Exception as e:
-                result = OperationResult(ok=False, message=e, item=None)
+                result = OperationResult(ok=False, message=str(e), item=None)
                 return result
             
     def get_performances_by_bot_dates(self, bot_id, date_from, date_to) -> OperationResult:
@@ -247,7 +250,7 @@ class BacktestService:
                 return result
             
             except Exception as e:
-                result = OperationResult(ok=False, message=e, item=None)
+                result = OperationResult(ok=False, message=str(e), item=None)
                 return result
      
     def get_performance_by_bot(self, bot_id) -> OperationResult: # cambiar bot_id por backtest_id
@@ -261,7 +264,7 @@ class BacktestService:
                 return result
             
             except Exception as e:
-                result = OperationResult(ok=False, message=e, item=None)
+                result = OperationResult(ok=False, message=str(e), item=None)
                 return result
             
     def get_bot_performance_by_id(self, bot_performance_id) -> OperationResult: # cambiar bot_id por backtest_id
@@ -275,7 +278,7 @@ class BacktestService:
                 return result
             
             except Exception as e:
-                result = OperationResult(ok=False, message=e, item=None)
+                result = OperationResult(ok=False, message=str(e), item=None)
                 return result
            
     def run_montecarlo_test(self, bot_performance_id, n_simulations, threshold_ruin) -> OperationResult:
@@ -330,7 +333,7 @@ class BacktestService:
         
         except Exception as e:
             
-            return OperationResult(ok=False, message=e, item=None)
+            return OperationResult(ok=False, message=str(e), item=None)
       
     def get_luck_test_equity_curve(self, bot_performance_id, remove_only_good_luck=False) -> OperationResult:
         ''' filtra los mejores y peores trades de un bt y devuelve una nueva curva de equity'''
@@ -359,7 +362,7 @@ class BacktestService:
             return OperationResult(ok=True, message=None, item=equity)
         
         except Exception as e:    
-            return OperationResult(ok=False, message=e, item=None)
+            return OperationResult(ok=False, message=str(e), item=None)
             
     def run_luck_test(self, bot_performance_id, trades_percent_to_remove) -> OperationResult:
         
@@ -396,7 +399,9 @@ class BacktestService:
             x = np.arange(filtered_trades.shape[0]).reshape(-1, 1)
             reg = LinearRegression().fit(x, filtered_trades['Equity'])
             stability_ratio = round(reg.score(x, filtered_trades['Equity']), 3)
-            new_winrate = round((filtered_trades[filtered_trades['PnL']>0].size / filtered_trades['Id'].size), 3)
+            new_winrate = round(
+                (filtered_trades[filtered_trades['PnL']>0]['Id'].size / filtered_trades['Id'].size) * 100, 3
+            )
             
             luck_test_performance = BotPerformance(**{
                 'DateFrom': performance.DateFrom,
@@ -443,7 +448,7 @@ class BacktestService:
 
         except Exception as e:
             
-            return OperationResult(ok=False, message=e, item=None)
+            return OperationResult(ok=False, message=str(e), item=None)
   
     def _create_luck_test_plot(self, bot_performance_id) -> OperationResult:
         print('Creando grafico de luck test')
@@ -549,11 +554,9 @@ class BacktestService:
             prob_trade = len(trade_history) / len(prices)  # Probabilidad de realizar un trade
             prob_long = len(long_trades) / len(trade_history) if len(trade_history) > 0 else 0
             prob_short = len(short_trades) / len(trade_history) if len(trade_history) > 0 else 0
-
-            timeframe_hours = bot_performance.Bot.Timeframe.Hours
-            
+           
             trade_history["Duration"] = pd.to_timedelta(trade_history["Duration"])
-            trade_history["Bars"] = (trade_history["Duration"] / pd.Timedelta(hours=timeframe_hours)).apply(lambda x: int(round(x)))
+            trade_history["Bars"] = trade_history["ExitBar"] - trade_history["EntryBar"]
 
             avg_trade_duration = trade_history.Bars.mean()
             std_trade_duration = trade_history.Bars.std()
@@ -624,7 +627,7 @@ class BacktestService:
 
         except Exception as e:
             
-            return OperationResult(ok=False, message=e, item=None)
+            return OperationResult(ok=False, message=str(e), item=None)
    
     def run_correlation_test(self, bot_performance_id) -> OperationResult:
         
@@ -735,7 +738,7 @@ class BacktestService:
 
         except Exception as e:
             
-            return OperationResult(ok=False, message=e, item=None)
+            return OperationResult(ok=False, message=str(e), item=None)
 
     def delete(self, bot_performance_id) -> OperationResult:
         try:
@@ -802,6 +805,36 @@ class BacktestService:
                 self.db_service.save(db)
 
             return OperationResult(ok=True, message="BotPerformance y elementos relacionados eliminados", item=None)
+
+        except Exception as e:
+            return OperationResult(ok=False, message=str(e), item=None)
+
+    def get_robusts_by_strategy_id(self, strategy_id) -> OperationResult:
+        try:
+            with self.db_service.get_database() as db:
+                subquery = (
+                    db.query(
+                        cast(func.min(cast(BotPerformance.Id, String)), Uuid).label("Id"),
+                        func.avg(BotPerformance.RreturnDd).label("AVGRreturnDd"),
+                        func.max(BotPerformance.RreturnDd).label("MaxRreturnDd"),
+                    )
+                    .join(Bot, Bot.Id == BotPerformance.BotId)
+                    .filter(
+                        Bot.StrategyId == strategy_id,
+                        BotPerformance.RreturnDd != "NaN",
+                    )
+                    .group_by(BotPerformance.BotId, BotPerformance.Method)
+                    .having(func.avg(BotPerformance.RreturnDd) >= 1)
+                    .subquery()
+                )
+
+                # Query principal uniendo con la subquery
+                query = (
+                    db.query(BotPerformance)
+                    .join(subquery, BotPerformance.Id == subquery.c.Id)
+                ).all()
+
+                return OperationResult(ok=True, message=None, item=query)
 
         except Exception as e:
             return OperationResult(ok=False, message=str(e), item=None)

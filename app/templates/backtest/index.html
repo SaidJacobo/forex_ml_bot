@@ -22,6 +22,7 @@
                     <th>Strategy</th>
                     <th>Description</th>
                     <th></th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -34,6 +35,11 @@
                             <i class="fas fa-money-bill-wave" aria-hidden="true"></i>
                         </a>
                     </td>
+                    <td>
+                        <a href="#" class="view-robusts btn btn-primary" data-strategy-id="{{ strategy.Id }}">
+                            <i class="fas fa-bolt" aria-hidden="true"></i>
+                        </a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -41,78 +47,53 @@
     </div>
 </div>
 
-<!-- Modal de Bootstrap -->
-<div class="modal fade" id="botsModal" tabindex="-1" aria-labelledby="botsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="botsModalLabel">Bots de la Estrategia</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Contenido dinámico del modal -->
-                <div id="modal-bots-container"></div>
-            </div>
-        </div>
-    </div>
-</div>
+
+<div id="modal-container"></div>
+
+
 
 <script>
-// Seleccionar todos los botones con clase "view-bots"
-const botsButtons = document.querySelectorAll('.view-bots');
+// Selecciona ambos botones (view-robusts y view-bots)
+const actionButtons = document.querySelectorAll('.view-robusts, .view-bots');
 
-// Agregar un evento a cada botón
-botsButtons.forEach(button => {
+actionButtons.forEach(button => {
     button.addEventListener('click', async () => {
         const strategyId = button.getAttribute('data-strategy-id');
+        let endpoint = '';
 
-        // Realizar la solicitud al endpoint
+        // Determinar el endpoint según la clase del botón
+        if (button.classList.contains('view-robusts')) {
+            endpoint = `/backtest/strategies/${strategyId}/get_robusts`;
+
+        } else if (button.classList.contains('view-bots')) {
+            endpoint = `/tickers/${strategyId}`; 
+        }
+
         try {
-            const response = await fetch(`/tickers/${strategyId}`);
-            const data = await response.json();
+            // Realizar la solicitud al endpoint correspondiente
+            const response = await fetch(endpoint);
+            
+            if (response.ok) {
+                const modalHtml = await response.text();
 
-            // Contenedor del modal
-            const modalContainer = document.getElementById('modal-bots-container');
-            modalContainer.innerHTML = '';
+                // Contenedor del modal
+                const modalContainer = document.getElementById('modal-container');
+                modalContainer.innerHTML = modalHtml;
 
-            if (data.tickers && data.tickers.length > 0) {
-                // Generar la tabla de bots
-                modalContainer.innerHTML = `
-                    <div class="table-responsive">
-                        <table class="table table-custom">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${data.tickers.map(ticker => `
-                                    <tr>
-                                        <td>
-                                            ${ticker.Name}
-                                        </td>
-                                        <td>
-                                            <a href='/backtest/ticker/${ticker.Id}?strategy_id=${strategyId}'>Ver</a>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
+                // Identificar el ID del modal dinámicamente según el contenido
+                const modalElement = modalContainer.querySelector('.modal');
+                const dynamicModal = new bootstrap.Modal(modalElement);
+                dynamicModal.show();
             } else {
-                modalContainer.innerHTML = '<p class="text-center">No hay bots disponibles para esta estrategia.</p>';
+                console.error('Error en la respuesta del servidor:', response.statusText);
+                alert('Hubo un error al cargar los datos. Por favor, intenta de nuevo.');
             }
-
-            // Mostrar el modal
-            const botsModal = new bootstrap.Modal(document.getElementById('botsModal'));
-            botsModal.show();
         } catch (error) {
-            console.error('Error al cargar los bots:', error);
-            alert('Hubo un error al cargar los bots. Por favor, intenta de nuevo.');
+            console.error('Error al cargar los datos del servidor:', error);
+            alert('Hubo un error al cargar los datos. Por favor, intenta de nuevo.');
         }
     });
 });
+
 </script>
 {% endblock %}

@@ -6,6 +6,7 @@ class BotVM(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
     Id:UUID
+    TickerId: UUID
+    StrategyId: UUID
     Name: str
     Risk: float
-    
