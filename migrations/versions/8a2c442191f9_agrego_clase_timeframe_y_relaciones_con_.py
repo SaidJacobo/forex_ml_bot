@@ -26,7 +26,7 @@ def upgrade() -> None:
     sa.Column('MetaTraderNumber', sa.Integer(), nullable=False),
     sa.PrimaryKeyConstraint('Id')
     )
-    op.add_column('Bots', sa.Column('Id', sa.UUID(), nullable=False))
+    # op.add_column('Bots', sa.Column('Id', sa.UUID(), nullable=False))
     op.add_column('Bots', sa.Column('StrategyId', sa.UUID(), nullable=True))
     op.add_column('Bots', sa.Column('TickerId', sa.UUID(), nullable=True))
     op.add_column('Bots', sa.Column('TimeframeId', sa.UUID(), nullable=True))
@@ -52,7 +52,7 @@ def downgrade() -> None:
     op.add_column('Bots', sa.Column('strategy_name', sa.VARCHAR(), autoincrement=False, nullable=False))
     op.add_column('Bots', sa.Column('ticker', sa.VARCHAR(), autoincrement=False, nullable=False))
     op.add_column('Bots', sa.Column('metatrader_name', sa.VARCHAR(), autoincrement=False, nullable=False))
-    op.add_column('Bots', sa.Column('id', sa.UUID(), autoincrement=False, nullable=False))
+    # op.add_column('Bots', sa.Column('id', sa.UUID(), autoincrement=False, nullable=False))
     op.drop_constraint(None, 'Bots', type_='foreignkey')
     op.drop_constraint(None, 'Bots', type_='foreignkey')
     op.drop_constraint(None, 'Bots', type_='foreignkey')
@@ -62,6 +62,6 @@ def downgrade() -> None:
     op.drop_column('Bots', 'TimeframeId')
     op.drop_column('Bots', 'TickerId')
     op.drop_column('Bots', 'StrategyId')
-    op.drop_column('Bots', 'Id')
+    # op.drop_column('Bots', 'Id')
     op.drop_table('Timeframes')
     # ### end Alembic commands ###
