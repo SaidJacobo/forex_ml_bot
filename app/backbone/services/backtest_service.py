@@ -164,11 +164,13 @@ class BacktestService:
                             trade.BotPerformance = bot_performance_for_db
                             self.db_service.create(db, trade)
                             
-                    return OperationResult(ok=True, message=None, item=None)
                     
                 except Exception as e:
                     return OperationResult(ok=False, message=str(e), item=None)
                     
+        return OperationResult(ok=True, message=None, item=None)
+    
+    
     def get_performances_by_strategy_ticker(self, strategy_id, ticker_id) -> OperationResult:
         with self.db_service.get_database() as db:
             try:
