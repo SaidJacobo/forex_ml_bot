@@ -96,7 +96,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    const isFavorite = data.result.Favorite;
+                    const isFavorite = data.result;
 
                     // Actualizar dinámicamente el ícono del botón
                     const icon = button.querySelector('i');
@@ -126,7 +126,9 @@
             info: true, // Mostrar información
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.5/i18n/Spanish.json' // Traducción al español
-            }
+            },
+            order: [[9, 'desc']] // Desactiva el orden inicial
+
         });
     });
 </script>

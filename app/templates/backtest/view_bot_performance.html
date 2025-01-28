@@ -496,7 +496,7 @@ if (floatingButton) {
 
             if (response.ok) {
                 const data = await response.json();
-                const isFavorite = data.result.Favorite;
+                const isFavorite = data.result;
 
                 // Actualizar dinámicamente el ícono del botón
                 const icon = floatingButton.querySelector('i');

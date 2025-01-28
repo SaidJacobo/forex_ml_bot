@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from pandas import Timestamp
 from app.backbone.services.bot_service import BotService
 from app.backbone.services.strategy_service import StrategyService
+from app.backbone.services.test_service import TestService
 from app.view_models.backtest_create_vm import BacktestCreateVM
 from app.view_models.bot_performance_metrics_vm import PerformanceMetricsVM
 from app.view_models.bot_performance_vm import BotPerformanceVM
@@ -28,6 +29,7 @@ templates = Jinja2Templates(directory="./app/templates")
 ticker_service = TickerService()
 strategy_service = StrategyService()
 backtest_service = BacktestService()
+test_service = TestService()
 bot_service = BotService()
 
 @router.get("/backtest", response_class=HTMLResponse)
@@ -200,7 +202,7 @@ def run_montecarlo_test(
     threshold_ruin: float = Form(...),
 ):
     
-    result = backtest_service.run_montecarlo_test(
+    result = test_service.run_montecarlo_test(
         bot_performance_id=bot_performance_id, 
         n_simulations=simulations,
         threshold_ruin=threshold_ruin
@@ -221,7 +223,7 @@ async def get_luck_test_modal(request: Request, bot_performance_id: UUID):
 @router.post('/backtest/{performance_id}/luck_test')
 def run_luck_test(request: Request, performance_id:UUID, percent_trades_to_remove: int = Form(...)):
 
-    result = backtest_service.run_luck_test(
+    result = test_service.run_luck_test(
         bot_performance_id=performance_id, 
         trades_percent_to_remove=percent_trades_to_remove 
     )
@@ -241,7 +243,7 @@ async def get_random_test_modal(request: Request, bot_performance_id: UUID):
 @router.post('/backtest/{performance_id}/random_test')
 def run_random_test(request: Request, performance_id:UUID, iterations: int = Form(...)):
 
-    result = backtest_service.run_random_test(performance_id, n_iterations=iterations)
+    result = test_service.run_random_test(performance_id, n_iterations=iterations)
     
     if result.ok:
         referer = request.headers.get('referer')  # Obtiene la URL de la página anterior
@@ -253,7 +255,7 @@ def run_random_test(request: Request, performance_id:UUID, iterations: int = For
 @router.post('/backtest/{performance_id}/correlation_test')
 def run_correlation_test(request: Request, performance_id:UUID):
 
-    result = backtest_service.run_correlation_test(performance_id)
+    result = test_service.run_correlation_test(performance_id)
     
     if result.ok:
         referer = request.headers.get('referer')  # Obtiene la URL de la página anterior
@@ -297,9 +299,8 @@ async def get_tickers_by_strategy(request: Request, strategy_id: UUID):
 @router.post("/backtest/{performance_id}/favorites")
 async def update_favorites(request: Request, performance_id: UUID):
     result = backtest_service.update_favorite(performance_id)
-    print(result)
     if result.ok:
-        return {'result':  result.item}
+        return {'result':  result.item.Favorite}
     
     else:
         return {'result': result.error}
