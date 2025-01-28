@@ -36,7 +36,7 @@ def upgrade() -> None:
     op.create_foreign_key(None, 'Bots', 'Tickers', ['TickerId'], ['Id'])
     op.create_foreign_key(None, 'Bots', 'Timeframes', ['TimeframeId'], ['Id'])
     op.create_foreign_key(None, 'Bots', 'Strategies', ['StrategyId'], ['Id'])
-    op.drop_column('Bots', 'id')
+    # op.drop_column('Bots', 'id')
     op.drop_column('Bots', 'metatrader_name')
     op.drop_column('Bots', 'ticker')
     op.drop_column('Bots', 'strategy_name')
