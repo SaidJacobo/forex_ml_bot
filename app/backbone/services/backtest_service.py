@@ -317,6 +317,7 @@ class BacktestService:
                     .filter(
                         Bot.StrategyId == strategy_id,
                         BotPerformance.RreturnDd != "NaN",
+                        BotPerformance.Trades > 30,
                     )
                     .group_by(BotPerformance.BotId, BotPerformance.Method)
                     .having(func.avg(BotPerformance.RreturnDd) >= 1)
