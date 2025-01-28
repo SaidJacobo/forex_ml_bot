@@ -1,207 +1,143 @@
-# ##################################################### EndOfMonthTrader #####################################################
-backbone.eom_trader.EndOfMonthTrader:
-  opt_params:
+backbone.bbands_cross_strategy.BbandsCross:
+  name: BbandsCross
+  metatrader_name: BCross # <-- Nombre para mostrar en las operaciones de metatrader
+  opt_params: 
     null
 
   wfo_params:
-    null
-
-  indicator_params:
-    rsi_time_period: 2  
-
-  instruments_info:
-    AMZNm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    AVGOm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    BIDUm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    COSTm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    CSCOm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    INTUm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    METAm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    MSFTm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    NVDAm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    PYPLm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-    VRTXm:
-      timeframe: D1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14
-        minute: 0
-
-##################################################### VixTrader #####################################################
-backbone.vix_trader.VixTrader:
-  opt_params: 
-    ll_hh_window: [5, 7, 10]
-    vix_percentage_above_sma: [0.01, 0.02, 0.03, 0.04, 0.05]
-
-  wfo_params:
-    look_back_bars: 480
-    warmup_bars: 300
-
-  instruments_info:
-    USTECm:
-      timeframe: H1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: 14-21
-        minute: 0
-
-    US500m:
-      timeframe: H1
-      lot_size: 0.02
-      cron:
-        day: mon-fri
-        hour: 14-21
-        minute: 0
-
-##################################################### BBandsTrader #####################################################
-backbone.bbands_trader.BbandsTrader:
-  opt_params: 
-    b_open_threshold : [0.9, 0.95, 0.99]
-    b_close_threshold : [0.5, 0.6, 0.8, 0.9]
-
-  wfo_params:
-    look_back_bars: 1920
-    warmup_bars: 300
+    use_wfo: False
+    look_back_bars: 200
+    warmup_bars: 200
 
   instruments_info: 
-
-    RLXm:
-      lot_size: 0.01
-      timeframe: M30
-      cron:
-        day: mon-fri
-        hour: 13-20
-        minute: '*/30'
-
-    LIm:
-      lot_size: 0.01
+    GBPUSD:
+      risk: 2
       timeframe: H1
       cron:
         day: mon-fri
-        hour: 13-20
-        minute: 0
+        hour: '*/1'
+        minute: '0'
 
-    TMEm:
-      lot_size: 0.01
-      timeframe: M30
+    USDCHF:
+      risk: 2
+      timeframe: H2
       cron:
         day: mon-fri
-        hour: 13-20
-        minute: '*/30'
+        hour: '*/2'
+        minute: '0'
 
-##################################################### MacdTrader #####################################################
+    # US2000.cash:
+    #   risk: 0.5
+    #   timeframe: H1
+    #   cron:
+    #     day: mon-fri
+    #     hour: '1-23/1'
+    #     minute: '0'
 
-backbone.macd_trader.MacdTrader:
-  opt_params: 
-    cum_rsi_open_threshold : [55, 65, 75, 85, 90]
-    cum_rsi_close_threshold : [55, 65, 75, 85, 90]
-
-  wfo_params:
-    look_back_bars: 1000
-    warmup_bars: 400
-
-  instruments_info: 
-    XPEVm:
-      lot_size: 0.01
-      timeframe: M15
-      cron:
-        day: mon-fri
-        hour: 13-20
-        minute: '*/15'
-
-
-##################################################### MeanRevTrader #####################################################
-backbone.mean_reversion_trader.MeanRevTrader:
-  opt_params: 
-    sma_period: [12, 26, 50]
-    deviation_threshold: [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]
-
-  wfo_params:
-    look_back_bars: 1920
-    warmup_bars: 80
-
-  instruments_info:
-    AUDUSDm:
-      timeframe: H1
-      lot_size: 0.01
-      cron:
-        day: mon-fri
-        hour: '*'
-        minute: 0
- 
-
-##################################################### Screener #####################################################
-# backbone.screener.Screener:
-#   strategy_params:
+# backbone.b_percent_strategy.BPercent:
+#   name: BPercent
+#   metatrader_name: BPerc
+#   opt_params: 
 #     null
 
-#   strategy_params: 
-#     telegram_bot_token: 7169280958:AAGzEP6lpNZMC7w_KEntUAQTEUdX2dnYe98
-#     telegram_chat_id : '-4201375396'
+#   wfo_params:
+#     use_wfo: False
+#     look_back_bars: 200
+#     warmup_bars: 200
 
-#   cron:
-#     day: mon-fri
-#     hour: '13'
-#     minute: '0'
+#   instruments_info:
+#     EURUSD:
+#       risk: 1.5
+#       timeframe: H2
+#       cron:
+#         day: mon-fri
+#         hour: '*/2'
+#         minute: '0'
+
+backbone.channel_strategy.Channel:
+  name: Channel
+  metatrader_name: Channel
+  opt_params: 
+    null
+
+  wfo_params:
+    use_wfo: False
+    look_back_bars: 200
+    warmup_bars: 200
+
+  instruments_info:
+    NVDA:
+      risk: 0.5
+      timeframe: H3
+      cron:
+        day: mon-fri
+        hour: 17-23/3
+        minute: '0'
+
+backbone.short_ibs.ShortIBS:
+  name: ShortIBS
+  metatrader_name: ShrtIB
+  opt_params: 
+    null
+
+  wfo_params:
+    use_wfo: False
+    look_back_bars: 200
+    warmup_bars: 200
+
+  instruments_info: 
+    BABA:
+      risk: 0.5
+      timeframe: H1
+      cron:
+        day: mon-fri
+        hour: 17-23/1
+        minute: '0'
+
+    EURUSD:
+      risk: 1.5
+      timeframe: H3
+      cron:
+        day: mon-fri
+        hour: '*/3'
+        minute: '0'
+
+backbone.triple_sma.TripleSMA:
+  name: TripleSMA
+  metatrader_name: 3SMA
+  opt_params: 
+    null
+
+  wfo_params:
+    use_wfo: False
+    look_back_bars: 200
+    warmup_bars: 200
+
+  instruments_info: 
+    NVDA:
+      risk: 0.5
+      timeframe: H2
+      cron:
+        day: mon-fri
+        hour: 17-23/2
+        minute: '0'
+
+# backbone.triple_supertrend.TripleSuperTrend:
+#   name: TripleST
+#   metatrader_name: TripleST
+#   opt_params: 
+#     null
+
+#   wfo_params:
+#     use_wfo: False
+#     look_back_bars: 200
+#     warmup_bars: 200
+    
+#   instruments_info: 
+#     NVDA:
+#       risk: 0.5
+#       timeframe: H4
+#       cron:
+#         day: mon-fri
+#         hour: 17-23/4
+#         minute: '0'

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Categorias{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="text-center mb-4">Lista de categorias</h1>
+
+    <!-- Botón Crear -->
+    <div class="d-flex justify-content-end mb-3">
+        <form action="/categories/update_commissions" method="post">
+            <button class="btn btn-primary" type="submit">Actualizar</button>
+        </form>
+    </div>
+
+    <!-- Tabla de Estrategias -->
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>Categoria</th>
+                    <th>Cantidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td>
+                        <a href="/categories/{{ category.Id }}/tickers">{{ category.Name }}</a>
+                    </td>
+                    <td>{{ category.Tickers|length }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

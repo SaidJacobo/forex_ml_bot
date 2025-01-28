@@ -1,0 +1,73 @@
+# GD -- PA -- FA -- RT
+#             |__  MC
+
+# GD -- PA -- RT
+#        |__  MC
+
+get_data:
+  date_from: '2021-01-01'
+  date_to: '2024-11-01'
+  out_path: './backtesting_pipeline/get_data'
+
+preliminar_analysis:
+  run_only_in: ['EURUSD_16387']
+  strategy_path: 'backbone.short_ibs.ShortIBS'
+  date_from: '2021-01-01'
+  date_to: '2024-11-01'
+  in_path: './backtesting_pipeline/get_data'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
+
+full_analysis:
+  date_from: '2021-01-01'
+  date_to: '2024-11-01'
+  strategy_path: 'backbone.short_ibs.ShortIBS'
+  opt_params:
+    exit_ibs : [0.1, 0.2, 0.3, 0.4, 0.5]
+    
+# ADVERTENCIA asegurarse que warmup_bars es el mayor valor de parametro para indicadores que tenga la estrategia
+  warmup_bars: 0
+  validation_bars: 200
+  data_path: './backtesting_pipeline/get_data'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/wfo'
+
+choose_the_best:
+  preliminar_analysis_path: 'backtesting_pipeline/strategies/{strategy_name}/preliminar_analysis'
+  full_analysis_path: 'backtesting_pipeline/strategies/{strategy_name}/wfo'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+
+montecarlo:
+  run_only_in: ['GBPUSD_16385','US2000.cash_16385','USDCHF_16386'] #null
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+  strategy_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  n_simulations: 1000
+  threshold_ruin: 0.9
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/montecarlo'
+
+random_test:
+  run_only_in: null
+  date_from: '2021-01-01'
+  date_to: '2024-11-01'
+  n_iterations: 30
+  strategy_path: 'backbone.random_trader.RandomTrader'
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+  data_path: './backtesting_pipeline/get_data'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/random_test'
+
+luck_test:
+  run_only_in: ['GBPUSD_16385','US2000.cash_16385','USDCHF_16386'] #null
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  trades_percent_to_remove: 3
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/luck_test'
+
+correlation_test:
+  run_only_in: null
+  in_path: 'backtesting_pipeline/strategies/{strategy_name}/choose_the_best'
+  data_path: './backtesting_pipeline/get_data'
+  root_path: 'backtesting_pipeline/strategies/{strategy_name}'
+  out_path: 'backtesting_pipeline/strategies/{strategy_name}/correlation_test'
+  show: True
+

@@ -8,12 +8,19 @@ __pycache__/
 mtvenv/
 mtvenv2/
 env/
+venv/
 
 # Archivo de configuración para el entorno de desarrollo
 .env
 
 # Archivos de datos
 *.csv
+
+# Archivos de btpy
+app/templates/static/backtest_plots/*.html
+app/templates/static/correlation_plots/*.html
+app/templates/static/luck_test_plots/*.html
+backtesting_pipeline/**/*.html
 
 # Archivos de texto
 *.txt
