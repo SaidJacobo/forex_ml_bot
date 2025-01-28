@@ -104,7 +104,7 @@ async def create_post(
     else:
         timeframes = [ticker_service.get_timeframe_by_id(timeframe_id).item]
     
-    backtest_service.run_backtest(
+    result = backtest_service.run_backtest(
         initial_cash,
         strategy,
         tickers,
@@ -116,7 +116,11 @@ async def create_post(
         risk,
     )
     
-    return RedirectResponse(url="/backtest", status_code=303)
+    if result.ok:
+        return RedirectResponse(url="/backtest", status_code=303)
+    
+    else:
+        return {'error': result.message}
 
 @router.get('/backtest/ticker/{ticker_id}')
 def get_backtest_by_ticker(request: Request, ticker_id: UUID, strategy_id: UUID = Query(...)):
