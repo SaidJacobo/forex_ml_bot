@@ -161,7 +161,7 @@ class BacktestService:
                             
                     
                 except Exception as e:
-                    return OperationResult(ok=False, message=str(e), item=None)
+                    print(f'Hubo un error en {ticker.Name}_{timeframe.Name}_{risk}')
                     
         return OperationResult(ok=True, message=None, item=None)
     
@@ -304,43 +304,43 @@ class BacktestService:
             return OperationResult(ok=False, message=str(e), item=None)
 
     def get_robusts_by_strategy_id(self, strategy_id) -> OperationResult:
-        # try:
-        with self.db_service.get_database() as db:
-            # Subquery para calcular los promedios y máximos de RreturnDd por StrategyId y TickerId
-            subquery = (
-                db.query(
-                    Bot.StrategyId,
-                    Bot.TickerId,
+        try:
+            with self.db_service.get_database() as db:
+                # Subquery para calcular los promedios y máximos de RreturnDd por StrategyId y TickerId
+                subquery = (
+                    db.query(
+                        Bot.StrategyId,
+                        Bot.TickerId,
+                    )
+                    .join(BotPerformance, Bot.Id == BotPerformance.BotId)
+                    .filter(
+                        Bot.StrategyId == strategy_id,
+                        BotPerformance.RreturnDd != "NaN",
+                    )
+                    .group_by(Bot.StrategyId, Bot.TickerId)
+                    .having(func.avg(BotPerformance.RreturnDd) > 1)
+                    .subquery()
                 )
-                .join(BotPerformance, Bot.Id == BotPerformance.BotId)
-                .filter(
-                    Bot.StrategyId == strategy_id,
-                    BotPerformance.RreturnDd != "NaN",
-                )
-                .group_by(Bot.StrategyId, Bot.TickerId)
-                .having(func.avg(BotPerformance.RreturnDd) > 1)
-                .subquery()
-            )
 
-            # Alias para evitar ambigüedad en las relaciones
-            bot_alias = aliased(Bot)
-            bp_alias = aliased(BotPerformance)
+                # Alias para evitar ambigüedad en las relaciones
+                bot_alias = aliased(Bot)
+                bp_alias = aliased(BotPerformance)
 
-            # Query principal con DISTINCT ON
-            query = (
-                db.query(
-                    bp_alias  # Aquí traemos la instancia completa de BotPerformance
-                )
-                .join(bot_alias, bot_alias.Id == bp_alias.BotId)  # Relacionamos Bot con BotPerformance
-                .join(subquery, (bot_alias.StrategyId == subquery.c.StrategyId) & (bot_alias.TickerId == subquery.c.TickerId))
-                .order_by(bot_alias.StrategyId, bot_alias.TickerId, bp_alias.CustomMetric.desc())
-                .distinct(bot_alias.StrategyId, bot_alias.TickerId)  # DISTINCT ON en SQLAlchemy
-            ).all()
+                # Query principal con DISTINCT ON
+                query = (
+                    db.query(
+                        bp_alias  # Aquí traemos la instancia completa de BotPerformance
+                    )
+                    .join(bot_alias, bot_alias.Id == bp_alias.BotId)  # Relacionamos Bot con BotPerformance
+                    .join(subquery, (bot_alias.StrategyId == subquery.c.StrategyId) & (bot_alias.TickerId == subquery.c.TickerId))
+                    .order_by(bot_alias.StrategyId, bot_alias.TickerId, bp_alias.CustomMetric.desc())
+                    .distinct(bot_alias.StrategyId, bot_alias.TickerId)  # DISTINCT ON en SQLAlchemy
+                ).all()
 
-            return OperationResult(ok=True, message=None, item=query)
+                return OperationResult(ok=True, message=None, item=query)
 
-        # except Exception as e:
-        #     return OperationResult(ok=False, message=str(e), item=None)
+        except Exception as e:
+            return OperationResult(ok=False, message=str(e), item=None)
 
     def update_favorite(self, performance_id):
         
