@@ -1,8 +1,5 @@
 import os
 from typing import List
-from uuid import UUID
-import numpy as np
-from sklearn.linear_model import LinearRegression
 import yaml
 from app.backbone.database.db_service import DbService
 from app.backbone.entities.bot import Bot
@@ -22,14 +19,12 @@ from app.backbone.services.bot_service import BotService
 from app.backbone.services.utils import _performance_from_df_to_obj
 from app.backbone.utils.get_data import get_data
 from app.backbone.utils.general_purpose import load_function
-from app.backbone.utils.montecarlo_utils import max_drawdown, monte_carlo_simulation_v2
 from app.backbone.utils.wfo_utils import run_strategy
 import pandas as pd
-from pandas import DataFrame
 from sqlalchemy.orm import joinedload
-import plotly.express as px
-import plotly.graph_objects as go
-from sqlalchemy import String, func, desc, cast, Uuid
+from sqlalchemy import func, desc
+from sqlalchemy.orm import aliased
+
 
 class BacktestService:
     def __init__(self):
@@ -309,35 +304,43 @@ class BacktestService:
             return OperationResult(ok=False, message=str(e), item=None)
 
     def get_robusts_by_strategy_id(self, strategy_id) -> OperationResult:
-        try:
-            with self.db_service.get_database() as db:
-                subquery = (
-                    db.query(
-                        cast(func.min(cast(BotPerformance.Id, String)), Uuid).label("Id"),
-                        func.avg(BotPerformance.RreturnDd).label("AVGRreturnDd"),
-                        func.max(BotPerformance.RreturnDd).label("MaxRreturnDd"),
-                    )
-                    .join(Bot, Bot.Id == BotPerformance.BotId)
-                    .filter(
-                        Bot.StrategyId == strategy_id,
-                        BotPerformance.RreturnDd != "NaN",
-                        BotPerformance.Trades > 30,
-                    )
-                    .group_by(BotPerformance.BotId, BotPerformance.Method)
-                    .having(func.avg(BotPerformance.RreturnDd) >= 1)
-                    .subquery()
+        # try:
+        with self.db_service.get_database() as db:
+            # Subquery para calcular los promedios y máximos de RreturnDd por StrategyId y TickerId
+            subquery = (
+                db.query(
+                    Bot.StrategyId,
+                    Bot.TickerId,
                 )
+                .join(BotPerformance, Bot.Id == BotPerformance.BotId)
+                .filter(
+                    Bot.StrategyId == strategy_id,
+                    BotPerformance.RreturnDd != "NaN",
+                )
+                .group_by(Bot.StrategyId, Bot.TickerId)
+                .having(func.avg(BotPerformance.RreturnDd) > 1)
+                .subquery()
+            )
 
-                # Query principal uniendo con la subquery
-                query = (
-                    db.query(BotPerformance)
-                    .join(subquery, BotPerformance.Id == subquery.c.Id)
-                ).all()
+            # Alias para evitar ambigüedad en las relaciones
+            bot_alias = aliased(Bot)
+            bp_alias = aliased(BotPerformance)
 
-                return OperationResult(ok=True, message=None, item=query)
+            # Query principal con DISTINCT ON
+            query = (
+                db.query(
+                    bp_alias  # Aquí traemos la instancia completa de BotPerformance
+                )
+                .join(bot_alias, bot_alias.Id == bp_alias.BotId)  # Relacionamos Bot con BotPerformance
+                .join(subquery, (bot_alias.StrategyId == subquery.c.StrategyId) & (bot_alias.TickerId == subquery.c.TickerId))
+                .order_by(bot_alias.StrategyId, bot_alias.TickerId, bp_alias.CustomMetric.desc())
+                .distinct(bot_alias.StrategyId, bot_alias.TickerId)  # DISTINCT ON en SQLAlchemy
+            ).all()
 
-        except Exception as e:
-            return OperationResult(ok=False, message=str(e), item=None)
+            return OperationResult(ok=True, message=None, item=query)
+
+        # except Exception as e:
+        #     return OperationResult(ok=False, message=str(e), item=None)
 
     def update_favorite(self, performance_id):
         
