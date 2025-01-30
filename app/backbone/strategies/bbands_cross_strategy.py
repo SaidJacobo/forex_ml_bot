@@ -35,21 +35,15 @@ class BbandsCross(Strategy):
 
         self.atr = self.I(ta.ATR, self.data.High, self.data.Low, self.data.Close)
 
-
-    def next(self):
-        actual_date = self.data.index[-1]
-        
-        if self.opt_params and actual_date in self.opt_params.keys():
-            for k, v in self.opt_params[actual_date].items():
-                setattr(self, k, v)
-        
-        self.upper_band, self.middle_band, self.lower_band = ta.BBANDS(
+        self.upper_band, self.middle_band, self.lower_band = self.I(
+            ta.BBANDS,
             self.data.Close, 
             timeperiod=self.bbands_timeperiod, 
             nbdevup=self.bband_std, 
             nbdevdn=self.bband_std
         )
-        
+
+    def next(self):
         
         if self.position:
             if self.position.is_long:
