@@ -36,7 +36,7 @@ class BbandsCross(Strategy):
         self.atr = self.I(ta.ATR, self.data.High, self.data.Low, self.data.Close)
 
         self.upper_band, self.middle_band, self.lower_band = self.I(
-            ta.BBAND,
+            ta.BBANDS,
             self.data.Close, 
             timeperiod=self.bbands_timeperiod, 
             nbdevup=self.bband_std, 
