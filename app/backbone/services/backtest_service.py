@@ -164,8 +164,7 @@ class BacktestService:
                     print(f'Hubo un error en {ticker.Name}_{timeframe.Name}_{risk}')
                     
         return OperationResult(ok=True, message=None, item=None)
-    
-    
+      
     def get_performances_by_strategy_ticker(self, strategy_id, ticker_id) -> OperationResult:
         with self.db_service.get_database() as db:
             try:
@@ -303,6 +302,60 @@ class BacktestService:
         except Exception as e:
             return OperationResult(ok=False, message=str(e), item=None)
 
+    def update_favorite(self, performance_id):
+        
+        try:
+            
+            with self.db_service.get_database() as db:
+                performance = self.db_service.get_by_id(db, BotPerformance, performance_id)
+                
+                performance.Favorite = not performance.Favorite
+                updated_performance = self.db_service.update(db, BotPerformance, performance)        
+                
+                return OperationResult(ok=True, message=None, item=updated_performance)
+        
+        except Exception as e:
+            
+            return OperationResult(ok=False, message=str(e), item=None)
+            
+    def get_robusts(self) -> OperationResult:
+        try:
+            with self.db_service.get_database() as db:
+                # Subquery para calcular los promedios y máximos de RreturnDd por StrategyId y TickerId
+                subquery = (
+                    db.query(
+                        Bot.StrategyId,
+                        Bot.TickerId,
+                    )
+                    .join(BotPerformance, Bot.Id == BotPerformance.BotId)
+                    .filter(
+                        BotPerformance.RreturnDd != "NaN",
+                    )
+                    .group_by(Bot.StrategyId, Bot.TickerId)
+                    .having(func.avg(BotPerformance.RreturnDd) > 1)
+                    .subquery()
+                )
+
+                # Alias para evitar ambigüedad en las relaciones
+                bot_alias = aliased(Bot)
+                bp_alias = aliased(BotPerformance)
+
+                # Query principal con DISTINCT ON
+                query = (
+                    db.query(
+                        bp_alias  # Aquí traemos la instancia completa de BotPerformance
+                    )
+                    .join(bot_alias, bot_alias.Id == bp_alias.BotId)  # Relacionamos Bot con BotPerformance
+                    .join(subquery, (bot_alias.StrategyId == subquery.c.StrategyId) & (bot_alias.TickerId == subquery.c.TickerId))
+                    .order_by(bot_alias.StrategyId, bot_alias.TickerId, bp_alias.CustomMetric.desc())
+                    .distinct(bot_alias.StrategyId, bot_alias.TickerId)  # DISTINCT ON en SQLAlchemy
+                ).all()
+
+                return OperationResult(ok=True, message=None, item=query)
+
+        except Exception as e:
+            return OperationResult(ok=False, message=str(e), item=None)             
+
     def get_robusts_by_strategy_id(self, strategy_id) -> OperationResult:
         try:
             with self.db_service.get_database() as db:
@@ -342,21 +395,14 @@ class BacktestService:
         except Exception as e:
             return OperationResult(ok=False, message=str(e), item=None)
 
-    def update_favorite(self, performance_id):
-        
+    def get_favorites(self) -> OperationResult:
         try:
-            
             with self.db_service.get_database() as db:
-                performance = self.db_service.get_by_id(db, BotPerformance, performance_id)
-                
-                performance.Favorite = not performance.Favorite
-                updated_performance = self.db_service.update(db, BotPerformance, performance)        
-                
-                return OperationResult(ok=True, message=None, item=updated_performance)
+                favorites = self.db_service.get_many_by_filter(db, BotPerformance, Favorite=True).all()
+            
+            return OperationResult(ok=True, message=None, item=favorites)
         
         except Exception as e:
+        
+            return OperationResult(ok=False, message=str(e), item=favorites)
             
-            return OperationResult(ok=False, message=str(e), item=None)
-            
-
-                

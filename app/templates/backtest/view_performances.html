@@ -62,12 +62,12 @@
                         </td>
                         <td>
                             <button type="button" class="btn btn-primary btn-sm toggle-favorite" data-performance-id="{{ performance.Id }}">
-                            {% if performance.Favorite %}
-                                <i class="fas fa-star"></i> <!-- Estrella llena -->
-                            {% else %}
-                                <i class="far fa-star"></i> <!-- Estrella vacía -->
-                            {% endif %}
-                        </button>
+                                {% if performance.Favorite %}
+                                    <i class="fas fa-star"></i> <!-- Estrella llena -->
+                                {% else %}
+                                    <i class="far fa-star"></i> <!-- Estrella vacía -->
+                                {% endif %}
+                            </button>
                         </td>
                     </tr>
                 {% endfor %}

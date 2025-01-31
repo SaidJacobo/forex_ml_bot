@@ -19,7 +19,7 @@ class StrategyService:
                 
                 strategy = self.db_service.create(db, new_strategy)
 
-                result = OperationResult(ok=True, message='', item=strategy)
+                result = OperationResult(ok=True, message=None, item=strategy)
                 
                 return result
             
@@ -31,7 +31,7 @@ class StrategyService:
             
             try:
                 all_strategies = self.db_service.get_all(db, Strategy)
-                result = OperationResult(ok=True, message='', item=all_strategies)
+                result = OperationResult(ok=True, message=None, item=all_strategies)
                 return result
             
             except Exception as e:

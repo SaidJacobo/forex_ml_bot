@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Strategies{% endblock %}
+{% block title %}Portfolios{% endblock %}
 
 {% block content %}
 <div class="container my-5">
-    <h1 class="text-center mb-4">Strategies</h1>
+    <h1 class="text-center mb-4">Portfolios</h1>
 
     <!-- Botón Crear -->
     <div class="d-flex justify-content-end mb-3">
-        <a href="/strategies/new" class="btn btn-primary">
+        <a href="/portfolios/new" class="btn btn-primary">
             <i class="fas fa-plus-circle"></i>
         </a>
     </div>
@@ -22,21 +22,27 @@
                     <th>Description</th>
                     <th></th>
                     <th></th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
-                {% for strategy in strategies %}
+                {% for portfolio in portfolios %}
                 <tr>
-                    <td>{{ strategy.Name }}</td>
-                    <td>{{ strategy.Description }}</td>
+                    <td>{{ portfolio.Name }}</td>
+                    <td>{{ portfolio.Description }}</td>
                     <td>
-                        <a href="/strategies/{{ strategy.Id }}" class="btn btn-warning">
+                        <a href="/portfolios/{{ portfolio.Id }}" class="btn btn-warning">
                             <i class="fas fa-wrench"></i>
                         </a>
                     </td>
                     <td>
-                        <form action="/strategies/{{ strategy.Id }}/delete" method="post" class="d-inline">
-                            <button type="submit" class="btn btn-danger" onclick="return confirm('¿Estás seguro de que deseas eliminar esta estrategia?')">
+                        <a href="/portfolios/admin/{{ portfolio.Id }}" class="btn btn-primary">
+                            <i class="fas fa-users"></i>
+                        </a>
+                    </td>
+                    <td>
+                        <form action="/portfolios/{{ portfolio.Id }}/delete" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('¿Estás seguro de que deseas eliminar este portfolio?')">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </form>

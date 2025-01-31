@@ -98,11 +98,20 @@ h4 {
 }
 
 .table.table-custom td {
-    padding: 8px 10px !important;
+    padding: 4px 5px !important;
     font-size: 0.85rem !important;
     color: var(--highlight-text) !important;
     text-align: center !important;
+    background-color: var(--primary-bg); /* Fondo dinámico */
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.3s ease;
 }
+
+.table.table-custom th,
+.table.table-custom td {
+    color: var(--highlight-text);
+}
+
 
 .table.table-custom tbody tr:nth-child(even) {
     background-color: var(--primary-bg) !important;
@@ -199,12 +208,6 @@ h1, h2, h3, h4 {
     color: var(--primary-text);
 }
 
-/* Ajustar texto dentro de tablas */
-.table.table-custom th,
-.table.table-custom td {
-    color: var(--highlight-text);
-}
-
 /* Asegurar contraste para las celdas de tablas */
 .table.table-custom th {
     background-color: var(--header-bg);
@@ -215,15 +218,6 @@ h1, h2, h3, h4 {
     border-bottom: 1px solid var(--border-color);
 }
 
-.table.table-custom td {
-    background-color: var(--primary-bg); /* Fondo dinámico */
-    color: var(--primary-text);         /* Texto dinámico */
-    font-size: 0.95rem;
-    padding: 8px 10px;
-    text-align: center;
-    border-bottom: 1px solid var(--border-color);
-    transition: all 0.3s ease;
-}
 
 /* Hover dinámico para filas */
 .table.table-custom tbody tr:hover td {
@@ -390,3 +384,4 @@ body.dark-mode textarea::placeholder {
 #floating-favorite-button:hover {
     background-color: #0056b3;
 }
+

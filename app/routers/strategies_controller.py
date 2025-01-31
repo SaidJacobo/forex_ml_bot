@@ -47,7 +47,6 @@ async def create_post(
         result = strategy_service.create(name=name, description=description)
         
         if result.ok:
-            strategy_vm = StrategyVM.model_validate(result.item)
             return RedirectResponse(url="/strategies", status_code=303)
 
         else:

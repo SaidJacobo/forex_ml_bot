@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Portfolio{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="text-center mb-4">Portfolio</h1>
+
+    <div class="d-flex justify-content-end mb-3">
+        <a href="#" class="btn btn-primary open-modal" data-url="/portfolios/{{ portfolio.Id }}/candidates">
+            <i class="fas fa-plus-circle"></i>
+        </a>
+    </div>
+    
+    <div class="table-responsive">
+        <table id="selectedTable" class="table table-custom">
+            <thead>
+                <tr>
+                    <th>Bot</th>
+                    <th>StabilityRatio</th>
+                    <th>Return</th>
+                    <th>Drawdown</th>
+                    <th>RreturnDd</th>
+                    <th>CustomMetric</th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for performance in portfolio.BotPerformances %}
+                    <tr>
+                        <td>
+                            <a href='/backtest/bot/{{ performance.BotId }}?date_from={{ performance.DateFrom }}&date_to={{ performance.DateTo }}'>
+                                {{ performance.Bot.Name }}
+                            </a>
+                        </td>
+                        <td>{{ performance.StabilityRatio }}</td>
+                        <td>{{ performance.Return }}</td>
+                        <td>{{ performance.Drawdown }}</td>
+                        <td>{{ performance.RreturnDd }}</td>
+                        <td>{{ performance.CustomMetric }}</td>
+                        <td>delete</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="modal-container"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const modalContainer = document.getElementById("modal-container");
+        const portfolioId = "{{ portfolio_id }}"; // Se obtiene desde Jinja2
+
+        document.querySelectorAll(".open-modal").forEach(button => {
+            button.addEventListener("click", function () {
+                const url = this.dataset.url;
+
+                fetch(url)
+                    .then(response => response.ok ? response.text() : Promise.reject("No se pudo cargar el modal."))
+                    .then(html => {
+                        modalContainer.innerHTML = html;
+
+                        const modalElement = document.getElementById("botsModal");
+                        const modal = new bootstrap.Modal(modalElement);
+                        modal.show();
+
+                        $('#favoritesTable').DataTable({
+                            paging: true,
+                            searching: true,
+                            ordering: true,
+                            info: true,
+                            order: [[5, 'desc']],
+                            pageLength: 5,
+                            lengthMenu: [[5, 10, 20], [5, 10, 20, 'Todos']]
+                        });
+                    })
+                    .catch(error => console.error("Error:", error));
+            });
+        });
+
+        // Delegación de eventos para botones dentro del modal
+        modalContainer.addEventListener("click", async function (event) {
+            let button = event.target.closest(".toggle-add"); 
+            if (!button) return;
+
+
+            const performanceId = button.getAttribute("data-performance-id");
+            if (!performanceId) {
+                console.warn("No se encontró performanceId en el botón.");
+                return;
+            }
+
+            let icon = button.querySelector("i");
+            if (!icon) {
+                console.error("No se encontró el icono dentro del botón.");
+                return;
+            }
+
+            // **Ahora se evalúa isAdding en función del icono actual**
+            let isAdding = icon.classList.contains("fa-plus-circle");
+            let url = `/portfolios/admin/${portfolioId}/${isAdding ? "add" : "delete"}/${performanceId}`;
+
+            try {
+                let response = await fetch(url, { method: "POST" });
+
+                if (response.ok) {
+                    console.log(response)
+                    // Cambiar icono
+                    if (isAdding) {
+                        icon.classList.replace("fa-plus-circle", "fa-minus-circle");
+                        button.classList.replace("btn-primary", "btn-danger");
+                    } else {
+                        icon.classList.replace("fa-minus-circle", "fa-plus-circle");
+                        button.classList.replace("btn-danger", "btn-primary");
+
+                    }
+                } else {
+                    console.error("Error en la solicitud:", response.statusText);
+                }
+            } catch (error) {
+                console.error("Error en la solicitud:", error);
+            }
+        });
+    });
+</script>
+
+
+
+{% endblock %}
+
