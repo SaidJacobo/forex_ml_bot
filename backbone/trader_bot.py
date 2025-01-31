@@ -316,12 +316,12 @@ class TraderBot:
         df["Date"] = pd.to_datetime(df["Date"])
         df = df.set_index("Date")
 
-        logger.info(f'{self.metatrader_name}: Datos obtenidos correctamente: {df.head(5)}')
+        logger.info(f'{self.metatrader_name}: Datos obtenidos correctamente: {df.tail(5)}')
         df.loc[:, ["Open", "High", "Low", "Close"]] = (
             df.loc[:, ["Open", "High", "Low", "Close"]] * self.minimum_fraction
         )
         
-        logger.info(f'{self.metatrader_name}: Datos escalados con minimum_fraction {self.minimum_fraction}: {df.head(5)}')
+        logger.info(f'{self.metatrader_name}: Datos escalados con minimum_fraction {self.minimum_fraction}: {df.tail(5)}')
         
         df.index = df.index.tz_localize("UTC").tz_convert("UTC")
 

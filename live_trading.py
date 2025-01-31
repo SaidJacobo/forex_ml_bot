@@ -70,9 +70,9 @@ def siguiente_hora_multiplo(intervalo_horas, now):
 
     if next_hour >= 24:  # Manejar el cambio de día
         next_hour -= 24
-        next_run = now.replace(day=now.day + 1, hour=next_hour, minute=0, second=5, microsecond=0)
+        next_run = now.replace(day=now.day + 1, hour=next_hour, minute=0, second=10, microsecond=0)
     else:
-        next_run = now.replace(hour=next_hour, minute=0, second=5, microsecond=0)
+        next_run = now.replace(hour=next_hour, minute=0, second=10, microsecond=0)
     return next_run
 
 def ejecutar_crons():
@@ -114,7 +114,7 @@ def ejecutar_crons():
                 # Verificar si el bot debe ejecutarse
                 if cron['day'] == 'mon-fri' and now.weekday() < 5:
 
-                    if now >= next_run and now.minute == int(cron['minute']):
+                    if now >= next_run:
 
                         warmup_bars = configs['wfo_params']["warmup_bars"]
                         look_back_bars = configs['wfo_params']["look_back_bars"]
