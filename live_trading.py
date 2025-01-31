@@ -7,6 +7,7 @@ from pytz import timezone
 import logging
 import pandas as pd
 import MetaTrader5 as mt5
+from datetime import datetime, timedelta
 
 time_frames = {
     "M1": mt5.TIMEFRAME_M1,
@@ -70,9 +71,10 @@ def siguiente_hora_multiplo(intervalo_horas, now):
 
     if next_hour >= 24:  # Manejar el cambio de día
         next_hour -= 24
-        next_run = now.replace(day=now.day + 1, hour=next_hour, minute=1, second=0, microsecond=0)
+        next_run = (now + timedelta(days=1)).replace(hour=next_hour, minute=1, second=0, microsecond=0)
     else:
         next_run = now.replace(hour=next_hour, minute=1, second=0, microsecond=0)
+    
     return next_run
 
 def ejecutar_crons():
