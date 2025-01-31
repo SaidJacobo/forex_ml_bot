@@ -5,6 +5,7 @@ from pytz import timezone
 from backbone.trader_bot import TraderBot
 from backbone.utils.general_purpose import load_function
 import logging
+import MetaTrader5 as mt5
 
 # Configuración básica de logging
 logging.basicConfig(
@@ -17,6 +18,7 @@ logging.basicConfig(
 )
 
 if __name__ == "__main__":
+    
     logger = logging.getLogger("bot_runner")
     
     if len(sys.argv) != 10:
@@ -43,7 +45,7 @@ if __name__ == "__main__":
         strategy = load_function(strategy_name)
 
         bot = TraderBot(
-            name=metatrader_name,
+            strategy_name=metatrader_name,
             ticker=ticker,
             timeframe=timeframe,
             creds=creds,
@@ -58,4 +60,4 @@ if __name__ == "__main__":
         logger.info(f'Bot {metatrader_name}_{ticker}_{timeframe}_r{risk} ejecutado con exito :)')
 
     except Exception as e:
-        logger.error(f"[{datetime.now(timezone('Etc/UTC'))}] Error al ejecutar el bot {bot_name}: {e}", file=sys.stderr)
+        logger.error(f"[{datetime.now(timezone('Etc/UTC'))}] Error al ejecutar el bot {bot_name}: {e}")

@@ -48,9 +48,9 @@ opposite_order_tpyes = {
 class TraderBot:
 
     def __init__(
-        self, name:str, ticker:str, timeframe:str, creds: dict, opt_params:dict, wfo_params:dict, strategy, risk:float, timezone
+        self, strategy_name:str, ticker:str, timeframe:str, creds: dict, opt_params:dict, wfo_params:dict, strategy, risk:float, timezone
     ):
-        logger.info(f'inicializando {name}_{ticker}_{timeframe}_r{risk}')
+        logger.info(f'inicializando {strategy_name}_{ticker}_{timeframe}_r{risk}')
         
         if not mt5.initialize():
             
@@ -58,7 +58,9 @@ class TraderBot:
             quit()
         
         name_ticker = ticker.split('.')[0] # --> para simbolos como us2000.cash le quito el .cash
-        self.metatrader_name = f"{name}_{name_ticker}_{timeframe}"
+        self.metatrader_name = f"{strategy_name}_{name_ticker}_{timeframe}"
+        
+        self.strategy_name = strategy_name
         
         if len(self.metatrader_name) > 16:
             raise Exception(f'El nombre del bot debe tener un length menor o igual a 16: {self.metatrader_name} tiene {len(self.metatrader_name)}')
@@ -303,15 +305,16 @@ class TraderBot:
 
     def run(self):
         
-        warmup_bars = self.wfo_params["warmup_bars"]
-        look_back_bars = self.wfo_params["look_back_bars"]
-
         logger.info(f'{self.metatrader_name}: Iniciando ejecucion')
 
         logger.info(f'{self.metatrader_name}: Obteniendo datos historicos')
-        df = self.get_data(
-            n_bars=look_back_bars + warmup_bars,
+        
+        df = pd.read_csv(
+            f'./live_trading_data/{self.strategy_name}_{self.ticker}_{self.timeframe}.csv'
         )
+        
+        df["Date"] = pd.to_datetime(df["Date"])
+        df = df.set_index("Date")
 
         logger.info(f'{self.metatrader_name}: Datos obtenidos correctamente: {df.head(5)}')
         df.loc[:, ["Open", "High", "Low", "Close"]] = (
