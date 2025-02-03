@@ -310,7 +310,7 @@ class TraderBot:
         logger.info(f'{self.metatrader_name}: Obteniendo datos historicos')
         
         df = pd.read_csv(
-            f'./live_trading_data/{self.strategy_name}_{self.ticker}_{self.timeframe}.csv'
+            f'./live_trading_data/{self.ticker}_{self.timeframe}.csv'
         )
         
         df["Date"] = pd.to_datetime(df["Date"])

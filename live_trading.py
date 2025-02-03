@@ -71,9 +71,9 @@ def siguiente_hora_multiplo(intervalo_horas, now):
 
     if next_hour >= 24:  # Manejar el cambio de día
         next_hour -= 24
-        next_run = (now + timedelta(days=1)).replace(hour=next_hour, minute=1, second=0, microsecond=0)
+        next_run = (now + timedelta(days=1)).replace(hour=next_hour, minute=0, second=10, microsecond=0)
     else:
-        next_run = now.replace(hour=next_hour, minute=1, second=0, microsecond=0)
+        next_run = now.replace(hour=next_hour, minute=0, second=10, microsecond=0)
     
     return next_run
 
@@ -118,31 +118,6 @@ def ejecutar_crons():
 
                     if now >= next_run:
 
-                        warmup_bars = configs['wfo_params']["warmup_bars"]
-                        look_back_bars = configs['wfo_params']["look_back_bars"]
-                        
-                        n_bars = warmup_bars + look_back_bars
-                        
-                        rates = mt5.copy_rates_from_pos(
-                            ticker, time_frames[timeframe], 1, n_bars
-                        )
-                        
-                        historical_prices = pd.DataFrame(rates)
-                        historical_prices["time"] = pd.to_datetime(historical_prices["time"], unit="s")
-
-                        historical_prices = historical_prices.rename(
-                            columns={
-                                "time": "Date",
-                                "open": "Open",
-                                "high": "High",
-                                "low": "Low",
-                                "close": "Close",
-                                "tick_volume": "Volume",
-                            }
-                        ).set_index("Date")
-                        
-                        historical_prices.to_csv(f'./live_trading_data/{metatrader_name}_{ticker}_{timeframe}.csv')
-                        
                         logger.info(f'Ejecutando: {strategy_name}_{ticker}_{timeframe}_r{risk}')
                         
                         lanzar_bot(
