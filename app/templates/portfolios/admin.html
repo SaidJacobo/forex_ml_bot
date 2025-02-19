@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container my-5">
-    <h1 class="text-center mb-4">Portfolio</h1>
+    <h1 class="text-center mb-4">Portfolio {{ portfolio.Name }}</h1>
 
     <div class="d-flex justify-content-end mb-3">
         <a href="#" class="btn btn-primary open-modal" data-url="/portfolios/{{ portfolio.Id }}/candidates">
@@ -12,6 +12,30 @@
         </a>
     </div>
     
+    <div class="table-responsive">
+        <table id="selectedTable" class="table table-custom">
+            <thead>
+                <tr>
+                    <th>StabilityRatio</th>
+                    <th>Return</th>
+                    <th>Drawdown</th>
+                    <th>RreturnDd</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ portfolio.StabilityRatio }}</td>
+                    <td>{{ portfolio.Return }}</td>
+                    <td>{{ portfolio.Drawdown }}</td>
+                    <td>{{ portfolio.RreturnDd }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div id="equity-plot"></div>
+    </div>
+
     <div class="table-responsive">
         <table id="selectedTable" class="table table-custom">
             <thead>
@@ -39,7 +63,11 @@
                         <td>{{ performance.Drawdown }}</td>
                         <td>{{ performance.RreturnDd }}</td>
                         <td>{{ performance.CustomMetric }}</td>
-                        <td>delete</td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm btn-add toggle-add" data-performance-id="{{ performance.Id }}">
+                                <i class="fas fa-minus-circle"></i>
+                            </button>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -50,9 +78,13 @@
 <div id="modal-container"></div>
 
 <script>
+    const plotEquityData = {{ equity_plot | safe }};
+    Plotly.newPlot('equity-plot', plotEquityData.data, plotEquityData.layout);
+
+
     document.addEventListener("DOMContentLoaded", function () {
         const modalContainer = document.getElementById("modal-container");
-        const portfolioId = "{{ portfolio_id }}"; // Se obtiene desde Jinja2
+        const portfolioId = "{{ portfolio.Id }}"; // Se obtiene desde Jinja2
 
         document.querySelectorAll(".open-modal").forEach(button => {
             button.addEventListener("click", function () {
@@ -104,6 +136,7 @@
             let url = `/portfolios/admin/${portfolioId}/${isAdding ? "add" : "delete"}/${performanceId}`;
 
             try {
+                console.log(url)
                 let response = await fetch(url, { method: "POST" });
 
                 if (response.ok) {

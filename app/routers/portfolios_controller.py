@@ -60,20 +60,17 @@ async def create_post(
 
     except ValidationError as e:
         return {"error": e.errors()}
-    
 
 @router.get("/portfolios/admin/{portfolio_id}", response_class=HTMLResponse)
 async def get_portfolios_admin(request: Request, portfolio_id:UUID):
-    
-    # Despues deberia tratar de que todo esto se haga por pydantic
-    
+       
     result = portfolio_service.get_portfolio_by_id(portfolio_id=portfolio_id)
     if not result.ok:
         return {'error': True, 'message': result.message}
     
     portfolio = result.item
     
-    result = portfolio_service.get_backtest_from_portfolio(portfolio_id=portfolio_id)
+    result = portfolio_service.get_backtests_from_portfolio(portfolio_id=portfolio_id)
 
     if not result.ok:
         return {'error': True, 'message': result.message}
@@ -82,6 +79,34 @@ async def get_portfolios_admin(request: Request, portfolio_id:UUID):
     used_backtests = result.item
     
     used_backtests = [PerformanceMetricsVM.model_validate(backtest) for backtest in used_backtests]
+    
+    # obtengo las equity curves de todos los backtest en formato df
+    result = portfolio_service.get_equity_curves(portfolio_id)
+
+    if not result.ok:
+        return result
+
+    equity_curves = result.item
+
+    # Obtengo la curva de equity del portfolio
+    equity_curve_result = portfolio_service.get_portfolio_equity_curve(equity_curves)
+    if not equity_curve_result.ok:
+        return {'error': True, 'message': result.message}
+    
+    portfolio_equity_curve = equity_curve_result.item
+    
+    # Aca deberia calcular las metricas del portfolio (return, dd, stability, negative hits, etc.)
+    
+    
+    # Obtengo el plot del portfolio
+    
+    equity_curves['portfolio'] = portfolio_equity_curve
+    
+    equity_plot_result = portfolio_service.plot_portfolio_equity_curve(equity_curves)
+    if not equity_plot_result.ok:
+        return {'error': True, 'message': result.message}
+    
+    equity_plot = equity_plot_result.item
     
     portfolio_vm = PortfolioVM(
         Id=portfolio_id,
@@ -92,8 +117,14 @@ async def get_portfolios_admin(request: Request, portfolio_id:UUID):
     )
     
     
-    return templates.TemplateResponse("/portfolios/admin.html", {"request": request, 'portfolio':portfolio_vm})
-
+    return templates.TemplateResponse(
+        "/portfolios/admin.html", 
+        {
+            "request": request, 
+            'portfolio':portfolio_vm,
+            'equity_plot': equity_plot
+        }
+    )
 
 @router.get("/portfolios/{portfolio_id}/candidates", response_class=HTMLResponse)
 def get_candidates(request:Request, portfolio_id):
@@ -108,8 +139,14 @@ def get_candidates(request:Request, portfolio_id):
     if result.ok:
         favorites_backtests = result.item
     
+    result = portfolio_service.get_backtests_from_portfolio(portfolio_id=portfolio_id)
+    if result.ok:
+        used_backtests = result.item
     
-    unique_backtests = {bt.Id: bt for bt in robusts_backtests + favorites_backtests}
+    used_backtests_ids = [bt.Id for bt in used_backtests]
+    
+    unique_backtests = {bt.Id: bt for bt in robusts_backtests + favorites_backtests if bt.Id not in used_backtests_ids}
+    
     favorites_and_robusts = list(unique_backtests.values())
     
     favorites_and_robusts = [PerformanceMetricsVM.model_validate(backtest) for backtest in favorites_and_robusts]
@@ -134,13 +171,17 @@ async def get_portfolios_admin(request: Request, portfolio_id:UUID, bot_performa
 
     return {'ok': result.message}
 
-@router.post("/portfolios/admin/{portfolio_id}/delete/{bot_performance_id}", response_class=HTMLResponse)
+@router.post("/portfolios/admin/{portfolio_id}/delete/{bot_performance_id}")
 async def get_portfolios_admin(request: Request, portfolio_id:UUID, bot_performance_id:UUID):
+    # eliminar el registro de botperformance-portfolio a la base de datos
+    result = portfolio_service.delete_performance(portfolio_id=portfolio_id, bot_performance_id=bot_performance_id)
     
-    #eliminar el registro de botperformance-portfolio a la base de datos
+    print('el resultado del delete es: ', result)
     
+    if result.ok:
+        return {'ok': result.ok}
     #calcular grafico de curva de equity y enviar
-    
-    return {}
+
+    return {'ok': result.message}
 
     

@@ -1,11 +1,13 @@
+import pandas as pd
 from sqlalchemy import UUID
-from app.backbone.entities.bot import Bot
 from app.backbone.entities.portfolio import Portfolio
 from app.backbone.entities.portfolio_backtest import PortfolioBacktest
 from app.backbone.services.backtest_service import BacktestService
 from backbone.database.db_service import DbService
-from backbone.entities.strategy import Strategy
 from backbone.services.operation_result import OperationResult
+from backbone.services.utils import get_trade_df_from_db, get_portfolio_equity_curve
+import plotly.graph_objects as go
+
 
 class PortfolioService:
     def __init__(self):
@@ -105,8 +107,29 @@ class PortfolioService:
             
                 result = OperationResult(ok=False, message=str(e), item=None)
                 return result        
+
+    def delete_performance(self, portfolio_id:UUID, bot_performance_id:UUID) -> OperationResult:
+        result = self.get_portfolio_backtest(portfolio_id=portfolio_id, bot_performance_id=bot_performance_id)
+        
+        if not result.ok:
+            return result
+               
+        if not result.item:
+            return OperationResult(ok=False, message='El bot no fue agregado a este portfolio', item=None)
+        
+        portfolio_backtest_result = result.item
+        
+        with self.db_service.get_database() as db:
+            try:
+                self.db_service.delete(db, PortfolioBacktest, portfolio_backtest_result.Id)
+                return OperationResult(ok=True, message=None, item=None)
             
-    def get_backtest_from_portfolio(self, portfolio_id:UUID) -> OperationResult:
+            except Exception as e:
+            
+                result = OperationResult(ok=False, message=str(e), item=None)
+                return result  
+
+    def get_backtests_from_portfolio(self, portfolio_id:UUID) -> OperationResult:
         
         try:
             with self.db_service.get_database() as db:
@@ -117,5 +140,63 @@ class PortfolioService:
                 return OperationResult(ok=True, message=None, item=backtests)
         
         except Exception as e:
+            
+            return OperationResult(ok=False, message=str(e), item=None)
+
+    def get_equity_curves(self, portfolio_id: UUID) -> OperationResult:
+        """Obtiene las curvas de equity de cada bot en un portafolio."""
+        result = self.get_backtests_from_portfolio(portfolio_id)
+        
+        if not result.ok:
+            return result
+        
+        try:
+            all_backtests = result.item
+            equity_curves = {
+                backtest.Bot.Name: get_trade_df_from_db(backtest.TradeHistory, backtest.Id) 
+                for backtest in all_backtests
+            }
+            
+            return OperationResult(ok=True, message=None, item=equity_curves)
+        
+        except Exception as e:
+            return OperationResult(ok=False, message=str(e), item=None)
+
+
+    def get_portfolio_equity_curve(self, equity_curves: dict) -> OperationResult:
+        """Calcula la curva de equity del portafolio a partir de las curvas individuales."""
+        try:
+            eq_curve = get_portfolio_equity_curve(equity_curves=equity_curves, initial_equity=100_000)
+            return OperationResult(ok=True, message=None, item=eq_curve)
+        
+        except Exception as e:
+            return OperationResult(ok=False, message=str(e), item=None)
+
+
+        
+    def plot_portfolio_equity_curve(self, equity_curves: pd.DataFrame):
+        
+        try:
+            # Crear una figura vacía
+            fig = go.Figure()
+
+            # Recorrer las curvas de equity de cada bot y agregarlas al gráfico
+            for k, v in equity_curves.items():
+                fig.add_trace(go.Scatter(x=v.index, y=v.Equity, mode='lines', name=k))
+
+            # Actualizar los detalles del layout del gráfico
+            fig.update_layout(
+                title="Curvas de Equity de Múltiples Bots",
+                xaxis_title="Fecha",
+                yaxis_title="Equity",
+                legend_title="Bots"
+            )
+
+            json_content = fig.to_json()
+            
+            return OperationResult(ok=True, message=None, item=json_content)
+        
+        except Exception as e:
             return OperationResult(ok=False, message=str(e), item=None)
             
+    
