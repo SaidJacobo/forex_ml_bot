@@ -1,0 +1,28 @@
+<div class="table-responsive">
+    <table id="metricsTable" class="table table-custom">
+        <thead>
+            <tr>
+                <th>StabilityRatio</th>
+                <th>Return</th>
+                <th>Drawdown</th>
+                <th>RreturnDd</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ metrics.StabilityRatio }}</td>
+                <td>{{ metrics.Return }}</td>
+                <td>{{ metrics.Drawdown }}</td>
+                <td>{{ metrics.RreturnDd }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div id="equity-plot"></div>
+
+    <!-- Guardar los datos del gráfico en un script JSON -->
+    <script id="equity-plot-data" type="application/json">
+        {{ equity_plot | safe }}
+    </script>
+
+</div>

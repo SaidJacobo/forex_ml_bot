@@ -12,28 +12,8 @@
         </a>
     </div>
     
-    <div class="table-responsive">
-        <table id="metricsTable" class="table table-custom">
-            <thead>
-                <tr>
-                    <th>StabilityRatio</th>
-                    <th>Return</th>
-                    <th>Drawdown</th>
-                    <th>RreturnDd</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>{{ portfolio.Metrics.StabilityRatio }}</td>
-                    <td>{{ portfolio.Metrics.Return }}</td>
-                    <td>{{ portfolio.Metrics.Drawdown }}</td>
-                    <td>{{ portfolio.Metrics.RreturnDd }}</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div id="equity-plot"></div>
+    <div id="portfolioMetrics">
+        
     </div>
 
     <div class="table-responsive">
@@ -78,9 +58,45 @@
 <div id="modal-container"></div>
 
 <script>
-    const plotEquityData = {{ equity_plot | safe }};
-    Plotly.newPlot('equity-plot', plotEquityData.data, plotEquityData.layout);
+    async function loadPortfolioMetrics() {
+        const portfolioId = "{{ portfolio.Id }}";
+        const url = `/portfolios/admin/${portfolioId}/metrics`;
+        const metricsDiv = document.getElementById("portfolioMetrics");
 
+        try {
+            // Hacer que el contenido desaparezca con una transición suave
+            metricsDiv.style.transition = "opacity 0.3s ease-out";
+            metricsDiv.style.opacity = "0";
+
+            let response = await fetch(url);
+            if (!response.ok) throw new Error("Error al obtener las métricas del portafolio.");
+
+            let html = await response.text();
+
+            // Esperar un pequeño tiempo antes de insertar el nuevo contenido
+            setTimeout(() => {
+                metricsDiv.innerHTML = html;
+                metricsDiv.style.opacity = "1"; // Volver a mostrar el contenido suavemente
+
+                // 📌 1. Asegurar que el gráfico de Plotly se renderice correctamente
+                let scriptTag = document.getElementById("portfolioMetrics").querySelector("#equity-plot-data");
+                if (scriptTag) {
+                    let plotData = JSON.parse(scriptTag.textContent);
+                    console.log("📊 Datos del gráfico Plotly:", plotData); // Depuración
+
+                    if (plotData.data && plotData.data.length > 0) {
+                        Plotly.newPlot('equity-plot', plotData.data, plotData.layout);
+                    } else {
+                        console.warn("⚠️ El gráfico de Plotly no tiene datos válidos.");
+                    }
+                }
+
+            }, 300); // Tiempo suficiente para completar el fade-out antes de mostrar el nuevo contenido
+
+        } catch (error) {
+            console.error("❌ Error cargando las métricas del portafolio:", error);
+        }
+    }
 
     document.addEventListener("DOMContentLoaded", function () {
         const modalContainer = document.getElementById("modal-container");
@@ -113,7 +129,17 @@
             });
         });
 
-        // Delegación de eventos para botones dentro del modal
+        modalContainer.addEventListener("click", function (event) {
+            let modalElement = document.getElementById("botsModal");
+
+            if (modalElement) {
+                modalElement.addEventListener("hidden.bs.modal", function () {
+                    location.reload(); // Recargar la página cuando el modal se cierra
+                });
+            }
+        });
+
+        // Delegación de eventos para botones de agregar y borrar backtests
         document.addEventListener("click", async function (event) {
             let button = event.target.closest(".toggle-add"); 
             if (!button) return;
@@ -150,6 +176,9 @@
                         button.classList.replace("btn-danger", "btn-primary");
 
                     }
+
+                    loadPortfolioMetrics();
+
                 } else {
                     console.error("Error en la solicitud:", response.statusText);
                 }
@@ -157,6 +186,9 @@
                 console.error("Error en la solicitud:", error);
             }
         });
+        
+        loadPortfolioMetrics();
+        
     });
 </script>
 

@@ -92,15 +92,13 @@ def get_candidates(request:Request, portfolio_id):
         'portfolio_id': portfolio_id
     })
 
-@router.get("/portfolios/admin/{portfolio_id}", response_class=HTMLResponse)
-async def get_portfolios_admin(request: Request, portfolio_id:UUID):
-       
+@router.get("/portfolios/admin/{portfolio_id}/metrics", response_class=HTMLResponse)
+async def get_portfolio_metrics(request: Request, portfolio_id:UUID):
     result = portfolio_service.get_portfolio_by_id(portfolio_id=portfolio_id)
     if not result.ok:
         return {'error': True, 'message': result.message}
     
-    portfolio = result.item
-    
+    # Obtengo todos los backtest de un portfolio
     result = portfolio_service.get_backtests_from_portfolio(portfolio_id=portfolio_id)
 
     if not result.ok:
@@ -125,7 +123,7 @@ async def get_portfolios_admin(request: Request, portfolio_id:UUID):
     
     portfolio_equity_curve = equity_curve_result.item
     
-    # Aca deberia calcular las metricas del portfolio (return, dd, stability, negative hits, etc.)
+    # Calculo las metricas del portfolio (return, dd, stability, negative hits, etc.)
     metrics_results = portfolio_service.get_portfolio_metrics(portfolio_equity_curve=portfolio_equity_curve)
     
     if not metrics_results.ok:
@@ -149,11 +147,41 @@ async def get_portfolios_admin(request: Request, portfolio_id:UUID):
     
     equity_plot = equity_plot_result.item
     
+    return templates.TemplateResponse(
+        "/portfolios/portfolio_metrics.html", 
+        {
+            "request": request, 
+            'metrics': metrics_vm,
+            'equity_plot': equity_plot
+        }
+    )
+    
+
+
+@router.get("/portfolios/admin/{portfolio_id}", response_class=HTMLResponse)
+async def get_portfolios_admin(request: Request, portfolio_id:UUID):
+       
+    result = portfolio_service.get_portfolio_by_id(portfolio_id=portfolio_id)
+    if not result.ok:
+        return {'error': True, 'message': result.message}
+    
+    portfolio = result.item
+    
+    # Obtengo todos los backtest de un portfolio
+    result = portfolio_service.get_backtests_from_portfolio(portfolio_id=portfolio_id)
+
+    if not result.ok:
+        return {'error': True, 'message': result.message}
+    
+    used_backtests = result.item
+    
+    used_backtests = [PerformanceMetricsVM.model_validate(backtest) for backtest in used_backtests]
+    
     portfolio_vm = PortfolioVM(
         Id=portfolio_id,
         Name=portfolio.Name,
         Description=portfolio.Description,
-        Metrics=metrics_vm,
+        # Metrics=metrics_vm,
         BotPerformances = used_backtests
     )
     
@@ -162,7 +190,6 @@ async def get_portfolios_admin(request: Request, portfolio_id:UUID):
         {
             "request": request, 
             'portfolio':portfolio_vm,
-            'equity_plot': equity_plot
         }
     )
 

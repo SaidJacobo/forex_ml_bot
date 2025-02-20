@@ -186,7 +186,6 @@ class PortfolioService:
 
             # Actualizar los detalles del layout del gráfico
             fig.update_layout(
-                title="Curvas de Equity de Múltiples Bots",
                 xaxis_title="Fecha",
                 yaxis_title="Equity",
                 legend_title="Bots"
