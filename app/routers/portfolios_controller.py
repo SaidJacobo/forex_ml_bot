@@ -192,5 +192,3 @@ async def get_portfolios_admin(request: Request, portfolio_id:UUID, bot_performa
     #calcular grafico de curva de equity y enviar
 
     return {'ok': result.message}
-
-    

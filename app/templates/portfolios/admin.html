@@ -13,7 +13,7 @@
     </div>
     
     <div class="table-responsive">
-        <table id="selectedTable" class="table table-custom">
+        <table id="metricsTable" class="table table-custom">
             <thead>
                 <tr>
                     <th>StabilityRatio</th>
@@ -37,7 +37,7 @@
     </div>
 
     <div class="table-responsive">
-        <table id="selectedTable" class="table table-custom">
+        <table id="botsTable" class="table table-custom">
             <thead>
                 <tr>
                     <th>Bot</th>
@@ -114,7 +114,7 @@
         });
 
         // Delegación de eventos para botones dentro del modal
-        modalContainer.addEventListener("click", async function (event) {
+        document.addEventListener("click", async function (event) {
             let button = event.target.closest(".toggle-add"); 
             if (!button) return;
 
