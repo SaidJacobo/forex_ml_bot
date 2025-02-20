@@ -1,5 +1,7 @@
 from typing import List
+import numpy as np
 from pandas import DataFrame
+from sklearn.linear_model import LinearRegression
 from app.backbone.entities.bot_performance import BotPerformance
 from app.backbone.entities.trade import Trade
 import pandas as pd
@@ -48,6 +50,7 @@ def get_trade_df_from_db(trades: List[Trade], performance_id):
     
     trade_history = pd.DataFrame(data)
     trade_history['ExitTime'] = pd.to_datetime(trade_history['ExitTime'])
+    trade_history = trade_history.sort_values(by='ExitTime')
     trade_history.set_index('ExitTime', inplace=True)
     
     return trade_history
@@ -142,3 +145,27 @@ def get_portfolio_equity_curve(equity_curves: pd.DataFrame, initial_equity: floa
     total = total.set_index('ExitTime')
     
     return total[['Equity']]
+
+def calculate_stability_ratio(equity_curve: pd.Series):
+    x = np.arange(len(equity_curve)).reshape(-1, 1)
+    reg = LinearRegression().fit(x, equity_curve)
+    stability_ratio = reg.score(x, equity_curve)
+    
+    return stability_ratio
+
+def max_drawdown(equity_curve, verbose=True):
+    # Calcular el running max de la equity curve
+    running_max = np.maximum.accumulate(equity_curve)
+    
+    # Calcular el drawdown
+    drawdown = (equity_curve - running_max) / running_max
+    
+    # Encontrar el valor máximo de drawdown y la fecha correspondiente
+    max_drawdown_value = np.min(drawdown) * 100  # Convertir el drawdown a porcentaje
+    max_drawdown_date = equity_curve.index[np.argmin(drawdown)]
+    
+    if verbose:
+        print(f"Máximo drawdown: {max_drawdown_value:.2f}%")
+        print(f"Fecha del máximo drawdown: {max_drawdown_date}")
+
+    return max_drawdown_value

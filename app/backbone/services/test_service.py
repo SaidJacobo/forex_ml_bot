@@ -399,6 +399,7 @@ class TestService:
             )
 
             # Transformar el índice al formato mensual
+            trade_history = trade_history.reset_index()
             equity = trade_history[['ExitTime', 'Equity']]
                     
             equity['month'] = pd.to_datetime(equity['ExitTime']).dt.to_period('M')

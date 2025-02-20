@@ -61,71 +61,6 @@ async def create_post(
     except ValidationError as e:
         return {"error": e.errors()}
 
-@router.get("/portfolios/admin/{portfolio_id}", response_class=HTMLResponse)
-async def get_portfolios_admin(request: Request, portfolio_id:UUID):
-       
-    result = portfolio_service.get_portfolio_by_id(portfolio_id=portfolio_id)
-    if not result.ok:
-        return {'error': True, 'message': result.message}
-    
-    portfolio = result.item
-    
-    result = portfolio_service.get_backtests_from_portfolio(portfolio_id=portfolio_id)
-
-    if not result.ok:
-        return {'error': True, 'message': result.message}
-    
-    
-    used_backtests = result.item
-    
-    used_backtests = [PerformanceMetricsVM.model_validate(backtest) for backtest in used_backtests]
-    
-    # obtengo las equity curves de todos los backtest en formato df
-    result = portfolio_service.get_equity_curves(portfolio_id)
-
-    if not result.ok:
-        return result
-
-    equity_curves = result.item
-
-    # Obtengo la curva de equity del portfolio
-    equity_curve_result = portfolio_service.get_portfolio_equity_curve(equity_curves)
-    if not equity_curve_result.ok:
-        return {'error': True, 'message': result.message}
-    
-    portfolio_equity_curve = equity_curve_result.item
-    
-    # Aca deberia calcular las metricas del portfolio (return, dd, stability, negative hits, etc.)
-    
-    
-    # Obtengo el plot del portfolio
-    
-    equity_curves['portfolio'] = portfolio_equity_curve
-    
-    equity_plot_result = portfolio_service.plot_portfolio_equity_curve(equity_curves)
-    if not equity_plot_result.ok:
-        return {'error': True, 'message': result.message}
-    
-    equity_plot = equity_plot_result.item
-    
-    portfolio_vm = PortfolioVM(
-        Id=portfolio_id,
-        Name=portfolio.Name,
-        Description=portfolio.Description,
-        # Metrics=portfolio.Metrics,
-        BotPerformances = used_backtests
-    )
-    
-    
-    return templates.TemplateResponse(
-        "/portfolios/admin.html", 
-        {
-            "request": request, 
-            'portfolio':portfolio_vm,
-            'equity_plot': equity_plot
-        }
-    )
-
 @router.get("/portfolios/{portfolio_id}/candidates", response_class=HTMLResponse)
 def get_candidates(request:Request, portfolio_id):
    # Obtener todos los bt robustos
@@ -156,6 +91,80 @@ def get_candidates(request:Request, portfolio_id):
         'favorites_and_robusts': favorites_and_robusts,
         'portfolio_id': portfolio_id
     })
+
+@router.get("/portfolios/admin/{portfolio_id}", response_class=HTMLResponse)
+async def get_portfolios_admin(request: Request, portfolio_id:UUID):
+       
+    result = portfolio_service.get_portfolio_by_id(portfolio_id=portfolio_id)
+    if not result.ok:
+        return {'error': True, 'message': result.message}
+    
+    portfolio = result.item
+    
+    result = portfolio_service.get_backtests_from_portfolio(portfolio_id=portfolio_id)
+
+    if not result.ok:
+        return {'error': True, 'message': result.message}
+    
+    used_backtests = result.item
+    
+    used_backtests = [PerformanceMetricsVM.model_validate(backtest) for backtest in used_backtests]
+    
+    # obtengo las equity curves de todos los backtest en formato df
+    result = portfolio_service.get_equity_curves(portfolio_id)
+
+    if not result.ok:
+        return result
+
+    equity_curves = result.item
+
+    # Obtengo la curva de equity del portfolio
+    equity_curve_result = portfolio_service.get_portfolio_equity_curve(equity_curves)
+    if not equity_curve_result.ok:
+        return {'error': True, 'message': result.message}
+    
+    portfolio_equity_curve = equity_curve_result.item
+    
+    # Aca deberia calcular las metricas del portfolio (return, dd, stability, negative hits, etc.)
+    metrics_results = portfolio_service.get_portfolio_metrics(portfolio_equity_curve=portfolio_equity_curve)
+    
+    if not metrics_results.ok:
+        return {'error': True, 'message': result.message}
+    
+    metrics = metrics_results.item
+    
+    metrics_vm = PerformanceMetricsVM(
+        StabilityRatio=metrics.stability_ratio,
+        Return=metrics.return_,
+        Drawdown=metrics.dd,
+        RreturnDd=metrics.return_dd
+    )
+    
+    # Obtengo el plot del portfolio
+    equity_curves['portfolio'] = portfolio_equity_curve
+    
+    equity_plot_result = portfolio_service.plot_portfolio_equity_curve(equity_curves)
+    if not equity_plot_result.ok:
+        return {'error': True, 'message': result.message}
+    
+    equity_plot = equity_plot_result.item
+    
+    portfolio_vm = PortfolioVM(
+        Id=portfolio_id,
+        Name=portfolio.Name,
+        Description=portfolio.Description,
+        Metrics=metrics_vm,
+        BotPerformances = used_backtests
+    )
+    
+    return templates.TemplateResponse(
+        "/portfolios/admin.html", 
+        {
+            "request": request, 
+            'portfolio':portfolio_vm,
+            'equity_plot': equity_plot
+        }
+    )
 
 @router.post("/portfolios/admin/{portfolio_id}/add/{bot_performance_id}")
 async def get_portfolios_admin(request: Request, portfolio_id:UUID, bot_performance_id:UUID):

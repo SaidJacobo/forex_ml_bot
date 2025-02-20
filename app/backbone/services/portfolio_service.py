@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from sqlalchemy import UUID
 from app.backbone.entities.portfolio import Portfolio
@@ -5,9 +6,11 @@ from app.backbone.entities.portfolio_backtest import PortfolioBacktest
 from app.backbone.services.backtest_service import BacktestService
 from backbone.database.db_service import DbService
 from backbone.services.operation_result import OperationResult
-from backbone.services.utils import get_trade_df_from_db, get_portfolio_equity_curve
+from backbone.services.utils import calculate_stability_ratio, get_trade_df_from_db, get_portfolio_equity_curve, max_drawdown
 import plotly.graph_objects as go
-
+from collections import namedtuple
+    
+Metrics = namedtuple('Metrics',['stability_ratio','return_','dd', 'return_dd'])
 
 class PortfolioService:
     def __init__(self):
@@ -162,7 +165,6 @@ class PortfolioService:
         except Exception as e:
             return OperationResult(ok=False, message=str(e), item=None)
 
-
     def get_portfolio_equity_curve(self, equity_curves: dict) -> OperationResult:
         """Calcula la curva de equity del portafolio a partir de las curvas individuales."""
         try:
@@ -171,10 +173,8 @@ class PortfolioService:
         
         except Exception as e:
             return OperationResult(ok=False, message=str(e), item=None)
-
-
-        
-    def plot_portfolio_equity_curve(self, equity_curves: pd.DataFrame):
+   
+    def plot_portfolio_equity_curve(self, equity_curves: pd.DataFrame) -> OperationResult:
         
         try:
             # Crear una figura vacía
@@ -199,4 +199,23 @@ class PortfolioService:
         except Exception as e:
             return OperationResult(ok=False, message=str(e), item=None)
             
-    
+    def get_portfolio_metrics(self, portfolio_equity_curve: pd.Series) -> OperationResult:
+        
+        try:
+            stability_ratio = round(calculate_stability_ratio(portfolio_equity_curve), 3)
+            return_ = round(((portfolio_equity_curve.Equity.iloc[-1] - portfolio_equity_curve.Equity.iloc[0]) / portfolio_equity_curve.Equity.iloc[0]) * 100, 3)
+            dd = round(np.abs(max_drawdown(portfolio_equity_curve, verbose=False)), 3)
+            return_dd = round(return_ / dd, 3)
+            
+            portfolio_metrics = Metrics(stability_ratio, return_, dd, return_dd)
+            
+            return OperationResult(
+                ok=True, 
+                message=None, 
+                item=portfolio_metrics
+            )
+        
+        except Exception as e:
+            return OperationResult(ok=False, message=str(e), item=None)
+        
+        

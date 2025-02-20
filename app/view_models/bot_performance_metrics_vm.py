@@ -10,20 +10,20 @@ from app.view_models.bot_vm import BotVM
 class PerformanceMetricsVM(BaseModel):
     Bot: Optional[BotVM] = None
     model_config = ConfigDict(from_attributes=True)
-    Id: UUID
-    BotId: Optional[UUID]=None
-    DateFrom: date
-    DateTo: date
-    Method: str
-    StabilityRatio: float
-    Trades: int
-    Return: float
-    Drawdown: float
-    RreturnDd: float
-    CustomMetric: float
-    WinRate: float
-    Duration: int
+    Id: UUID = None
+    BotId: Optional[UUID] = None
+    DateFrom: date = None
+    DateTo: date = None
+    Method: str = None
+    StabilityRatio: float = None
+    Trades: int = None
+    Return: float = None
+    Drawdown: float = None
+    RreturnDd: float = None
+    CustomMetric: float = None
+    WinRate: float = None
+    Duration: int = None
     Favorite: bool = False
-    InitialCash: float
+    InitialCash: float  = None
     BotTradePerformance: Optional[BotTradePerformamceVM] = None
     
