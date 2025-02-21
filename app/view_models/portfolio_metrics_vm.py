@@ -11,3 +11,5 @@ class PortfolioPerformanceMetricsVM(BaseModel):
     MeanTimeToNegative: float
     StdTimeToPositive: float
     StdTimeToNegative: float
+    MarginCalls: int
+    StopOuts: int

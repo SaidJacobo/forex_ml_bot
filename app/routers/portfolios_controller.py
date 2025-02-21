@@ -110,15 +110,15 @@ async def get_portfolio_metrics(request: Request, portfolio_id:UUID):
     used_backtests = [PerformanceMetricsVM.model_validate(backtest) for backtest in used_backtests]
     
     # obtengo las equity curves de todos los backtest en formato df
-    result = portfolio_service.get_equity_curves(portfolio_id)
+    result = portfolio_service.get_df_trades(portfolio_id)
 
     if not result.ok:
         return result
 
-    equity_curves = result.item
+    trades_with_equity = result.item
 
     # Obtengo la curva de equity del portfolio
-    equity_curve_result = portfolio_service.get_portfolio_equity_curve(equity_curves)
+    equity_curve_result = portfolio_service.get_portfolio_equity_curve(trades_with_equity)
     if not equity_curve_result.ok:
         return {'error': True, 'message': result.message}
     
@@ -138,6 +138,12 @@ async def get_portfolio_metrics(request: Request, portfolio_id:UUID):
     
     challenge_metrics = result_challenge_metrics.item
     
+    result_margin_metrics = portfolio_service.get_margin_metrics(trades_with_equity, portfolio_equity_curve)
+    if not result_challenge_metrics.ok:
+        return {'error': True, 'message': result.message}
+        
+    margin_metrics = result_margin_metrics.item
+    
     metrics_vm = PortfolioPerformanceMetricsVM(
         StabilityRatio=metrics.stability_ratio,
         Return=metrics.return_,
@@ -151,12 +157,14 @@ async def get_portfolio_metrics(request: Request, portfolio_id:UUID):
         StdTimeToPositive=challenge_metrics.std_time_to_positive,
         StdTimeToNegative=challenge_metrics.std_time_to_negative,
         
+        MarginCalls = margin_metrics.margin_calls,
+        StopOuts = margin_metrics.stop_outs
     )
     
     # Obtengo el plot del portfolio
-    equity_curves['portfolio'] = portfolio_equity_curve
+    trades_with_equity['portfolio'] = portfolio_equity_curve
     
-    equity_plot_result = portfolio_service.plot_portfolio_equity_curve(equity_curves)
+    equity_plot_result = portfolio_service.plot_portfolio_equity_curve(trades_with_equity)
     if not equity_plot_result.ok:
         return {'error': True, 'message': result.message}
     

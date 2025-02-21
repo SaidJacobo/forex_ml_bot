@@ -6,7 +6,7 @@ from app.backbone.entities.portfolio_backtest import PortfolioBacktest
 from app.backbone.services.backtest_service import BacktestService
 from backbone.database.db_service import DbService
 from backbone.services.operation_result import OperationResult
-from backbone.services.utils import calculate_stability_ratio, ftmo_simulator, get_trade_df_from_db, get_portfolio_equity_curve, max_drawdown
+from backbone.services.utils import calculate_margin_metrics, calculate_stability_ratio, ftmo_simulator, get_trade_df_from_db, get_portfolio_equity_curve, max_drawdown
 import plotly.graph_objects as go
 from collections import namedtuple
     
@@ -146,7 +146,7 @@ class PortfolioService:
             
             return OperationResult(ok=False, message=str(e), item=None)
 
-    def get_equity_curves(self, portfolio_id: UUID) -> OperationResult:
+    def get_df_trades(self, portfolio_id: UUID) -> OperationResult:
         """Obtiene las curvas de equity de cada bot en un portafolio."""
         result = self.get_backtests_from_portfolio(portfolio_id)
         
@@ -155,12 +155,12 @@ class PortfolioService:
         
         try:
             all_backtests = result.item
-            equity_curves = {
+            trades_with_equity = {
                 backtest.Bot.Name: get_trade_df_from_db(backtest.TradeHistory, backtest.Id) 
                 for backtest in all_backtests
             }
             
-            return OperationResult(ok=True, message=None, item=equity_curves)
+            return OperationResult(ok=True, message=None, item=trades_with_equity)
         
         except Exception as e:
             return OperationResult(ok=False, message=str(e), item=None)
@@ -230,4 +230,15 @@ class PortfolioService:
         except Exception as e:
             return OperationResult(ok=False, message=str(e), item=None)
         
+    def get_margin_metrics(self, all_trades:pd.DataFrame, portfolio_equity_curve:pd.Series) -> OperationResult:
+        try:
+            margin_metrics = calculate_margin_metrics(all_trades, portfolio_equity_curve)
+            
+            return OperationResult(
+                ok=True, 
+                message=None, 
+                item=margin_metrics
+            )
         
+        except Exception as e:
+            return OperationResult(ok=False, message=str(e), item=None)

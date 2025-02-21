@@ -3,6 +3,7 @@ from typing import List
 import numpy as np
 from pandas import DataFrame
 from sklearn.linear_model import LinearRegression
+import yaml
 from app.backbone.entities.bot_performance import BotPerformance
 from app.backbone.entities.trade import Trade
 import pandas as pd
@@ -52,7 +53,8 @@ def get_trade_df_from_db(trades: List[Trade], performance_id):
     trade_history = pd.DataFrame(data)
     trade_history['ExitTime'] = pd.to_datetime(trade_history['ExitTime'])
     trade_history = trade_history.sort_values(by='ExitTime')
-    trade_history.set_index('ExitTime', inplace=True)
+    trade_history['Date'] = trade_history['ExitTime']
+    trade_history.set_index('Date', inplace=True)
     
     return trade_history
 
@@ -261,3 +263,67 @@ def ftmo_simulator(equity_curve, initial_cash):
     )
     
     return ftmo_challenge_metrics
+
+MarginMetrics = namedtuple('MarginMetrics',
+    [
+        'margin_calls',
+        'stop_outs',
+    ]
+)
+def calculate_margin_metrics(all_trades, portfolio_equity_curve):
+    # Convertir columnas a datetime
+    with open("./configs/leverages.yml", "r") as file_name:
+        leverages = yaml.safe_load(file_name)
+    
+    for bot_name, trades in all_trades.items():
+        ticker = bot_name.split('_')[1]
+        leverage = leverages[ticker]
+        
+        trades["EntryTime"] = pd.to_datetime(trades["EntryTime"])
+        trades["ExitTime"] = pd.to_datetime(trades["ExitTime"])
+        
+        trades['margin'] = (np.abs(trades['Size']) * trades['EntryPrice']) / leverage
+        
+
+    # Concatenar y calcular los eventos
+    all_events = pd.concat([
+        pd.concat([
+            df[["EntryTime", "margin"]].rename(columns={"EntryTime": "time", "margin": "change"}).round(3),
+            df[["ExitTime", "margin"]].rename(columns={"ExitTime": "time", "margin": "change"}).assign(change=lambda x: -x["change"]).round(3)
+        ]) for df in all_trades.values()
+    ])
+
+    # Ordenar por tiempo
+    all_events = all_events.sort_values(['time', 'change'], ascending=[True, False]).reset_index(drop=True)
+
+    # Calcular el margen acumulado
+    all_events["margin"] = all_events["change"].cumsum()
+
+    all_events['time'] = pd.to_datetime(all_events['time']).dt.date
+    all_events.set_index('time', inplace=True)
+
+    all_events = pd.merge(
+        all_events,
+        portfolio_equity_curve,
+        left_index=True,
+        right_index=True,
+        how='left'
+    )
+
+    all_events = all_events.round(2)
+    
+
+    all_events['margin_level'] = ((all_events['Equity'] / all_events['margin']) * 100)
+
+    all_events['free_margin'] = (all_events['Equity'] - all_events['margin'])
+    print(all_events.head(20))
+
+    stop_outs = all_events[(all_events['margin_level'] < 50) & (all_events['margin_level'] != -1*np.inf)]
+    margin_calls = all_events[(all_events['margin_level'] < 100) & (all_events['margin_level'] != -1*np.inf)]
+    
+    margin_metrics = MarginMetrics(
+        margin_calls=margin_calls.shape[0], 
+        stop_outs=stop_outs.shape[0]
+    )
+    
+    return margin_metrics
