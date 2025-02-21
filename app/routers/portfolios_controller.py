@@ -9,6 +9,7 @@ from app.backbone.services.portfolio_service import PortfolioService
 from app.view_models.bot_performance_metrics_vm import PerformanceMetricsVM
 from app.view_models.bot_performance_vm import BotPerformanceVM
 from app.view_models.portfolio_admin_vm import PortfolioAdminVM
+from app.view_models.portfolio_metrics_vm import PortfolioPerformanceMetricsVM
 from app.view_models.portfolio_vm import PortfolioVM
 
 
@@ -131,11 +132,25 @@ async def get_portfolio_metrics(request: Request, portfolio_id:UUID):
     
     metrics = metrics_results.item
     
-    metrics_vm = PerformanceMetricsVM(
+    result_challenge_metrics = portfolio_service.get_challenge_metrics(portfolio_equity_curve)
+    if not result_challenge_metrics.ok:
+        return {'error': True, 'message': result.message}
+    
+    challenge_metrics = result_challenge_metrics.item
+    
+    metrics_vm = PortfolioPerformanceMetricsVM(
         StabilityRatio=metrics.stability_ratio,
         Return=metrics.return_,
         Drawdown=metrics.dd,
-        RreturnDd=metrics.return_dd
+        RreturnDd=metrics.return_dd,
+        
+        PositiveHits=challenge_metrics.positive_hits,
+        NegativeHits=challenge_metrics.negative_hits,
+        MeanTimeToPositive=challenge_metrics.mean_time_to_positive,
+        MeanTimeToNegative=challenge_metrics.mean_time_to_negative,
+        StdTimeToPositive=challenge_metrics.std_time_to_positive,
+        StdTimeToNegative=challenge_metrics.std_time_to_negative,
+        
     )
     
     # Obtengo el plot del portfolio

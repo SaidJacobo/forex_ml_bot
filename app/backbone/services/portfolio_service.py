@@ -6,7 +6,7 @@ from app.backbone.entities.portfolio_backtest import PortfolioBacktest
 from app.backbone.services.backtest_service import BacktestService
 from backbone.database.db_service import DbService
 from backbone.services.operation_result import OperationResult
-from backbone.services.utils import calculate_stability_ratio, get_trade_df_from_db, get_portfolio_equity_curve, max_drawdown
+from backbone.services.utils import calculate_stability_ratio, ftmo_simulator, get_trade_df_from_db, get_portfolio_equity_curve, max_drawdown
 import plotly.graph_objects as go
 from collections import namedtuple
     
@@ -212,6 +212,19 @@ class PortfolioService:
                 ok=True, 
                 message=None, 
                 item=portfolio_metrics
+            )
+        
+        except Exception as e:
+            return OperationResult(ok=False, message=str(e), item=None)
+    
+    def get_challenge_metrics(self, portfolio_equity_curve: pd.Series) -> OperationResult:
+        try:
+            challenge_metrics = ftmo_simulator(portfolio_equity_curve, initial_cash=100_000)
+            
+            return OperationResult(
+                ok=True, 
+                message=None, 
+                item=challenge_metrics
             )
         
         except Exception as e:

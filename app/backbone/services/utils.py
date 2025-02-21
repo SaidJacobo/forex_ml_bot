@@ -1,3 +1,4 @@
+from collections import namedtuple
 from typing import List
 import numpy as np
 from pandas import DataFrame
@@ -169,3 +170,94 @@ def max_drawdown(equity_curve, verbose=True):
         print(f"Fecha del máximo drawdown: {max_drawdown_date}")
 
     return max_drawdown_value
+
+
+FtmoChallengeMetrics = namedtuple('FtmoChallengeMetrics',
+    [
+        'positive_hits',
+        'negative_hits',
+        'mean_time_to_positive', 
+        'std_time_to_positive',
+        'mean_time_to_negative',
+        'std_time_to_negative',
+    ]
+)
+
+def ftmo_simulator(equity_curve, initial_cash):
+        
+    def safe_mean(arr):
+        return np.mean(arr) if len(arr) > 0 else 0
+
+    def safe_std(arr):
+        return np.std(arr) if len(arr) > 0 else 0
+    
+    equity_curve['month'] = pd.to_datetime(equity_curve.index)
+    equity_curve['month'] = pd.to_datetime(equity_curve['month'], errors='coerce')  # Asegúrate de que sea datetime
+    equity_curve['month'] = equity_curve['month'].dt.to_period('M')  # Convertir a un periodo mensual
+    
+    equity_curve.fillna(0, inplace=True)
+
+    # Identificar índices de los valores máximo y mínimo por mes
+    max_indices = equity_curve.groupby('month')['Equity'].idxmax()
+    min_indices = equity_curve.groupby('month')['Equity'].idxmin()
+
+    # Combinar índices únicos
+    unique_indices = pd.Index(max_indices).union(pd.Index(min_indices))
+
+    equity_curve = equity_curve.loc[unique_indices]
+    
+    # Inicializar acumuladores globales
+    total_positive_hits = 0
+    total_negative_hits = 0
+    all_time_to_positive = []
+    all_time_to_negative = []
+
+    # Simulación para cada mes como punto de partida
+    for i in range(0, len(equity_curve), 2):
+        perc_change = 0
+        time_to_positive = []
+        time_to_negative = []
+        
+        actual_equity = equity_curve.iloc[i].Equity
+        
+        months_elapsed = 0
+
+        # Iterar desde el mes de inicio hacia adelante
+        for j in range(i, len(equity_curve)):
+            
+            future_equity = equity_curve.iloc[j].Equity
+            
+            if i == 0 and j == 0:
+                perc_change = ((future_equity - initial_cash) / initial_cash) * 100
+                
+            else:
+                perc_change = ((future_equity - actual_equity) / actual_equity) * 100
+            
+            months_elapsed += 0.5
+
+            if perc_change >= 10:
+                total_positive_hits += 1
+                time_to_positive.append(months_elapsed)
+                months_elapsed = 0
+                break
+
+            elif perc_change <= -10:
+                total_negative_hits += 1
+                time_to_negative.append(months_elapsed)
+                months_elapsed = 0
+                break
+
+        # Guardar tiempos de esta simulación
+        all_time_to_positive.extend(time_to_positive)
+        all_time_to_negative.extend(time_to_negative)
+
+    ftmo_challenge_metrics = FtmoChallengeMetrics(
+        negative_hits=total_negative_hits,
+        positive_hits=total_positive_hits,
+        mean_time_to_positive=round(safe_mean(all_time_to_positive), 3), 
+        mean_time_to_negative=round(safe_mean(all_time_to_negative), 3), 
+        std_time_to_positive=round(safe_std(all_time_to_positive), 3),
+        std_time_to_negative=round(safe_std(all_time_to_negative), 3)
+    )
+    
+    return ftmo_challenge_metrics

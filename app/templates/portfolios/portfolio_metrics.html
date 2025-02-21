@@ -18,6 +18,29 @@
         </tbody>
     </table>
 
+    <table id="challengeTable" class="table table-custom">
+        <thead>
+            <tr>
+                <th>PositiveHits</th>
+                <th>NegativeHits</th>
+                <th>MeanTimeToPositive</th>
+                <th>StdTimeToPositive</th>
+                <th>MeanTimeToNegative</th>
+                <th>StdTimeToNegative</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ metrics.PositiveHits }}</td>
+                <td>{{ metrics.NegativeHits }}</td>
+                <td>{{ metrics.MeanTimeToPositive }}</td>
+                <td>{{ metrics.StdTimeToPositive }}</td>
+                <td>{{ metrics.MeanTimeToNegative }}</td>
+                <td>{{ metrics.StdTimeToNegative }}</td>
+            </tr>
+        </tbody>
+    </table>
+
     <div id="equity-plot"></div>
 
     <!-- Guardar los datos del gráfico en un script JSON -->
